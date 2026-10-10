@@ -1,0 +1,15 @@
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" routerLink="/">BKK Smart Market</a>
+    <app-mock-badge />
+    <nav aria-label="พื้นที่ใช้งาน">
+      <a routerLink="/vendor" routerLinkActive="active">ผู้ค้า</a>
+      <a routerLink="/portal" routerLinkActive="active">เจ้าหน้าที่</a>
+      <a routerLink="/dashboard" routerLinkActive="active">ผู้บริหาร</a>
+    </nav>
+    <app-role-switcher />
+  </div>
+</header>
+<main>
+  <router-outlet />
+</main>
