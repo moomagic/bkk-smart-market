@@ -16,9 +16,7 @@ builder.Services
     .AddAuthentication(DemoAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, DemoAuthenticationHandler>(DemoAuthenticationHandler.SchemeName, null);
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(DemoPolicies.Vendor, p => p.RequireRole("vendor"))
-    .AddPolicy(DemoPolicies.Officer, p => p.RequireRole("officer", "executive"))
-    .AddPolicy(DemoPolicies.Executive, p => p.RequireRole("executive"));
+    .AddPolicy(DemoPolicies.Vendor, p => p.RequireRole("vendor"));
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 

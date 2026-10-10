@@ -5,7 +5,6 @@ public enum ErrorKind
     NotFound,
     Conflict,
     Forbidden,
-    Validation,
 }
 
 /// <summary>A business-rule failure. <see cref="Message"/> is Thai and safe to show to the user.</summary>

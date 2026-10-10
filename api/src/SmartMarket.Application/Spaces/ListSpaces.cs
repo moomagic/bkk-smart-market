@@ -25,8 +25,8 @@ public sealed class ListSpacesHandler(IAppDbContext db, IClock clock)
             .Select(s => new SpaceSummary(
                 s.Id, s.Name, s.Type, s.Locks.Count, s.ProductTypes, s.OpenHours,
                 db.Rounds
-                    .Where(r => r.SpaceId == s.Id && r.Status == RoundStatus.Open
-                                && r.ApplyOpensAt <= now && now <= r.ApplyClosesAt)
+                    .Where(Round.AcceptingRequestsAt(now))
+                    .Where(r => r.SpaceId == s.Id)
                     .OrderBy(r => r.StartsOn)
                     .Select(r => new OpenRoundSummary(r.Id, r.StartsOn, r.EndsOn, r.ApplyClosesAt))
                     .FirstOrDefault()))

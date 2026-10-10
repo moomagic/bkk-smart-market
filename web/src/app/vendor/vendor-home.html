@@ -70,7 +70,7 @@
             </dl>
             @if (space.openRound && session.role() === 'vendor') {
               @if (requestedRoundIds().has(space.openRound.id)) {
-                <p class="status submitted">ยื่นคำขอแล้ว</p>
+                <p class="status submitted">{{ statusLabel.Submitted }}</p>
               } @else {
                 <button type="button" (click)="submit(space)" [disabled]="submitting() !== null">
                   {{ submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ' }}

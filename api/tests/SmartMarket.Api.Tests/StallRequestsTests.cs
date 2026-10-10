@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.Common;
+using SmartMarket.Domain.StallRequests;
 using SmartMarket.Domain.Vendors;
 using SmartMarket.Infrastructure.Seed;
 
@@ -61,6 +62,22 @@ public sealed class StallRequestsTests(ApiFactory api) : IDisposable
 
         var created = await (await api.ClientAs("vendor", vendorId.ToString())
             .PostAsJsonAsync("/api/stall-requests", new { roundId = SeedData.CharanCurrentRound }))
+            .Content.ReadFromJsonAsync<RequestDto>();
+
+        created!.Category.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(null, "ปากซอยจรัญฯ 79", "Legacy")] // held a lock here last round
+    [InlineData(null, "หน้า MRT บางพลัด ทางออก 1", "New")] // Legacy only at the same space
+    [InlineData("ผู้สูงอายุ", "ปากซอยจรัญฯ 79", "Vulnerable")] // Vulnerable outranks Legacy
+    public async Task Legacy_is_per_space_and_vulnerable_takes_precedence(string? vulnerableReason, string space, string expected)
+    {
+        var vendorId = await NewVendor("ทดสอบ ผู้ค้าเดิม", vulnerableReason, heldLockAtCharanLastRound: true);
+        var roundId = space == "ปากซอยจรัญฯ 79" ? SeedData.CharanCurrentRound : SeedData.MrtCurrentRound;
+
+        var created = await (await api.ClientAs("vendor", vendorId.ToString())
+            .PostAsJsonAsync("/api/stall-requests", new { roundId }))
             .Content.ReadFromJsonAsync<RequestDto>();
 
         created!.Category.Should().Be(expected);
@@ -129,12 +146,15 @@ public sealed class StallRequestsTests(ApiFactory api) : IDisposable
     private sealed record JsonOpenRound(Guid Id);
     private sealed record JsonSpace(string Name, JsonOpenRound? OpenRound);
 
-    private async Task<Guid> NewVendor(string name, string? vulnerableReason = null)
+    private async Task<Guid> NewVendor(string name, string? vulnerableReason = null, bool heldLockAtCharanLastRound = false)
     {
         await using var scope = api.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
         var vendor = new Vendor(Guid.NewGuid(), name, "089-000-0000", vulnerableReason, "อาหาร", true, null, TestClock.DemoNow);
         db.Vendors.Add(vendor);
+        if (heldLockAtCharanLastRound)
+            db.StallRequests.Add(new StallRequest(Guid.NewGuid(), SeedData.CharanPreviousRound, vendor.Id,
+                TestClock.DemoNow.AddMonths(-6), Category.New, StallRequestStatus.Confirmed));
         await db.CommitAsync("Test.CreateVendor", CancellationToken.None);
         return vendor.Id;
     }

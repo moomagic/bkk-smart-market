@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SmartMarket.Application.Common;
+using SmartMarket.Domain.Rounds;
 using SmartMarket.Domain.StallRequests;
 
 namespace SmartMarket.Application.StallRequests;
@@ -10,16 +12,16 @@ public sealed record SubmitStallRequest(Guid RoundId);
 /// Vendor submits a request for an open round. Rules: the round must be accepting requests (by <see cref="IClock"/>),
 /// and the vendor may not hold another unfinished request in the district for an overlapping round period.
 /// </summary>
-public sealed class SubmitStallRequestHandler(IAppDbContext db, IClock clock)
+public sealed class SubmitStallRequestHandler(IAppDbContext db, IClock clock, ICurrentActor actor, IOptions<RulesOptions> rules)
 {
     public const string Action = "StallRequest.Submit";
 
-    public async Task<Result<StallRequestDto>> Handle(Guid vendorId, SubmitStallRequest command, CancellationToken ct)
+    public async Task<Result<StallRequestDto>> Handle(SubmitStallRequest command, CancellationToken ct)
     {
         var now = clock.Now;
-        var vendor = await db.Vendors.SingleOrDefaultAsync(v => v.Id == vendorId, ct);
-        if (vendor is null)
-            return Error.Forbidden("vendor.unknown", "ไม่พบข้อมูลผู้ค้า");
+        if (await VendorLookup.Current(db, actor, ct) is not { } vendor)
+            return VendorLookup.Unknown;
+        var vendorId = vendor.Id;
 
         var target = await (
             from r in db.Rounds
@@ -31,18 +33,18 @@ public sealed class SubmitStallRequestHandler(IAppDbContext db, IClock clock)
         if (!target.Round.AcceptsRequestsAt(now))
             return Error.Conflict("round.closed", "รอบนี้ไม่ได้เปิดรับคำขอในขณะนี้");
 
+        var limit = rules.Value.MaxOpenRequestsPerVendorInDistrict;
         var blocking = await (
             from req in db.StallRequests
-            join r in db.Rounds on req.RoundId equals r.Id
+            join r in db.Rounds.Where(Round.Overlapping(target.Round.StartsOn, target.Round.EndsOn)) on req.RoundId equals r.Id
             join s in db.Spaces on r.SpaceId equals s.Id
             where req.VendorId == vendorId
                   && s.DistrictId == target.Space.DistrictId
                   && !StallRequest.Finished.Contains(req.Status)
-                  && r.StartsOn <= target.Round.EndsOn && target.Round.StartsOn <= r.EndsOn
-            select s.Name).FirstOrDefaultAsync(ct);
-        if (blocking is not null)
+            select s.Name).Take(limit).ToListAsync(ct);
+        if (blocking.Count >= limit)
             return Error.Conflict("request.already_open",
-                $"มีคำขอที่ยังไม่สิ้นสุดอยู่แล้วที่ {blocking} — ยื่นได้ 1 คำขอต่อช่วงรอบในเขต");
+                $"มีคำขอที่ยังไม่สิ้นสุดอยู่แล้วที่ {string.Join(", ", blocking)} — ยื่นได้ {limit} คำขอต่อช่วงรอบในเขต");
 
         var previousRoundId = await db.Rounds
             .Where(r => r.SpaceId == target.Space.Id && r.EndsOn < target.Round.StartsOn)

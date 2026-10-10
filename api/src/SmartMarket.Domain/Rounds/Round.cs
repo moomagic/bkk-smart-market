@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 namespace SmartMarket.Domain.Rounds;
 
 /// <summary>One period of use of a space, with its own window for stall requests.</summary>
@@ -24,8 +26,14 @@ public sealed class Round
         Status = status;
     }
 
-    public bool AcceptsRequestsAt(DateTimeOffset now) =>
-        Status == RoundStatus.Open && ApplyOpensAt <= now && now <= ApplyClosesAt;
+    // Rules as expressions so EF queries and in-memory checks share one definition.
 
-    public bool Overlaps(Round other) => StartsOn <= other.EndsOn && other.StartsOn <= EndsOn;
+    public static Expression<Func<Round, bool>> AcceptingRequestsAt(DateTimeOffset now) =>
+        r => r.Status == RoundStatus.Open && r.ApplyOpensAt <= now && now <= r.ApplyClosesAt;
+
+    /// <summary>Rounds whose period overlaps [startsOn, endsOn].</summary>
+    public static Expression<Func<Round, bool>> Overlapping(DateOnly startsOn, DateOnly endsOn) =>
+        r => r.StartsOn <= endsOn && startsOn <= r.EndsOn;
+
+    public bool AcceptsRequestsAt(DateTimeOffset now) => AcceptingRequestsAt(now).Compile()(this);
 }
