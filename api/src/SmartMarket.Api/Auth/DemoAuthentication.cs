@@ -57,4 +57,7 @@ public sealed class HttpCurrentActor(IHttpContextAccessor accessor) : ICurrentAc
 public static class DemoPolicies
 {
     public const string Vendor = "vendor";
+
+    /// <summary>District officers; executives may do anything an officer can.</summary>
+    public const string Officer = "officer";
 }

@@ -43,6 +43,31 @@ export interface StallRequest {
   ineligibleReason: string | null;
 }
 
+export type RoundStatus = 'Open' | 'Closed' | 'Drawn' | 'Approved';
+
+export interface RoundSummary {
+  id: string;
+  spaceId: string;
+  spaceName: string;
+  startsOn: string;
+  endsOn: string;
+  applyClosesAt: string;
+  status: RoundStatus;
+  requestCount: number;
+  eligibleCount: number;
+  ineligibleCount: number;
+}
+
+export interface RoundRequestRow {
+  requestId: string;
+  vendorId: string;
+  vendorName: string;
+  category: Category;
+  status: StallRequestStatus;
+  ineligibleReason: string | null;
+  carryOverWeight: number;
+}
+
 export interface Session {
   user: string;
   role: string;
@@ -66,6 +91,18 @@ export class Api {
 
   myStallRequests() {
     return this.http.get<StallRequest[]>('/api/stall-requests/me');
+  }
+
+  rounds() {
+    return this.http.get<RoundSummary[]>('/api/rounds');
+  }
+
+  roundRequests(roundId: string) {
+    return this.http.get<RoundRequestRow[]>(`/api/rounds/${roundId}/stall-requests`);
+  }
+
+  checkEligibility(roundId: string) {
+    return this.http.post<RoundRequestRow[]>(`/api/rounds/${roundId}/eligibility`, null);
   }
 }
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SmartMarket.Application.Rounds;
 using SmartMarket.Application.Spaces;
 using SmartMarket.Application.StallRequests;
 
@@ -11,6 +12,9 @@ public static class DependencyInjection
         services.AddScoped<ListSpacesHandler>();
         services.AddScoped<SubmitStallRequestHandler>();
         services.AddScoped<ListMyStallRequestsHandler>();
+        services.AddScoped<ListRoundsHandler>();
+        services.AddScoped<ListRoundRequestsHandler>();
+        services.AddScoped<CheckRoundEligibilityHandler>();
         return services;
     }
 }

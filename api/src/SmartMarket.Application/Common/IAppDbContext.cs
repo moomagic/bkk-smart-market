@@ -23,4 +23,10 @@ public interface IAppDbContext
     /// (the use-case name, e.g. "StallRequest.Submit"). Call once per command.
     /// </summary>
     Task CommitAsync(string action, CancellationToken ct);
+
+    /// <summary>
+    /// As <see cref="CommitAsync(string, CancellationToken)"/>, but the audit entry is filed under
+    /// <paramref name="subject"/> and is written even when nothing changed (e.g. a re-run eligibility check).
+    /// </summary>
+    Task CommitAsync(string action, AuditSubject subject, CancellationToken ct);
 }

@@ -1,0 +1,104 @@
+<h1>พอร์ทัลเจ้าหน้าที่เขต</h1>
+
+@if (!isOfficer()) {
+  <p class="muted">สลับบทบาทเป็นเจ้าหน้าที่เขตที่มุมขวาบนเพื่อใช้งาน</p>
+} @else {
+  <section aria-labelledby="rounds-heading">
+    <h2 id="rounds-heading">รอบ</h2>
+    @switch (rounds().state) {
+      @case ('loading') {
+        <p class="muted">กำลังโหลด…</p>
+      }
+      @case ('error') {
+        <p class="error">โหลดรายการรอบไม่สำเร็จ</p>
+      }
+      @case ('ready') {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">พื้นที่</th>
+                <th scope="col">ช่วงรอบ</th>
+                <th scope="col">ปิดรับ</th>
+                <th scope="col">สถานะ</th>
+                <th scope="col" class="num">คำขอ</th>
+                <th scope="col" class="num">ผ่าน</th>
+                <th scope="col" class="num">ไม่ผ่าน</th>
+                <th scope="col"><span class="sr-only">ดำเนินการ</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (round of roundList(); track round.id) {
+                <tr [class.selected]="round.id === selectedId()">
+                  <td>{{ round.spaceName }}</td>
+                  <td>{{ date(round.startsOn) }} – {{ date(round.endsOn) }}</td>
+                  <td>{{ date(round.applyClosesAt) }}</td>
+                  <td>{{ roundStatus[round.status] }}</td>
+                  <td class="num mono">{{ round.requestCount }}</td>
+                  <td class="num mono">{{ round.eligibleCount }}</td>
+                  <td class="num mono">{{ round.ineligibleCount }}</td>
+                  <td><button type="button" class="link" (click)="select(round)">ดูคำขอ</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </section>
+
+  @if (selected(); as round) {
+    <section aria-labelledby="requests-heading">
+      <div class="section-head">
+        <h2 id="requests-heading">
+          คำขอ · {{ round.spaceName }}
+          <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}</span>
+        </h2>
+        <button
+          type="button"
+          (click)="checkEligibility(round)"
+          [disabled]="checking() || round.status === 'Drawn' || round.status === 'Approved'"
+        >
+          {{ checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ' }}
+        </button>
+      </div>
+
+      @if (notice(); as n) {
+        <p class="notice" [class.error]="n.kind === 'error'" role="status">{{ n.text }}</p>
+      }
+
+      @if (requests()?.state === 'loading') {
+        <p class="muted">กำลังโหลด…</p>
+      } @else if (requests()?.state === 'error') {
+        <p class="error">โหลดคำขอไม่สำเร็จ</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">ผู้ค้า</th>
+                <th scope="col">กลุ่ม</th>
+                <th scope="col">สถานะ</th>
+                <th scope="col" class="num">น้ำหนัก</th>
+                <th scope="col">เหตุผล</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of requestRows(); track row.requestId) {
+                <tr>
+                  <td>{{ row.vendorName }}</td>
+                  <td>{{ category[row.category] }}</td>
+                  <td [class.warn]="row.status === 'Ineligible'">{{ status[row.status] }}</td>
+                  <td class="num mono">×{{ row.carryOverWeight }}</td>
+                  <td>{{ row.ineligibleReason ?? '' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="muted">ยังไม่มีคำขอ</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+}

@@ -1,4 +1,4 @@
-import { Category, SpaceType, StallRequestStatus } from '../core/api';
+import { Category, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
 
 export const SPACE_TYPE_LABEL: Record<SpaceType, string> = {
   Relaxation: 'จุดผ่อนผัน',
@@ -22,6 +22,13 @@ export const STATUS_LABEL: Record<StallRequestStatus, string> = {
   NotSelected: 'ไม่ได้สิทธิ์',
   Confirmed: 'ยืนยันสิทธิ์แล้ว',
   Forfeited: 'สละสิทธิ์',
+};
+
+export const ROUND_STATUS_LABEL: Record<RoundStatus, string> = {
+  Open: 'เปิดรับคำขอ',
+  Closed: 'ปิดรับแล้ว',
+  Drawn: 'จับฉลากแล้ว',
+  Approved: 'อนุมัติผลแล้ว',
 };
 
 const thaiDate = new Intl.DateTimeFormat('th-TH', {

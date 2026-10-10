@@ -14,6 +14,11 @@ public sealed class Space
     public bool IsActive { get; private set; }
     public IReadOnlyList<Lock> Locks => _locks;
 
+    /// <summary>Product types that make a space a food space (hygiene training required).</summary>
+    public static readonly string[] FoodProductTypes = ["อาหาร", "เครื่องดื่ม"];
+
+    public bool SellsFood => ProductTypes.Any(FoodProductTypes.Contains);
+
     public Space(
         Guid id, Guid districtId, string name, SpaceType type,
         string[] productTypes, string openHours, string rulesRef, bool isActive = true)

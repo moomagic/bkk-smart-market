@@ -32,6 +32,32 @@ public sealed class StallRequest
         CarryOverWeight = carryOverWeight;
     }
 
+    /// <summary>Statuses eligibility may (re)decide — before the draw.</summary>
+    public static readonly StallRequestStatus[] AwaitingDraw =
+        [StallRequestStatus.Submitted, StallRequestStatus.Eligible, StallRequestStatus.Ineligible];
+
+    public void MarkEligible(int carryOverWeight)
+    {
+        EnsureAwaitingDraw();
+        Status = StallRequestStatus.Eligible;
+        IneligibleReason = null;
+        CarryOverWeight = carryOverWeight;
+    }
+
+    public void MarkIneligible(string reason)
+    {
+        EnsureAwaitingDraw();
+        Status = StallRequestStatus.Ineligible;
+        IneligibleReason = reason;
+        CarryOverWeight = 1;
+    }
+
+    private void EnsureAwaitingDraw()
+    {
+        if (!AwaitingDraw.Contains(Status))
+            throw new InvalidOperationException($"Eligibility cannot change a request that is already {Status}.");
+    }
+
     /// <summary>
     /// Category snapshot at submission (CONTEXT.md › Category): Vulnerable > Legacy > New.
     /// Legacy = held a lock at the same space in the previous round.

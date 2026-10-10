@@ -52,13 +52,17 @@ public sealed class AuditInterceptor(IClock clock, ICurrentActor actor) : SaveCh
             .Where(c => c is not null)
             .Cast<EntityChange>()
             .ToList();
-        if (changes.Count == 0) return;
+        var smartMarket = context as SmartMarketDbContext;
+        var subject = smartMarket?.PendingAuditSubject;
+        if (changes.Count == 0 && subject is null) return;
 
-        var action = (context as SmartMarketDbContext)?.PendingAuditAction ?? UnscopedAction;
-        var primary = changes[0];
+        var action = smartMarket?.PendingAuditAction ?? UnscopedAction;
+        var (entityType, entityId) = subject is not null
+            ? (subject.EntityType, subject.EntityId)
+            : (changes[0].Entity, changes[0].Id);
         context.Add(new AuditEntry(
             Guid.CreateVersion7(clock.Now), clock.Now, actor.Actor, actor.Role, action,
-            primary.Entity, primary.Id, JsonSerializer.Serialize(changes, Json)));
+            entityType, entityId, JsonSerializer.Serialize(changes, Json)));
     }
 
     private static EntityChange? Describe(EntityEntry entry)

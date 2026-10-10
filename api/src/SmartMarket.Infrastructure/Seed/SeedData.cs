@@ -62,7 +62,7 @@ public static class SeedData
         Food(8, "สุดา พรหมมา", "ข้าวเหนียวมะม่วง"),
         Food(9, "กิตติ วงศ์ใหญ่", "ลูกชิ้นทอด"),
         Food(10, "ศิริ มั่นคง", "กาแฟโบราณ"),
-        Food(11, "ชัย ดวงดี", "ไก่ทอด"),
+        Food(11, "ชัย ดวงดี", "ไก่ทอด", hygieneTrained: false), // demo: ineligible at a food space
     ];
 
     // ---- Rounds (CLAUDE.md: current round 1 พ.ย. 2569 – 30 เม.ย. 2570, closes 31 ต.ค. 2569) ----
@@ -100,6 +100,8 @@ public static class SeedData
     [
         new(RequestId(0, 1), CharanPreviousRound, VendorId(1), At(2026, 4, 3), Category.Legacy, StallRequestStatus.Confirmed),
         new(RequestId(0, 2), CharanPreviousRound, VendorId(2), At(2026, 4, 5), Category.Legacy, StallRequestStatus.Confirmed),
+        // demo: ปิยะ น. missed out here last round → carry-over weight ×2 this round
+        new(RequestId(0, 7), CharanPreviousRound, VendorId(7), At(2026, 4, 8), Category.New, StallRequestStatus.NotSelected),
         Submitted(2, Category.Legacy, day: 2),
         Submitted(3, Category.Vulnerable, day: 3),
         Submitted(4, Category.Vulnerable, day: 3),
@@ -114,9 +116,9 @@ public static class SeedData
 
     public static Guid VendorId(int n) => new($"40000000-0000-0000-0000-{n:000000000000}");
 
-    private static Vendor Food(int n, string name, string product, string? vulnerableReason = null) =>
+    private static Vendor Food(int n, string name, string product, string? vulnerableReason = null, bool hygieneTrained = true) =>
         new(VendorId(n), name, $"080-000-{n:0000}", vulnerableReason, product,
-            foodHygieneTrained: true, bannedUntil: null, ConsentAt);
+            foodHygieneTrained: hygieneTrained, bannedUntil: null, ConsentAt);
 
     private static Guid RoundId(int n) => new($"50000000-0000-0000-0000-{n:000000000000}");
 

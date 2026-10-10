@@ -23,9 +23,17 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     /// <summary>Use-case name for the save in progress; read by <see cref="Audit.AuditInterceptor"/>.</summary>
     internal string? PendingAuditAction { get; private set; }
 
-    public async Task CommitAsync(string action, CancellationToken ct)
+    /// <summary>Explicit audit subject for the save in progress, if the command named one.</summary>
+    internal AuditSubject? PendingAuditSubject { get; private set; }
+
+    public Task CommitAsync(string action, CancellationToken ct) => Commit(action, null, ct);
+
+    public Task CommitAsync(string action, AuditSubject subject, CancellationToken ct) => Commit(action, subject, ct);
+
+    private async Task Commit(string action, AuditSubject? subject, CancellationToken ct)
     {
         PendingAuditAction = action;
+        PendingAuditSubject = subject;
         try
         {
             await SaveChangesAsync(ct);
@@ -33,6 +41,7 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
         finally
         {
             PendingAuditAction = null;
+            PendingAuditSubject = null;
         }
     }
 

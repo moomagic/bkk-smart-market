@@ -35,5 +35,8 @@ public sealed class Round
     public static Expression<Func<Round, bool>> Overlapping(DateOnly startsOn, DateOnly endsOn) =>
         r => r.StartsOn <= endsOn && startsOn <= r.EndsOn;
 
+    /// <summary>Eligibility can be (re)checked until the draw.</summary>
+    public bool CanCheckEligibility => Status is RoundStatus.Open or RoundStatus.Closed;
+
     public bool AcceptsRequestsAt(DateTimeOffset now) => AcceptingRequestsAt(now).Compile()(this);
 }

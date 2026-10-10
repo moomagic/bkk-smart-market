@@ -565,6 +565,16 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         },
                         new
                         {
+                            Id = new Guid("60000000-0000-0000-0000-000000000007"),
+                            CarryOverWeight = 1,
+                            Category = "New",
+                            RoundId = new Guid("50000000-0000-0000-0001-000000000001"),
+                            Status = "NotSelected",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 4, 8, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
                             Id = new Guid("60000000-0000-0000-0001-000000000002"),
                             CarryOverWeight = 1,
                             Category = "Legacy",
@@ -817,7 +827,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("40000000-0000-0000-0000-000000000011"),
                             ConsentAt = new DateTimeOffset(new DateTime(2026, 9, 1, 2, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DisplayName = "ชัย ดวงดี",
-                            FoodHygieneTrained = true,
+                            FoodHygieneTrained = false,
                             MaskedName = "ชัย ด.",
                             Phone = "080-000-0011",
                             ProductType = "ไก่ทอด"
