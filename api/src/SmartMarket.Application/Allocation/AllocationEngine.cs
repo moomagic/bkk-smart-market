@@ -41,18 +41,20 @@ public static class AllocationEngine
         var baseQuota = pooled ? DrawOrder.ToDictionary(g => g, _ => 0) : BaseQuota(n, counts, input.Rules);
         var (allocated, rolloverSources) = Rollover(baseQuota, counts);
 
-        // 3. Draw. N=1 is one pooled pick first; every group is then drawn to the end for waitlist order.
-        Candidate? pooledWinner = null;
-        if (pooled && candidates.Count > 0)
+        // 3. Draw every group to the end (the tail is the waitlist order). N=1 draws one pooled order
+        //    across all groups instead: its head wins and it also decides who is promoted on forfeit.
+        List<Candidate> pooledOrder = [];
+        Dictionary<Category, List<Candidate>> drawn;
+        if (pooled)
         {
-            pooledWinner = DrawOne(candidates, rng);
-            allocated[pooledWinner.Category] = 1;
+            pooledOrder = DrawAll([.. candidates], rng);
+            if (pooledOrder.Count > 0) allocated[pooledOrder[0].Category] = 1;
+            drawn = DrawOrder.ToDictionary(g => g, g => pooledOrder.Where(c => c.Category == g).ToList());
         }
-        var drawn = DrawOrder.ToDictionary(g => g, g =>
+        else
         {
-            var order = DrawAll(members[g].Where(c => c != pooledWinner).ToList(), rng);
-            return pooledWinner?.Category == g ? [pooledWinner, .. order] : order;
-        });
+            drawn = DrawOrder.ToDictionary(g => g, g => DrawAll(members[g], rng));
+        }
 
         // 5. Shuffle lock codes with the same RNG, then hand them out in outcome order.
         var shuffled = Shuffle(lockCodes, rng);
@@ -95,12 +97,14 @@ public static class AllocationEngine
             pooled,
             [.. DrawOrder.Select(g => new QuotaLine(g, baseQuota[g], allocated[g]))],
             outcomes,
-            [.. shuffled.Skip(nextLock)]);
+            [.. shuffled.Skip(nextLock)],
+            [.. pooledOrder.Select(c => c.VendorId)]);
     }
 
     /// <summary>
     /// A winner forfeits: the head of the same group's waitlist takes the lock; if that waitlist is empty,
-    /// follow the rollover cycle. With nobody waiting anywhere the lock stays vacant.
+    /// follow the rollover cycle. A pooled draw (N=1) has no group quotas, so the earliest waitlisted
+    /// vendor in the pooled order takes it instead. With nobody waiting anywhere the lock stays vacant.
     /// </summary>
     public static PromotionResult Promote(AllocationResult result, Guid forfeitedVendorId)
     {
@@ -109,7 +113,12 @@ public static class AllocationEngine
             throw new InvalidOperationException("Only a vendor who won a lock can forfeit it.");
 
         Outcome? head = null;
-        for (var g = forfeiter.Category; head is null; g = Next(g))
+        if (result.PooledDraw)
+        {
+            var waiting = result.Outcomes.Where(o => o.Kind == OutcomeKind.Waitlisted).ToDictionary(o => o.VendorId);
+            head = result.PooledOrder.Where(waiting.ContainsKey).Select(id => waiting[id]).FirstOrDefault();
+        }
+        else for (var g = forfeiter.Category; head is null; g = Next(g))
         {
             head = result.Outcomes
                 .Where(o => o.Category == g && o.Kind == OutcomeKind.Waitlisted)
@@ -124,7 +133,7 @@ public static class AllocationEngine
             if (o == head)
                 return o with
                 {
-                    Kind = OutcomeKind.Won, LockCode = lockCode, WaitlistPosition = null, ViaRollover = o.Category != forfeiter.Category,
+                    Kind = OutcomeKind.Won, LockCode = lockCode, WaitlistPosition = null, ViaRollover = !result.PooledDraw && o.Category != forfeiter.Category,
                     Reason = $"เลื่อนจากสำรองลำดับ {o.WaitlistPosition} · กลุ่ม{Label(o.Category)} แทนผู้สละสิทธิ์ · ล็อค {lockCode}",
                 };
             if (head is not null && o.Category == head.Category && o.Kind == OutcomeKind.Waitlisted)

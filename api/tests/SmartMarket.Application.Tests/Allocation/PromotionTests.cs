@@ -47,6 +47,29 @@ public sealed class PromotionTests
     }
 
     [Fact]
+    public void Pooled_draw_promotes_the_earliest_waitlisted_vendor_in_pooled_order_whatever_their_group()
+    {
+        var promotedFromAnotherGroup = false;
+        foreach (var seed in Enumerable.Range(0, 100))
+        {
+            var result = Allocate(1, Applicants(3, 3, 3), seed);
+            var winner = result.Outcomes.Single(o => o.Kind == OutcomeKind.Won);
+            var waitlisted = result.Outcomes.Where(o => o.Kind == OutcomeKind.Waitlisted).Select(o => o.VendorId).ToHashSet();
+            var expected = result.PooledOrder.First(waitlisted.Contains);
+
+            var promotion = AllocationEngine.Promote(result, winner.VendorId);
+
+            promotion.PromotedVendorId.Should().Be(expected);
+            var promoted = promotion.Result.Outcomes.Single(o => o.VendorId == expected);
+            promoted.LockCode.Should().Be("B1");
+            promoted.ViaRollover.Should().BeFalse("a pooled draw has no quotas to roll over");
+            promotedFromAnotherGroup |= promoted.Category != winner.Category;
+        }
+
+        promotedFromAnotherGroup.Should().BeTrue("pooled promotion must not prefer the winner's group");
+    }
+
+    [Fact]
     public void Forfeit_with_nobody_waiting_leaves_the_lock_vacant()
     {
         var result = Allocate(4, Applicants(1, 1, 1));

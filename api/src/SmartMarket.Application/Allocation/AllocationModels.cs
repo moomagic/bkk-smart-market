@@ -29,11 +29,13 @@ public sealed record Outcome(
 public sealed record QuotaLine(Category Category, int Base, int Allocated);
 
 /// <param name="Outcomes">Ordered Legacy → Vulnerable → New, each in draw order.</param>
+/// <param name="PooledOrder">N=1 only: every vendor in the single pooled draw order (decides promotion); empty otherwise.</param>
 public sealed record AllocationResult(
     string InputHash,
     bool PooledDraw,
     IReadOnlyList<QuotaLine> Quota,
     IReadOnlyList<Outcome> Outcomes,
-    IReadOnlyList<string> UnassignedLockCodes);
+    IReadOnlyList<string> UnassignedLockCodes,
+    IReadOnlyList<Guid> PooledOrder);
 
 public sealed record PromotionResult(AllocationResult Result, Guid? PromotedVendorId);
