@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SmartMarket.Application.Common;
+using SmartMarket.Application.Rounds;
 using SmartMarket.Domain.Rounds;
 using SmartMarket.Domain.StallRequests;
 
@@ -46,11 +47,7 @@ public sealed class SubmitStallRequestHandler(IAppDbContext db, IClock clock, IC
             return Error.Conflict("request.already_open",
                 $"มีคำขอที่ยังไม่สิ้นสุดอยู่แล้วที่ {string.Join(", ", blocking)} — ยื่นได้ {limit} คำขอต่อช่วงรอบในเขต");
 
-        var previousRoundId = await db.Rounds
-            .Where(r => r.SpaceId == target.Space.Id && r.EndsOn < target.Round.StartsOn)
-            .OrderByDescending(r => r.EndsOn)
-            .Select(r => (Guid?)r.Id)
-            .FirstOrDefaultAsync(ct);
+        var previousRoundId = await RoundQueries.PreviousRoundId(db, target.Space.Id, target.Round.StartsOn, ct);
         var heldLockHere = previousRoundId is not null && await db.StallRequests.AnyAsync(
             req => req.RoundId == previousRoundId && req.VendorId == vendorId && StallRequest.HeldLock.Contains(req.Status), ct);
 

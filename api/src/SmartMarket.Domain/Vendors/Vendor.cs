@@ -38,6 +38,9 @@ public sealed class Vendor
         ConsentAt = consentAt;
     }
 
+    /// <summary>Enough identity on file to hold a lock (mock: name and phone present).</summary>
+    public bool HasIdentity => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(Phone);
+
     public void UpdateContact(string displayName, string phone)
     {
         DisplayName = displayName;

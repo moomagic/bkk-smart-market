@@ -36,11 +36,7 @@ public sealed class CheckRoundEligibilityHandler(IAppDbContext db, IOptions<Rule
         var vendorIds = requests.Select(q => q.VendorId).ToList();
         var vendors = await db.Vendors.AsNoTracking().Where(v => vendorIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, ct);
 
-        var previousRoundId = await db.Rounds
-            .Where(r => r.SpaceId == space.Id && r.EndsOn < round.StartsOn)
-            .OrderByDescending(r => r.EndsOn)
-            .Select(r => (Guid?)r.Id)
-            .FirstOrDefaultAsync(ct);
+        var previousRoundId = await RoundQueries.PreviousRoundId(db, space.Id, round.StartsOn, ct);
         var previousOutcome = await db.StallRequests
             .Where(q => q.RoundId == previousRoundId && vendorIds.Contains(q.VendorId))
             .ToDictionaryAsync(q => q.VendorId, q => q.Status, ct);
@@ -55,12 +51,13 @@ public sealed class CheckRoundEligibilityHandler(IAppDbContext db, IOptions<Rule
             group q by q.VendorId into g
             select new { VendorId = g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.VendorId, x => x.Count, ct);
 
+        // Earlier TrialArea rounds this year only, so the result doesn't depend on which round is checked first.
         var trialThisYear = space.Type != SpaceType.TrialArea ? [] : await (
             from q in db.StallRequests
             join r in db.Rounds on q.RoundId equals r.Id
             join s in db.Spaces on r.SpaceId equals s.Id
             where vendorIds.Contains(q.VendorId) && q.RoundId != roundId
-                  && s.Type == SpaceType.TrialArea && r.StartsOn.Year == round.StartsOn.Year
+                  && s.Type == SpaceType.TrialArea && r.StartsOn.Year == round.StartsOn.Year && r.StartsOn < round.StartsOn
                   && q.Status != StallRequestStatus.Ineligible
             group q by q.VendorId into g
             select new { VendorId = g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.VendorId, x => x.Count, ct);
@@ -71,7 +68,7 @@ public sealed class CheckRoundEligibilityHandler(IAppDbContext db, IOptions<Rule
         {
             var vendor = vendors.GetValueOrDefault(request.VendorId);
             var decision = EligibilityChecker.Check(new EligibilityFacts(
-                HasIdentity: vendor is not null && !string.IsNullOrWhiteSpace(vendor.DisplayName) && !string.IsNullOrWhiteSpace(vendor.Phone),
+                HasIdentity: vendor?.HasIdentity ?? false,
                 FoodHygieneTrained: vendor?.FoodHygieneTrained ?? false,
                 BannedUntil: vendor?.BannedUntil,
                 SpaceSellsFood: space.SellsFood,

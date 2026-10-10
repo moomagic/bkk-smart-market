@@ -81,6 +81,20 @@ public sealed class EligibilityTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task A_later_trial_area_round_in_the_same_year_does_not_count_against_this_one()
+    {
+        var vendorId = await VendorWithTrialAreaRequestIn(new DateOnly(2026, 12, 1), StallRequestStatus.Submitted);
+        (await api.ClientAs("vendor", vendorId.ToString())
+            .PostAsJsonAsync("/api/stall-requests", new { roundId = SeedData.Rama8CurrentRound }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var rows = await (await Officer.PostAsync($"/api/rounds/{SeedData.Rama8CurrentRound}/eligibility", null))
+            .Content.ReadFromJsonAsync<Row[]>();
+
+        rows!.Single(r => r.VendorId == vendorId).Status.Should().Be("Eligible");
+    }
+
+    [Fact]
     public async Task Officer_sees_rounds_with_request_counts()
     {
         var rounds = await Officer.GetFromJsonAsync<RoundDto[]>("/api/rounds");
@@ -108,17 +122,22 @@ public sealed class EligibilityTests(ApiFactory api)
     private sealed record RoundDto(Guid Id, string SpaceName, int RequestCount);
 
     /// <summary>A vendor who already had a (finished) TrialArea request earlier in 2026.</summary>
-    private async Task<Guid> VendorWithEarlierTrialAreaRequestThisYear()
+    private Task<Guid> VendorWithEarlierTrialAreaRequestThisYear() =>
+        VendorWithTrialAreaRequestIn(new DateOnly(2026, 6, 1), StallRequestStatus.NotSelected);
+
+    /// <summary>A vendor with a request in a one-month TrialArea round at ลานใต้สะพานพระราม 8 starting <paramref name="startsOn"/>.</summary>
+    private async Task<Guid> VendorWithTrialAreaRequestIn(DateOnly startsOn, StallRequestStatus status)
     {
         await using var scope = api.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
         var vendor = new Vendor(Guid.NewGuid(), "ทดสอบ ทดลองค้า", "089-000-0001", null, "เสื้อผ้า", true, null, TestClock.DemoNow);
-        var earlierRound = new Round(Guid.NewGuid(), SeedData.Rama8BridgeYard, new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30),
-            TestClock.DemoNow.AddMonths(-6), TestClock.DemoNow.AddMonths(-5), RoundStatus.Approved);
+        var other = await db.Rounds.SingleOrDefaultAsync(r => r.SpaceId == SeedData.Rama8BridgeYard && r.StartsOn == startsOn)
+            ?? new Round(Guid.NewGuid(), SeedData.Rama8BridgeYard, startsOn, startsOn.AddMonths(1).AddDays(-1),
+                TestClock.DemoNow.AddMonths(-6), TestClock.DemoNow.AddMonths(-5), RoundStatus.Approved);
+        if (db.Rounds.Local.All(r => r.Id != other.Id) && !await db.Rounds.AnyAsync(r => r.Id == other.Id)) db.Rounds.Add(other);
         db.Vendors.Add(vendor);
-        db.Rounds.Add(earlierRound);
-        db.StallRequests.Add(new StallRequest(Guid.NewGuid(), earlierRound.Id, vendor.Id, TestClock.DemoNow.AddMonths(-6),
-            Category.New, StallRequestStatus.NotSelected));
+        db.StallRequests.Add(new StallRequest(Guid.NewGuid(), other.Id, vendor.Id, TestClock.DemoNow.AddMonths(-6),
+            Category.New, status));
         await db.CommitAsync("Test.Arrange", CancellationToken.None);
         return vendor.Id;
     }

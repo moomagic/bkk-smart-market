@@ -21,7 +21,7 @@ public sealed class RulesOptions
     public ReviewRules Review { get; init; } = new();
 
     public bool IsComplete() =>
-        MaxOpenRequestsPerVendorInDistrict > 0 && CarryOverWeight > 0 && MaxConsecutiveRenewals > 0
+        MaxOpenRequestsPerVendorInDistrict > 0 && CarryOverWeight is >= 1 and <= 2 /* ×2 at most */ && MaxConsecutiveRenewals > 0
         && ConfirmWithinDays > 0 && WaitlistPerGroup > 0 && SubletBanRounds > 0
         && Quota.LegacyMax > 0 && Quota.VulnerableMin > 0 && Quota.NewMin > 0
         && Rounds.RelaxationMonths > 0 && Rounds.DistrictMarketMonths > 0 && Rounds.TrialAreaMonths > 0

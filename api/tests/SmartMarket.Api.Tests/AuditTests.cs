@@ -15,7 +15,7 @@ public sealed class AuditTests(ApiFactory api)
     [Fact]
     public async Task A_command_writes_one_audit_entry_with_personal_data_masked()
     {
-        var vendorId = SeedData.VendorId(9);
+        var vendorId = await NewVendor("ต้นฉบับ ทดสอบ", "089-555-0009");
         var since = await LatestAuditAt();
 
         await Command("Vendor.UpdateContact", async db =>
@@ -35,29 +35,26 @@ public sealed class AuditTests(ApiFactory api)
             change.GetProperty(side).GetProperty("DisplayName").GetString().Should().Be("***");
             change.GetProperty(side).GetProperty("Phone").GetString().Should().Be("***");
         }
-        change.GetProperty("Before").GetProperty("MaskedName").GetString().Should().Be("กิตติ ว.");
+        change.GetProperty("Before").GetProperty("MaskedName").GetString().Should().Be("ต้นฉบับ ท.");
         change.GetProperty("After").GetProperty("MaskedName").GetString().Should().Be("ทดสอบ ส.");
         entry.Changes.Should().NotContain("ทดสอบ สมมุติ").And.NotContain("089-999-0009")
-            .And.NotContain("กิตติ วงศ์ใหญ่").And.NotContain("080-000-0009");
+            .And.NotContain("ต้นฉบับ ทดสอบ").And.NotContain("089-555-0009");
     }
 
     [Fact]
     public async Task A_command_touching_several_entities_still_writes_one_entry()
     {
+        var ids = new[] { await NewVendor("หนึ่ง ทดสอบ", "089-555-0010"), await NewVendor("สอง ทดสอบ", "089-555-0011") };
         var since = await LatestAuditAt();
 
         await Command("Vendor.BulkUpdate", async db =>
         {
-            foreach (var n in new[] { 10, 11 })
-            {
-                var id = SeedData.VendorId(n);
-                var vendor = await db.Vendors.SingleAsync(v => v.Id == id);
-                vendor.UpdateContact($"ผู้ค้า ทดสอบ{n}", $"089-999-00{n}");
-            }
+            foreach (var id in ids)
+                (await db.Vendors.SingleAsync(v => v.Id == id)).UpdateContact("ผู้ค้า ทดสอบ", "089-999-0010");
         });
 
         var entry = (await AuditSince(since)).Should().ContainSingle().Subject;
-        entry.Changes.Should().Contain(SeedData.VendorId(10).ToString()).And.Contain(SeedData.VendorId(11).ToString());
+        entry.Changes.Should().Contain(ids[0].ToString()).And.Contain(ids[1].ToString());
     }
 
     [Fact]
@@ -73,12 +70,12 @@ public sealed class AuditTests(ApiFactory api)
     [Fact]
     public async Task A_bare_save_is_still_audited_as_unscoped()
     {
+        var id = await NewVendor("ไม่ระบุ ทดสอบ", "089-555-0008");
         var since = await LatestAuditAt();
 
         await using (var scope = api.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<SmartMarketDbContext>();
-            var id = SeedData.VendorId(8);
             (await db.Vendors.SingleAsync(v => v.Id == id)).UpdateContact("ผู้ค้า ไม่ระบุ", "089-999-0008");
             await db.SaveChangesAsync();
         }
@@ -89,11 +86,9 @@ public sealed class AuditTests(ApiFactory api)
     [Fact]
     public async Task Personal_data_never_reaches_the_application_log()
     {
+        var id = await NewVendor("ก่อนลับ ทดสอบ", "089-555-0007");
         await Command("Vendor.UpdateContact", async db =>
-        {
-            var id = SeedData.VendorId(7);
-            (await db.Vendors.SingleAsync(v => v.Id == id)).UpdateContact("ลับมาก ห้ามหลุด", "089-777-7777");
-        });
+            (await db.Vendors.SingleAsync(v => v.Id == id)).UpdateContact("ลับมาก ห้ามหลุด", "089-777-7777"));
         await api.CreateClient().GetAsync("/api/spaces");
 
         var personal = SeedData.Vendors.SelectMany(v => new[] { v.DisplayName, v.Phone })
@@ -101,6 +96,18 @@ public sealed class AuditTests(ApiFactory api)
         api.Logs.Should().NotBeEmpty();
         foreach (var value in personal)
             api.Logs.Should().NotContain(line => line.Contains(value), $"'{value}' is personal data");
+    }
+
+    /// <summary>Tests change their own vendors so seeded ones (used by other test classes) stay untouched.</summary>
+    private async Task<Guid> NewVendor(string name, string phone)
+    {
+        var vendor = new SmartMarket.Domain.Vendors.Vendor(Guid.NewGuid(), name, phone, null, "อาหาร", true, null, TestClock.DemoNow);
+        await Command("Test.Arrange", db =>
+        {
+            db.Vendors.Add(vendor);
+            return Task.CompletedTask;
+        });
+        return vendor.Id;
     }
 
     private async Task Command(string action, Func<IAppDbContext, Task> work)

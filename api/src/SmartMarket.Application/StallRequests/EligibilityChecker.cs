@@ -27,9 +27,9 @@ public sealed record EligibilityDecision(bool Eligible, string? Reason, int Weig
 /// </summary>
 public static class EligibilityChecker
 {
-    /// <summary>Ending a round in one of these at the same space doubles the weight next round.</summary>
     private static readonly CultureInfo Thai = new("th-TH"); // Buddhist calendar: 31 ม.ค. 2570
 
+    /// <summary>Ending a round in one of these at the same space doubles the weight next round.</summary>
     private static readonly StallRequestStatus[] MissedOut = [StallRequestStatus.NotSelected, StallRequestStatus.Waitlisted];
 
     public static EligibilityDecision Check(EligibilityFacts facts, EligibilityLimits limits)
