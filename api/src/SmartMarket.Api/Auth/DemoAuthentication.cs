@@ -53,3 +53,10 @@ public sealed class HttpCurrentActor(IHttpContextAccessor accessor) : ICurrentAc
         _ => Anonymous,
     };
 }
+
+public static class DemoPolicies
+{
+    public const string Vendor = "vendor";
+    public const string Officer = "officer";
+    public const string Executive = "executive";
+}

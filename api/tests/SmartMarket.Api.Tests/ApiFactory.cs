@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SmartMarket.Application.Common;
 using Testcontainers.PostgreSql;
 
 namespace SmartMarket.Api.Tests;
@@ -13,6 +15,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     private readonly PostgreSqlContainer _db = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
     public ConcurrentQueue<string> Logs { get; } = new();
+    public TestClock Clock { get; } = new();
 
     public async Task InitializeAsync()
     {
@@ -32,6 +35,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.ConfigureServices(s => s.AddLogging(l => l
             .SetMinimumLevel(LogLevel.Trace)
             .AddProvider(new CapturingLoggerProvider(Logs))));
+        builder.ConfigureTestServices(s => s.AddSingleton<IClock>(Clock));
     }
 
     private sealed class CapturingLoggerProvider(ConcurrentQueue<string> sink) : ILoggerProvider
@@ -48,6 +52,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
             Func<TState, Exception?, string> formatter) =>
             sink.Enqueue($"{category}: {formatter(state, exception)} {exception}");
+    }
+}
+
+public static class ApiFactoryExtensions
+{
+    /// <summary>An HttpClient acting as the given demo role/user (mock auth headers).</summary>
+    public static HttpClient ClientAs(this ApiFactory api, string role, string user)
+    {
+        var client = api.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Demo-Role", role);
+        client.DefaultRequestHeaders.Add("X-Demo-User", user);
+        return client;
     }
 }
 

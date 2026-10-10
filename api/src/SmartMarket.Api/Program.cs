@@ -15,7 +15,10 @@ builder.Services.AddScoped<ICurrentActor, HttpCurrentActor>();
 builder.Services
     .AddAuthentication(DemoAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, DemoAuthenticationHandler>(DemoAuthenticationHandler.SchemeName, null);
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(DemoPolicies.Vendor, p => p.RequireRole("vendor"))
+    .AddPolicy(DemoPolicies.Officer, p => p.RequireRole("officer", "executive"))
+    .AddPolicy(DemoPolicies.Executive, p => p.RequireRole("executive"));
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -31,6 +34,7 @@ app.UseAuthorization();
 var api = app.MapGroup("/api");
 api.MapSpaces();
 api.MapSession();
+api.MapStallRequests();
 
 app.Run();
 

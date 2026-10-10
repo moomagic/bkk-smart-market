@@ -103,7 +103,7 @@ AuditEntry      Id, At, Actor, ActorRole, Action, EntityType, EntityId (entity �
 | เช่าช่วง | ยืนยันพบ = ยกเลิกสิทธิ์ + งดสมัคร 1 รอบ |
 | ขอทบทวนผล | ภายใน 7 วัน · เขตตอบภายใน 7 วัน · ผล Upheld หรือ Corrected (เฉพาะตรวจสิทธิผิด) — ผลจับฉลากทบทวนไม่ได้ |
 
-**Implement จริง:** คุณสมบัติ 3 ข้อ · 1 คน 1 คำขอที่ยังไม่จบทั้งเขต · TrialArea 1 ครั้ง/ปี · โควตา · carry-over · ยืนยัน/สละ · สำรอง · Reject limit · ขอทบทวน
+**Implement จริง:** คุณสมบัติ 3 ข้อ · 1 คน 1 คำขอที่ยังไม่จบทั้งเขตต่อช่วงรอบที่ทับกัน (Ineligible/NotSelected/Forfeited = จบแล้ว) · TrialArea 1 ครั้ง/ปี · โควตา · carry-over · ยืนยัน/สละ · สำรอง · Reject limit · ขอทบทวน
 **Flag read-only (Allocation Insight):** เช็คอิน < 80% · ขาด 7/14 วัน
 **Config + `docs/rules` เท่านั้น (ยังไม่ implement — ระบุใน README):** ต่อสิทธิ์ 2 รอบ · เช่าช่วง
 

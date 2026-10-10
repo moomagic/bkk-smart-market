@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using SmartMarket.Domain.Audit;
 using SmartMarket.Domain.Districts;
+using SmartMarket.Domain.Rounds;
 using SmartMarket.Domain.Spaces;
+using SmartMarket.Domain.StallRequests;
 using SmartMarket.Domain.Vendors;
 
 namespace SmartMarket.Application.Common;
@@ -12,6 +14,8 @@ public interface IAppDbContext
     DbSet<Space> Spaces { get; }
     DbSet<Lock> Locks { get; }
     DbSet<Vendor> Vendors { get; }
+    DbSet<Round> Rounds { get; }
+    DbSet<StallRequest> StallRequests { get; }
     DbSet<AuditEntry> AuditEntries { get; }
 
     /// <summary>

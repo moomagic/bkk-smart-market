@@ -92,6 +92,92 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SmartMarket.Domain.Rounds.Round", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ApplyClosesAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ApplyOpensAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("EndsOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("StartsOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpaceId", "StartsOn")
+                        .IsUnique();
+
+                    b.ToTable("Rounds");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("50000000-0000-0000-0000-000000000001"),
+                            ApplyClosesAt = new DateTimeOffset(new DateTime(2026, 10, 31, 16, 59, 59, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            ApplyOpensAt = new DateTimeOffset(new DateTime(2026, 9, 30, 17, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EndsOn = new DateOnly(2027, 4, 30),
+                            SpaceId = new Guid("20000000-0000-0000-0000-000000000001"),
+                            StartsOn = new DateOnly(2026, 11, 1),
+                            Status = "Open"
+                        },
+                        new
+                        {
+                            Id = new Guid("50000000-0000-0000-0000-000000000002"),
+                            ApplyClosesAt = new DateTimeOffset(new DateTime(2026, 10, 31, 16, 59, 59, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            ApplyOpensAt = new DateTimeOffset(new DateTime(2026, 9, 30, 17, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EndsOn = new DateOnly(2027, 4, 30),
+                            SpaceId = new Guid("20000000-0000-0000-0000-000000000002"),
+                            StartsOn = new DateOnly(2026, 11, 1),
+                            Status = "Open"
+                        },
+                        new
+                        {
+                            Id = new Guid("50000000-0000-0000-0000-000000000003"),
+                            ApplyClosesAt = new DateTimeOffset(new DateTime(2026, 10, 31, 16, 59, 59, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            ApplyOpensAt = new DateTimeOffset(new DateTime(2026, 9, 30, 17, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EndsOn = new DateOnly(2027, 4, 30),
+                            SpaceId = new Guid("20000000-0000-0000-0000-000000000003"),
+                            StartsOn = new DateOnly(2026, 11, 1),
+                            Status = "Open"
+                        },
+                        new
+                        {
+                            Id = new Guid("50000000-0000-0000-0000-000000000004"),
+                            ApplyClosesAt = new DateTimeOffset(new DateTime(2026, 10, 31, 16, 59, 59, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            ApplyOpensAt = new DateTimeOffset(new DateTime(2026, 9, 30, 17, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EndsOn = new DateOnly(2026, 11, 30),
+                            SpaceId = new Guid("20000000-0000-0000-0000-000000000004"),
+                            StartsOn = new DateOnly(2026, 11, 1),
+                            Status = "Open"
+                        },
+                        new
+                        {
+                            Id = new Guid("50000000-0000-0000-0001-000000000001"),
+                            ApplyClosesAt = new DateTimeOffset(new DateTime(2026, 4, 30, 16, 59, 59, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            ApplyOpensAt = new DateTimeOffset(new DateTime(2026, 3, 31, 17, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EndsOn = new DateOnly(2026, 10, 31),
+                            SpaceId = new Guid("20000000-0000-0000-0000-000000000001"),
+                            StartsOn = new DateOnly(2026, 5, 1),
+                            Status = "Approved"
+                        });
+                });
+
             modelBuilder.Entity("SmartMarket.Domain.Spaces.Lock", b =>
                 {
                     b.Property<Guid>("Id")
@@ -415,6 +501,170 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SmartMarket.Domain.StallRequests.StallRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CarryOverWeight")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("IneligibleReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VendorId");
+
+                    b.HasIndex("RoundId", "VendorId")
+                        .IsUnique();
+
+                    b.ToTable("StallRequests");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0000-000000000001"),
+                            CarryOverWeight = 1,
+                            Category = "Legacy",
+                            RoundId = new Guid("50000000-0000-0000-0001-000000000001"),
+                            Status = "Confirmed",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 4, 3, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000001")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0000-000000000002"),
+                            CarryOverWeight = 1,
+                            Category = "Legacy",
+                            RoundId = new Guid("50000000-0000-0000-0001-000000000001"),
+                            Status = "Confirmed",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 4, 5, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000002"),
+                            CarryOverWeight = 1,
+                            Category = "Legacy",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 2, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000003"),
+                            CarryOverWeight = 1,
+                            Category = "Vulnerable",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 3, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000003")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000004"),
+                            CarryOverWeight = 1,
+                            Category = "Vulnerable",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 3, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000004")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000005"),
+                            CarryOverWeight = 1,
+                            Category = "Vulnerable",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 6, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000005")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000006"),
+                            CarryOverWeight = 1,
+                            Category = "New",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 7, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000006")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000007"),
+                            CarryOverWeight = 1,
+                            Category = "New",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 9, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000008"),
+                            CarryOverWeight = 1,
+                            Category = "New",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 12, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000008")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000009"),
+                            CarryOverWeight = 1,
+                            Category = "New",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 14, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000009")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000010"),
+                            CarryOverWeight = 1,
+                            Category = "New",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000010")
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0001-000000000011"),
+                            CarryOverWeight = 1,
+                            Category = "New",
+                            RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
+                            Status = "Submitted",
+                            SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 20, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            VendorId = new Guid("40000000-0000-0000-0000-000000000011")
+                        });
+                });
+
             modelBuilder.Entity("SmartMarket.Domain.Vendors.Vendor", b =>
                 {
                     b.Property<Guid>("Id")
@@ -574,6 +824,15 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SmartMarket.Domain.Rounds.Round", b =>
+                {
+                    b.HasOne("SmartMarket.Domain.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SmartMarket.Domain.Spaces.Lock", b =>
                 {
                     b.HasOne("SmartMarket.Domain.Spaces.Space", null)
@@ -588,6 +847,21 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.HasOne("SmartMarket.Domain.Districts.District", null)
                         .WithMany()
                         .HasForeignKey("DistrictId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartMarket.Domain.StallRequests.StallRequest", b =>
+                {
+                    b.HasOne("SmartMarket.Domain.Rounds.Round", null)
+                        .WithMany()
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartMarket.Domain.Vendors.Vendor", null)
+                        .WithMany()
+                        .HasForeignKey("VendorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -1,70 +1,81 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Api, SPACE_TYPE_LABEL, SpaceSummary } from '../core/api';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
+import { Api, SpaceSummary, StallRequest, problemMessage } from '../core/api';
+import { DemoSession } from '../core/demo-session';
+import { CATEGORY_LABEL, SPACE_TYPE_LABEL, STATUS_LABEL, formatThaiDate } from '../shared/labels';
+
+type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <h1>พื้นที่ค้าขายในเขตบางพลัด</h1>
-    <p class="lead">พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ</p>
-
-    @switch (state()) {
-      @case ('loading') {
-        <p class="muted">กำลังโหลด…</p>
-      }
-      @case ('error') {
-        <p class="error">โหลดรายการพื้นที่ไม่สำเร็จ ลองใหม่อีกครั้ง</p>
-      }
-      @default {
-        <ul class="spaces">
-          @for (space of spaces(); track space.id) {
-            <li class="space">
-              <div class="head">
-                <h2>{{ space.name }}</h2>
-                <span class="type">{{ typeLabel[space.type] }}</span>
-              </div>
-              <dl>
-                <div><dt>ล็อค</dt><dd class="mono">{{ space.lockCount }}</dd></div>
-                <div><dt>สินค้า</dt><dd>{{ space.productTypes.join(' · ') }}</dd></div>
-                <div><dt>เวลา</dt><dd>{{ space.openHours }}</dd></div>
-              </dl>
-            </li>
-          } @empty {
-            <li class="muted">ยังไม่มีพื้นที่</li>
-          }
-        </ul>
-      }
-    }
-  `,
-  styles: `
-    .lead { color: var(--muted); margin-top: 0; }
-    .spaces { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 12px; }
-    .space { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-    .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-    h2 { font-size: 1.05rem; margin: 0; }
-    .type { color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 8px; font-size: 0.75rem; white-space: nowrap; }
-    dl { margin: 10px 0 0; display: grid; gap: 4px; }
-    dl div { display: grid; grid-template-columns: 56px 1fr; gap: 8px; }
-    dt { color: var(--muted); font-size: 0.85rem; }
-    dd { margin: 0; }
-    .muted { color: var(--muted); }
-    .error { color: var(--warn); }
-  `,
+  templateUrl: './vendor-home.html',
+  styleUrl: './vendor-home.scss',
 })
 export class VendorHome {
-  protected readonly typeLabel = SPACE_TYPE_LABEL;
-  protected readonly spaces = signal<SpaceSummary[]>([]);
-  protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
+  private readonly api = inject(Api);
+  protected readonly session = inject(DemoSession);
 
-  constructor() {
-    inject(Api)
-      .spaces()
-      .subscribe({
-        next: (s) => {
-          this.spaces.set(s);
-          this.state.set('ready');
-        },
-        error: () => this.state.set('error'),
-      });
+  protected readonly typeLabel = SPACE_TYPE_LABEL;
+  protected readonly categoryLabel = CATEGORY_LABEL;
+  protected readonly statusLabel = STATUS_LABEL;
+  protected readonly date = formatThaiDate;
+
+  /** Bumped after a submit so both lists reload. */
+  private readonly refresh = signal(0);
+  private readonly reload$ = combineLatest([toObservable(this.session.role), toObservable(this.refresh)]);
+
+  protected readonly spaces = toSignal(
+    this.reload$.pipe(switchMap(() => loadState(this.api.spaces()))),
+    { initialValue: { state: 'loading' } as Load<SpaceSummary[]> },
+  );
+
+  protected readonly spaceList = computed(() => {
+    const s = this.spaces();
+    return s.state === 'ready' ? s.data : [];
+  });
+
+  protected readonly myRequests = toSignal(
+    this.reload$.pipe(
+      switchMap(([role]) => (role === 'vendor' ? loadState(this.api.myStallRequests()) : of(null))),
+    ),
+    { initialValue: null as Load<StallRequest[]> | null },
+  );
+
+  protected readonly requestedRoundIds = computed(() => {
+    const mine = this.myRequests();
+    return new Set(mine?.state === 'ready' ? mine.data.map((r) => r.roundId) : []);
+  });
+
+  protected readonly submitting = signal<string | null>(null);
+  protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  protected submit(space: SpaceSummary): void {
+    if (!space.openRound) return;
+    this.submitting.set(space.id);
+    this.notice.set(null);
+    this.api.submitStallRequest(space.openRound.id).subscribe({
+      next: (req) => {
+        this.submitting.set(null);
+        this.notice.set({
+          kind: 'ok',
+          text: `${STATUS_LABEL[req.status]} · ${req.spaceName} · กลุ่ม${CATEGORY_LABEL[req.category]} — ยังไม่ใช่การได้สิทธิ์ ผลจับฉลากประกาศหลังปิดรับคำขอ`,
+        });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.submitting.set(null);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
   }
+}
+
+function loadState<T>(source: Observable<T>) {
+  return source.pipe(
+    map((data) => ({ state: 'ready', data }) as Load<T>),
+    catchError(() => of({ state: 'error' } as Load<T>)),
+    startWith({ state: 'loading' } as Load<T>),
+  );
 }

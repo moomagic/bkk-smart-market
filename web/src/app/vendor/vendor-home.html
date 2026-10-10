@@ -1,0 +1,89 @@
+@if (notice(); as n) {
+  <p class="notice" [class.error]="n.kind === 'error'" role="status">{{ n.text }}</p>
+}
+
+@if (myRequests(); as mine) {
+  <section aria-labelledby="mine-heading">
+    <h1 id="mine-heading">คำขอของฉัน</h1>
+    @switch (mine.state) {
+      @case ('loading') {
+        <p class="muted">กำลังโหลด…</p>
+      }
+      @case ('error') {
+        <p class="error">โหลดคำขอไม่สำเร็จ</p>
+      }
+      @case ('ready') {
+        @if (mine.data.length === 0) {
+          <p class="muted">ยังไม่มีคำขอ</p>
+        } @else {
+          <ul class="list">
+            @for (req of mine.data; track req.id) {
+              <li class="card">
+                <div class="head">
+                  <h2>{{ req.spaceName }}</h2>
+                  <span class="status">{{ statusLabel[req.status] }}</span>
+                </div>
+                <p class="meta">
+                  รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}
+                </p>
+                @if (req.ineligibleReason) {
+                  <p class="error">{{ req.ineligibleReason }}</p>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  </section>
+}
+
+<section aria-labelledby="spaces-heading">
+  <h1 id="spaces-heading">พื้นที่ค้าขายในเขตบางพลัด</h1>
+  <p class="lead">พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ</p>
+
+  @switch (spaces().state) {
+    @case ('loading') {
+      <p class="muted">กำลังโหลด…</p>
+    }
+    @case ('error') {
+      <p class="error">โหลดรายการพื้นที่ไม่สำเร็จ ลองใหม่อีกครั้ง</p>
+    }
+    @case ('ready') {
+      <ul class="list">
+        @for (space of spaceList(); track space.id) {
+          <li class="card">
+            <div class="head">
+              <h2>{{ space.name }}</h2>
+              <span class="type">{{ typeLabel[space.type] }}</span>
+            </div>
+            <dl>
+              <div><dt>ล็อค</dt><dd class="mono">{{ space.lockCount }}</dd></div>
+              <div><dt>สินค้า</dt><dd>{{ space.productTypes.join(' · ') }}</dd></div>
+              <div><dt>เวลา</dt><dd>{{ space.openHours }}</dd></div>
+              @if (space.openRound; as round) {
+                <div>
+                  <dt>รอบ</dt>
+                  <dd>{{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับ {{ date(round.applyClosesAt) }}</dd>
+                </div>
+              }
+            </dl>
+            @if (space.openRound && session.role() === 'vendor') {
+              @if (requestedRoundIds().has(space.openRound.id)) {
+                <p class="status submitted">ยื่นคำขอแล้ว</p>
+              } @else {
+                <button type="button" (click)="submit(space)" [disabled]="submitting() !== null">
+                  {{ submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ' }}
+                </button>
+              }
+            } @else if (!space.openRound) {
+              <p class="muted small">ไม่มีรอบที่เปิดรับคำขอ</p>
+            }
+          </li>
+        } @empty {
+          <li class="muted">ยังไม่มีพื้นที่</li>
+        }
+      </ul>
+    }
+  }
+</section>

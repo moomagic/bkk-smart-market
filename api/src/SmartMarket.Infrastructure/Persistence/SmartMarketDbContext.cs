@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using SmartMarket.Application.Common;
 using SmartMarket.Domain.Audit;
 using SmartMarket.Domain.Districts;
+using SmartMarket.Domain.Rounds;
 using SmartMarket.Domain.Spaces;
+using SmartMarket.Domain.StallRequests;
 using SmartMarket.Domain.Vendors;
 
 namespace SmartMarket.Infrastructure.Persistence;
@@ -14,6 +16,8 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     public DbSet<Space> Spaces => Set<Space>();
     public DbSet<Lock> Locks => Set<Lock>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<Round> Rounds => Set<Round>();
+    public DbSet<StallRequest> StallRequests => Set<StallRequest>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     /// <summary>Use-case name for the save in progress; read by <see cref="Audit.AuditInterceptor"/>.</summary>
@@ -31,6 +35,13 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
             PendingAuditAction = null;
         }
     }
+
+    /// <summary>timestamptz only accepts UTC offsets; normalise here so callers may pass Bangkok time.</summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+        configurationBuilder.Properties<DateTimeOffset>().HaveConversion<UtcDateTimeOffsetConverter>();
+
+    private sealed class UtcDateTimeOffsetConverter() : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTimeOffset, DateTimeOffset>(
+        v => v.ToUniversalTime(), v => v);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SmartMarketDbContext).Assembly);
