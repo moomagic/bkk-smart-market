@@ -12,7 +12,7 @@ public interface IAppDbContext
     DbSet<Space> Spaces { get; }
     DbSet<Lock> Locks { get; }
     DbSet<Vendor> Vendors { get; }
-    DbSet<AuditLog> AuditLogs { get; }
+    DbSet<AuditEntry> AuditEntries { get; }
 
     /// <summary>
     /// Persists the command's changes and writes exactly one audit entry named <paramref name="action"/>

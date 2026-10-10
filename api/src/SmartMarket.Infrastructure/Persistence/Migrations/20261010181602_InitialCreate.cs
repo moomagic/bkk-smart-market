@@ -14,7 +14,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "AuditLogs",
+                name: "AuditEntries",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -28,7 +28,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AuditLogs", x => x.Id);
+                    table.PrimaryKey("PK_AuditEntries", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -182,13 +182,13 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AuditLogs_At",
-                table: "AuditLogs",
+                name: "IX_AuditEntries_At",
+                table: "AuditEntries",
                 column: "At");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AuditLogs_EntityType_EntityId",
-                table: "AuditLogs",
+                name: "IX_AuditEntries_EntityType_EntityId",
+                table: "AuditEntries",
                 columns: new[] { "EntityType", "EntityId" });
 
             migrationBuilder.CreateIndex(
@@ -207,7 +207,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "AuditLogs");
+                name: "AuditEntries");
 
             migrationBuilder.DropTable(
                 name: "Locks");

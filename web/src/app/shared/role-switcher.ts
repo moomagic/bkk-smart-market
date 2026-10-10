@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
-import { Api, Session } from '../core/api';
+import { Api } from '../core/api';
 import { DEMO_ROLES, DemoRole, DemoSession } from '../core/demo-session';
 
 /** Top-right role switcher. Shows who the API says we are, to prove the headers arrive. */
@@ -12,7 +14,7 @@ import { DEMO_ROLES, DemoRole, DemoSession } from '../core/demo-session';
       <span class="label">บทบาท</span>
       <select [value]="session.role()" (change)="switch($any($event.target).value)">
         @for (role of roles; track role) {
-          <option [value]="role">{{ labels[role].label }}</option>
+          <option [value]="role">{{ roleInfo[role].label }}</option>
         }
       </select>
     </label>
@@ -41,18 +43,15 @@ export class RoleSwitcher {
   private readonly router = inject(Router);
 
   protected readonly roles = Object.keys(DEMO_ROLES) as DemoRole[];
-  protected readonly labels = DEMO_ROLES;
-  protected readonly confirmed = signal<Session | null>(null);
+  protected readonly roleInfo = DEMO_ROLES;
 
-  constructor() {
-    effect(() => {
-      this.session.role();
-      this.api.session().subscribe({
-        next: (s) => this.confirmed.set(s),
-        error: () => this.confirmed.set(null),
-      });
-    });
-  }
+  /** Identity echoed by the API; switchMap drops stale responses when roles change quickly. */
+  protected readonly confirmed = toSignal(
+    toObservable(this.session.role).pipe(
+      switchMap(() => this.api.session().pipe(catchError(() => of(null)))),
+    ),
+    { initialValue: null },
+  );
 
   protected switch(role: DemoRole): void {
     this.session.switchTo(role);

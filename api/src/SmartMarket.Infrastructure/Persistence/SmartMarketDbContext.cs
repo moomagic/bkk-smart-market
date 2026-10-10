@@ -14,7 +14,7 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     public DbSet<Space> Spaces => Set<Space>();
     public DbSet<Lock> Locks => Set<Lock>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     /// <summary>Use-case name for the save in progress; read by <see cref="Audit.AuditInterceptor"/>.</summary>
     internal string? PendingAuditAction { get; private set; }

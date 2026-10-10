@@ -5,7 +5,7 @@ namespace SmartMarket.Domain.Audit;
 /// <see cref="Changes"/> holds the field-level diff of every entity the command touched
 /// (personal data already masked).
 /// </summary>
-public sealed class AuditLog
+public sealed class AuditEntry
 {
     public Guid Id { get; private set; }
     public DateTimeOffset At { get; private set; }
@@ -16,7 +16,7 @@ public sealed class AuditLog
     public string EntityId { get; private set; }
     public string Changes { get; private set; }
 
-    public AuditLog(
+    public AuditEntry(
         Guid id, DateTimeOffset at, string actor, string actorRole, string action,
         string entityType, string entityId, string changes)
     {

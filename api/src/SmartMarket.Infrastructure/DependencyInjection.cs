@@ -13,7 +13,10 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
         services.AddOptions<DemoOptions>().Bind(config.GetSection(DemoOptions.Section));
-        services.AddOptions<RulesOptions>().Bind(config.GetSection(RulesOptions.Section));
+        services.AddOptions<RulesOptions>()
+            .Bind(config.GetSection(RulesOptions.Section))
+            .Validate(r => r.IsComplete(), $"appsettings section '{RulesOptions.Section}' is missing or incomplete")
+            .ValidateOnStart();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IClock, DemoClock>();
 

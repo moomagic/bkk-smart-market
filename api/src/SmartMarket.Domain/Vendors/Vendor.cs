@@ -49,6 +49,11 @@ public sealed class Vendor
     public static string Mask(string displayName)
     {
         var parts = displayName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        return parts.Length < 2 ? parts[0] : $"{parts[0]} {char.ConvertFromUtf32(char.ConvertToUtf32(parts[1], 0))}.";
+        return parts.Length switch
+        {
+            0 => "",
+            1 => parts[0],
+            _ => $"{parts[0]} {char.ConvertFromUtf32(char.ConvertToUtf32(parts[1], 0))}.",
+        };
     }
 }

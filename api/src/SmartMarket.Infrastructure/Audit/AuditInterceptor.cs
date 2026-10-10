@@ -13,7 +13,7 @@ using SmartMarket.Infrastructure.Persistence;
 namespace SmartMarket.Infrastructure.Audit;
 
 /// <summary>
-/// Writes exactly one <see cref="AuditLog"/> per SaveChanges that changes anything.
+/// Writes exactly one <see cref="AuditEntry"/> per SaveChanges that changes anything.
 /// Commands go through <see cref="IAppDbContext.CommitAsync"/>, which names the action;
 /// a bare SaveChanges is still audited as "Unscoped" so nothing slips through.
 /// Personal data is masked before it reaches the audit row.
@@ -46,7 +46,7 @@ public sealed class AuditInterceptor(IClock clock, ICurrentActor actor) : SaveCh
         if (context is null) return;
 
         var changes = context.ChangeTracker.Entries()
-            .Where(e => e.Entity is not AuditLog
+            .Where(e => e.Entity is not AuditEntry
                         && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .Select(Describe)
             .Where(c => c is not null)
@@ -56,7 +56,7 @@ public sealed class AuditInterceptor(IClock clock, ICurrentActor actor) : SaveCh
 
         var action = (context as SmartMarketDbContext)?.PendingAuditAction ?? UnscopedAction;
         var primary = changes[0];
-        context.Add(new AuditLog(
+        context.Add(new AuditEntry(
             Guid.CreateVersion7(clock.Now), clock.Now, actor.Actor, actor.Role, action,
             primary.Entity, primary.Id, JsonSerializer.Serialize(changes, Json)));
     }

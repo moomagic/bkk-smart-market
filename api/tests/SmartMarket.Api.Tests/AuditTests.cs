@@ -115,13 +115,13 @@ public sealed class AuditTests(ApiFactory api)
     {
         await using var scope = api.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditLogs.MaxAsync(a => (DateTimeOffset?)a.At) ?? DateTimeOffset.MinValue;
+        return await db.AuditEntries.MaxAsync(a => (DateTimeOffset?)a.At) ?? DateTimeOffset.MinValue;
     }
 
-    private async Task<List<AuditLog>> AuditSince(DateTimeOffset since)
+    private async Task<List<AuditEntry>> AuditSince(DateTimeOffset since)
     {
         await using var scope = api.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditLogs.Where(a => a.At > since).ToListAsync();
+        return await db.AuditEntries.Where(a => a.At > since).ToListAsync();
     }
 }

@@ -4,9 +4,9 @@ using SmartMarket.Domain.Audit;
 
 namespace SmartMarket.Infrastructure.Persistence.Configurations;
 
-internal sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
+internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEntry>
 {
-    public void Configure(EntityTypeBuilder<AuditLog> b)
+    public void Configure(EntityTypeBuilder<AuditEntry> b)
     {
         b.Property(x => x.Actor).HasMaxLength(100);
         b.Property(x => x.ActorRole).HasMaxLength(30);

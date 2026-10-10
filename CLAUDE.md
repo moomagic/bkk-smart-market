@@ -10,7 +10,7 @@ Pilot: **เขตบางพลัด** · ข้อมูลทั้งห�
 
 1. **AI ไม่ตัดสินสิทธิ** — AI แนะนำ/ตอบคำถาม/แจ้งเตือนเท่านั้น การจัดสรรเป็น rule-based และเจ้าหน้าที่อนุมัติเสมอ
 2. **Allocation ต้อง deterministic และตรวจย้อนได้** — ใช้ seeded RNG, บันทึก seed + input snapshot hash + เลขอ้างอิง, รันซ้ำด้วย seed เดิมต้องได้ผลเดิม
-3. **ทุก command เขียน Audit Log 1 แถว** — ใคร ทำอะไร (`Action` = ชื่อ use case) เมื่อไร กับ entity ไหน ค่าก่อน/หลังเฉพาะฟิลด์ที่เปลี่ยน · ฟิลด์ข้อมูลส่วนบุคคล mask ก่อนบันทึก
+3. **ทุก command เขียน Audit entry 1 แถว** — ใคร ทำอะไร (`Action` = ชื่อ use case) เมื่อไร กับ entity ไหน ค่าก่อน/หลังเฉพาะฟิลด์ที่เปลี่ยน · ฟิลด์ข้อมูลส่วนบุคคล mask ก่อนบันทึก
 4. **"จอง" = ยื่นคำขอ/เข้าคิว** ไม่ใช่ได้สิทธิ — ห้ามใช้คำว่า "จองสำเร็จ" ใน UI ให้ใช้ "ยื่นคำขอแล้ว"
 5. **ทุกหน้าจอมีป้าย "ข้อมูลจำลอง"** — ชื่อผู้ค้าแสดงแบบย่อนามสกุล (สมศรี ใ.)
 6. **PDPA** — เก็บเท่าที่จำเป็น, มี consent record, ไม่ log ข้อมูลส่วนบุคคลลง application log
@@ -69,7 +69,7 @@ Space           Id, DistrictId, Name, Type(Relaxation|DistrictMarket|TrialArea),
                 OpenHours, Rules (markdown ref), IsActive
 Round           Id, SpaceId, StartsOn, EndsOn, ApplyOpensAt, ApplyClosesAt, Status(Open|Closed|Drawn|Approved)
 Lock            Id, SpaceId, Code ("B1".."B4")
-Vendor          Id, DisplayName, MaskedName, Phone(masked), VulnerableReason?, ProductType,
+Vendor          Id, DisplayName, MaskedName, Phone (เก็บเต็ม · mask ใน audit/UI), VulnerableReason?, ProductType,
                 FoodHygieneTrained, BannedUntil?, ConsentAt
 StallRequest    Id, RoundId, VendorId, SubmittedAt, Category(Legacy|Vulnerable|New) ← snapshot ตอนยื่น,
                 Status(Submitted|Eligible|Ineligible|Won|Waitlisted|NotSelected|Confirmed|Forfeited),
@@ -79,7 +79,8 @@ AllocationRun   Id, RoundId, ReferenceNo, Seed, InputHash, RulesSnapshot, RanAt,
 Assignment      Id, RoundId, VendorId, LockId, ConfirmBy, ConfirmedAt?
 Review          Id, StallRequestId, Reason, SubmittedAt, Outcome?(Upheld|Corrected), Response?, RespondedAt?
 CheckIn         Id, AssignmentId, At, Method(QR), WithinGeofence
-AuditLog        Id, At, Actor, ActorRole, Action, EntityType, EntityId, Before?, After?
+AuditEntry      Id, At, Actor, ActorRole, Action, EntityType, EntityId (entity หลักของ command),
+                Changes (jsonb: [{Entity, Id, State, Before?, After?}] ทุก entity ที่ command แตะ · ฟิลด์ [PersonalData] = "***")
 ```
 
 ---

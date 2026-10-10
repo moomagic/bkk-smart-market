@@ -12,7 +12,7 @@ using SmartMarket.Infrastructure.Persistence;
 namespace SmartMarket.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SmartMarketDbContext))]
-    [Migration("20261010180823_InitialCreate")]
+    [Migration("20261010181602_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,7 +25,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("SmartMarket.Domain.Audit.AuditLog", b =>
+            modelBuilder.Entity("SmartMarket.Domain.Audit.AuditEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -69,7 +69,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditEntries");
                 });
 
             modelBuilder.Entity("SmartMarket.Domain.Districts.District", b =>

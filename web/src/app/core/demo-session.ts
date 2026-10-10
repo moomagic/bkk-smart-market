@@ -22,7 +22,6 @@ const STORAGE_KEY = 'bkk-smart-market.role';
 export class DemoSession {
   readonly role = signal<DemoRole>(readStoredRole());
   readonly user = computed(() => DEMO_ROLES[this.role()].user);
-  readonly info = computed(() => DEMO_ROLES[this.role()]);
 
   switchTo(role: DemoRole): void {
     this.role.set(role);
