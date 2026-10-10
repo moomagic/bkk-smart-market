@@ -39,7 +39,11 @@ public sealed class PromotionTests
         var promotion = AllocationEngine.Promote(result, forfeiter.VendorId);
 
         promotion.PromotedVendorId.Should().Be(newHead.VendorId);
-        promotion.Result.Outcomes.Single(o => o.VendorId == newHead.VendorId).LockCode.Should().Be(forfeiter.LockCode);
+        var promoted = promotion.Result.Outcomes.Single(o => o.VendorId == newHead.VendorId);
+        promoted.LockCode.Should().Be(forfeiter.LockCode);
+        promoted.ViaRollover.Should().BeTrue();
+        promotion.Result.Outcomes.Where(o => o.Category == New && o.Kind == OutcomeKind.Waitlisted)
+            .Select(o => o.WaitlistPosition).Should().Equal(1, 2);
     }
 
     [Fact]

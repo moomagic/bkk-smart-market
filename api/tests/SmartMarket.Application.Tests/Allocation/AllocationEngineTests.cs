@@ -28,7 +28,18 @@ public sealed class AllocationEngineTests
 
         WinnersPer(result).Should().Equal(legacy, vulnerable, @new);
         result.Quota.Select(q => q.Base).Should().Equal(legacy, vulnerable, @new);
-        legacy.Should().BeLessThanOrEqualTo(n / 2, "Legacy ≤ 50% unless it comes from rollover");
+    }
+
+    [Fact]
+    public void Legacy_exceeds_half_only_through_rollover()
+    {
+        foreach (var n in Enumerable.Range(1, 10))
+        foreach (var (l, v, nw) in from l in Enumerable.Range(0, 7) from v in Enumerable.Range(0, 7) from nw in Enumerable.Range(0, 7) select (l, v, nw))
+        {
+            var legacyOnOwnQuota = Allocate(n, Applicants(l, v, nw)).Outcomes
+                .Count(o => o.Category == Legacy && o.Kind == OutcomeKind.Won && !o.ViaRollover);
+            if (n > 1) legacyOnOwnQuota.Should().BeLessThanOrEqualTo(n / 2, $"N={n}, applicants {l}/{v}/{nw}");
+        }
     }
 
     [Fact]
@@ -43,10 +54,13 @@ public sealed class AllocationEngineTests
         winners.Distinct().Should().BeEquivalentTo([Legacy, Vulnerable, New], "every group can win the single lock");
     }
 
-    [Fact]
-    public void N2_gives_the_second_lock_to_legacy_when_no_new_vendor_applied()
+    [Theory]
+    [InlineData(3, 3, 0, 1, 1, 0)] // no New → second lock to Legacy
+    [InlineData(3, 0, 3, 0, 0, 2)] // no Vulnerable → its lock rolls to New
+    [InlineData(0, 3, 0, 0, 2, 0)] // only Vulnerable → both locks
+    public void N2_special_rule(int l, int v, int nw, int legacy, int vulnerable, int @new)
     {
-        WinnersPer(Allocate(2, Applicants(3, 3, 0))).Should().Equal(1, 1, 0);
+        WinnersPer(Allocate(2, Applicants(l, v, nw))).Should().Equal(legacy, vulnerable, @new);
     }
 
     // ---- rollover (step 2): Vulnerable → New → Legacy → Vulnerable ----
@@ -60,6 +74,9 @@ public sealed class AllocationEngineTests
     [InlineData(4, 2, 5, 0, 2, 2, 0)] // New short, Legacy full → skips to Vulnerable
     [InlineData(8, 5, 1, 5, 4, 1, 3)] // Vulnerable partly short
     [InlineData(4, 2, 0, 0, 2, 0, 0)] // fewer applicants than locks → locks stay empty
+    [InlineData(4, 0, 5, 0, 0, 4, 0)] // only Vulnerable applied
+    [InlineData(4, 0, 1, 5, 0, 1, 3)] // Legacy short, Vulnerable full → passes on to New
+    [InlineData(8, 5, 1, 1, 5, 1, 1)] // Vulnerable and New short together
     public void Rollover_moves_unfilled_quota_along_the_cycle(
         int n, int legacyApplicants, int vulnerableApplicants, int newApplicants,
         int legacy, int vulnerable, int @new)

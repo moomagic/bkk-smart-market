@@ -23,7 +23,9 @@ public static class AllocationEngine
         _ => Category.Vulnerable,
     };
 
-    private static readonly Category[] RolloverOrder = [Category.Vulnerable, Category.New, Category.Legacy];
+    /// <summary>The cycle unrolled from Vulnerable — the order shortfalls are resolved in.</summary>
+    private static readonly Category[] RolloverOrder =
+        [Category.Vulnerable, Next(Category.Vulnerable), Next(Next(Category.Vulnerable))];
 
     public static AllocationResult Allocate(AllocationInput input)
     {
