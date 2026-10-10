@@ -1,0 +1,6 @@
+P:System.DateTime.Now;Use IClock
+P:System.DateTime.UtcNow;Use IClock
+P:System.DateTime.Today;Use IClock
+P:System.DateTimeOffset.Now;Use IClock
+P:System.DateTimeOffset.UtcNow;Use IClock
+P:System.TimeProvider.System;Use IClock

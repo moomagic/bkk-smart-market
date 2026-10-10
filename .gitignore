@@ -1,0 +1,15 @@
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

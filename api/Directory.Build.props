@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- RS0030: banned API (clock access must go through IClock) -->
+    <WarningsAsErrors>$(WarningsAsErrors);RS0030;nullable</WarningsAsErrors>
+  </PropertyGroup>
+</Project>

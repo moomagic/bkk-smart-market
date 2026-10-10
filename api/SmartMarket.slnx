@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SmartMarket.Api/SmartMarket.Api.csproj" />
+    <Project Path="src/SmartMarket.Application/SmartMarket.Application.csproj" />
+    <Project Path="src/SmartMarket.Domain/SmartMarket.Domain.csproj" />
+    <Project Path="src/SmartMarket.Infrastructure/SmartMarket.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SmartMarket.Api.Tests/SmartMarket.Api.Tests.csproj" />
+    <Project Path="tests/SmartMarket.Application.Tests/SmartMarket.Application.Tests.csproj" />
+  </Folder>
+</Solution>
