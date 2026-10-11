@@ -98,6 +98,14 @@ public sealed class FaqAssistantTests
         answer.Citations.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData("ถ้ารอบก่อนไม่ได้ล็อค รอบนี้มีโอกาสมากขึ้นไหม")]
+    [InlineData("หากไม่ได้สิทธิ์จะเป็นสำรองไหม")]
+    public void A_what_if_question_about_the_rules_is_not_taken_for_an_individual_outcome(string question)
+    {
+        FaqAssistant.Answer(question, Library).Text.Should().NotBe(FaqAssistant.NoIndividualOutcomes);
+    }
+
     [Fact]
     public void A_rules_question_about_a_group_is_still_answered()
     {

@@ -21,6 +21,9 @@ public static class FaqAssistant
     // looks for an outcome phrase + a yes/no question, unless the question is about a group ("ผู้สูงอายุได้สิทธิ์ไหม").
     private static readonly string[] OutcomePhrases = ["ได้ล็อค", "ได้ล็อก", "ได้สิทธิ", "ได้ที่", "ติดสำรอง", "ชนะ", "ถูกจับ"];
     private static readonly string[] YesNo = ["ไหม", "มั้ย", "หรือเปล่า", "รึเปล่า", "หรือยัง", "ป่าว"];
+    /// <summary>"ถ้า…" / "หาก…" asks what the rules do in a case, not what happened to someone.</summary>
+    private static readonly string[] Conditionals = ["ถ้า", "หาก"];
+
     // Not "ใคร": "ใครได้ล็อค B2 ไหม" asks who won — an individual outcome.
     private static readonly string[] GroupTerms = ["ผู้สูงอายุ", "ผู้พิการ", "คนพิการ", "เปราะบาง", "ผู้ค้าเดิม", "ผู้ค้าใหม่", "กลุ่ม"];
     private static readonly string[] OwnResultOrGuarantee =
@@ -29,7 +32,7 @@ public static class FaqAssistant
     /// <summary>Shared by every path: such a question never reaches a model (Guardrail 1).</summary>
     public static bool AsksForIndividualOutcome(string q) =>
         OwnResultOrGuarantee.Any(q.Contains)
-        || (OutcomePhrases.Any(q.Contains) && YesNo.Any(q.Contains) && !GroupTerms.Any(q.Contains));
+        || (OutcomePhrases.Any(q.Contains) && YesNo.Any(q.Contains) && !GroupTerms.Any(q.Contains) && !Conditionals.Any(q.Contains));
 
     /// <summary>Up to 3 lines of the section plus a citation line: at most 4 lines.</summary>
     public const int MaxBodyLines = 3;
