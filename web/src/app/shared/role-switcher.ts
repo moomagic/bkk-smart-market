@@ -12,9 +12,10 @@ import { DEMO_ROLES, DemoRole, DemoSession } from '../core/demo-session';
   template: `
     <label class="switcher">
       <span class="label">บทบาท</span>
-      <select [value]="session.role()" (change)="switch($any($event.target).value)">
+      <select (change)="switch($any($event.target).value)">
         @for (role of roles; track role) {
-          <option [value]="role">{{ roleInfo[role].label }}</option>
+          <!-- [selected] per option: a [value] on <select> is applied before the options exist, so a reload showed the first role -->
+          <option [value]="role" [selected]="role === session.role()">{{ roleInfo[role].label }}</option>
         }
       </select>
     </label>
