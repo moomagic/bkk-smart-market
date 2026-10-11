@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -187,7 +187,7 @@ export class PortalHome {
   /** Review being answered, with the chosen outcome and the answer typed so far. */
   protected readonly answering = signal<{ id: string; outcome: ReviewOutcome; response: string } | null>(null);
 
-  protected readonly latestRun = computed(() => this.runList()[0] ?? null);
+  protected readonly latestRun = computed<AllocationRun | null>(() => this.runList()[0] ?? null);
 
   protected readonly pendingReviews = computed(() => this.reviewList().filter((r) => !r.outcome).length);
 
@@ -236,6 +236,21 @@ export class PortalHome {
     const status = this.selected()?.status;
     return !!this.latestRun() || status === 'Drawn' || status === 'Approved';
   });
+
+  private readonly injector = inject(Injector);
+
+  /** "ตรวจผลและอนุมัติ": open the run tab, then bring the decision bar (after the evidence) into view. */
+  protected goToDecision(): void {
+    this.tabChoice.set('run');
+    afterNextRender(
+      () => {
+        const decision = document.getElementById('decision');
+        decision?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        decision?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
+  }
 
   protected pickTab(value: string | number | undefined): void {
     this.tabChoice.set(value as RoundTab);

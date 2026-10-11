@@ -63,12 +63,15 @@ test('demo script 1–6', async ({ page, request }) => {
     await expect(statusCell(requests, 'สมศรี ใ.', 'ผ่านการตรวจสิทธิ')).toBeVisible();
 
     await page.getByRole('button', { name: 'รันจัดสรร' }).click();
+    // Once drawn, the header offers only the next step; running or checking again is no longer on screen
+    await expect(page.getByRole('button', { name: 'ตรวจผลและอนุมัติ' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'รันจัดสรร' })).toHaveCount(0);
     const run = page.getByRole('region', { name: new RegExp(`ผลจัดสรร · ${ref}`) });
     await expect(run).toContainText('ร่าง รออนุมัติ');
-    await expect(run.getByText('Seed (ระบบสุ่ม)')).toBeVisible();
+    await expect(run.getByText('เลขตั้งต้นการสุ่ม (seed)')).toBeVisible();
     // The input hash sits in the folded evidence, one click away
     await run.getByText('หลักฐานการสุ่ม').click();
-    await expect(run.getByText('Input hash (SHA-256)')).toBeVisible();
+    await expect(run.getByText('ค่าแฮชข้อมูลนำเข้า (SHA-256)')).toBeVisible();
     for (const [group, quota] of [
       ['ผู้ค้าเดิม', '2'],
       ['กลุ่มเปราะบาง', '1'],
@@ -115,9 +118,9 @@ test('demo script 1–6', async ({ page, request }) => {
     await page.setViewportSize(DESKTOP);
     await switchRole(page, 'officer');
     await openRound(page, 'ปากซอยจรัญฯ 79');
-    await page.getByRole('button', { name: 'Audit trail ของรอบ' }).click();
+    await page.getByRole('button', { name: 'ประวัติการดำเนินการ' }).click();
 
-    const audit = page.getByRole('region', { name: /Audit trail ·/ });
+    const audit = page.getByRole('region', { name: /ประวัติการดำเนินการ ·/ });
     for (const action of [
       'ยื่นคำขอ',
       'ตรวจสิทธิทั้งรอบ',
@@ -129,7 +132,7 @@ test('demo script 1–6', async ({ page, request }) => {
       await expect(audit.getByText(action, { exact: true }).first()).toBeVisible();
     }
     await expect(audit).toContainText('***');
-    await page.getByRole('button', { name: 'ปิด audit trail' }).click();
+    await page.getByRole('button', { name: 'ปิดประวัติการดำเนินการ' }).click();
     await expect(audit).toHaveCount(0);
   });
 

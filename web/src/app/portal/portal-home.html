@@ -60,23 +60,34 @@
           <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}</span>
           <app-status-tag [round]="round.status" />
         </h2>
+        <!-- Only the actions for where the round stands; the step strip below already shows what is done -->
         <div class="actions">
-          <p-button text label="Audit trail ของรอบ" (onClick)="showRoundAudit(round)" />
-          <p-button
-            variant="outlined"
-            [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
-            (onClick)="checkEligibility(round)"
-            [disabled]="checking() || running() || round.status === 'Drawn' || round.status === 'Approved'"
-          />
-          <p-button [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
-            [disabled]="running() || checking() || !canRun()" />
+          <p-button text label="ประวัติการดำเนินการ" (onClick)="showRoundAudit(round)" />
+          @if (round.status === 'Open' || round.status === 'Closed') {
+            <p-button
+              variant="outlined"
+              [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
+              (onClick)="checkEligibility(round)"
+              [disabled]="checking() || running()"
+            />
+            <p-button [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
+              [disabled]="running() || checking() || !canRun()" [attr.aria-describedby]="canRun() ? null : 'run-blocked'" />
+          } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft') {
+            <p-button label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
+          }
         </div>
       </div>
 
       <app-round-steps [steps]="steps()" />
 
-      @if (uncheckedCount() > 0 && (round.status === 'Open' || round.status === 'Closed')) {
-        <p class="muted small-note">มีคำขอที่ยังไม่ได้ตรวจสิทธิ {{ uncheckedCount() }} คำขอ ต้องตรวจสิทธิก่อนจึงรันจัดสรรได้</p>
+      @if (round.status === 'Open' || round.status === 'Closed') {
+        @if (uncheckedCount() > 0) {
+          <p id="run-blocked" class="muted small-note">มีคำขอที่ยังไม่ได้ตรวจสิทธิ {{ uncheckedCount() }} คำขอ ต้องตรวจสิทธิก่อนจึงรันจัดสรรได้</p>
+        } @else if (requests()?.state === 'ready' && requestRows().length === 0) {
+          <p id="run-blocked" class="muted small-note">ยังไม่มีคำขอในรอบนี้ จึงยังรันจัดสรรไม่ได้</p>
+        } @else if (requests()?.state === 'ready' && !canRun()) {
+          <p id="run-blocked" class="muted small-note">ไม่มีคำขอที่ผ่านการตรวจสิทธิ จึงยังรันจัดสรรไม่ได้</p>
+        }
       }
 
       <p-tabs [value]="tab()" (valueChange)="pickTab($event)">
@@ -92,7 +103,7 @@
             </p-tab>
           }
           @if (insightList().length > 0) {
-            <p-tab value="insight">Insight <p-badge [value]="insightList().length" severity="secondary" /></p-tab>
+            <p-tab value="insight">ข้อสังเกต <p-badge [value]="insightList().length" severity="secondary" /></p-tab>
           }
         </p-tablist>
         <p-tabpanels>
@@ -151,7 +162,7 @@
                 <div class="run-summary">
                   <dl class="run-meta">
                     <div><dt>เลขอ้างอิง</dt><dd class="mono">{{ run.referenceNo }}</dd></div>
-                    <div><dt>Seed (ระบบสุ่ม)</dt><dd class="mono">{{ run.seed }}</dd></div>
+                    <div><dt>เลขตั้งต้นการสุ่ม (seed)</dt><dd class="mono">{{ run.seed }}</dd></div>
                     <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
                     @if (run.decidedAt) {
                       <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
@@ -183,7 +194,7 @@
                   <details class="disclosure evidence">
                     <summary>หลักฐานการสุ่ม</summary>
                     <dl>
-                      <div><dt>Input hash (SHA-256)</dt><dd class="mono hash">{{ run.inputHash }}</dd></div>
+                      <div><dt>ค่าแฮชข้อมูลนำเข้า (SHA-256)</dt><dd class="mono hash">{{ run.inputHash }}</dd></div>
                       <div>
                         <dt>กติกาที่ใช้</dt>
                         <dd>ผู้ค้าเดิม ≤ {{ pct(run.rules.legacyMax) }} · กลุ่มเปราะบาง ≥ {{ pct(run.rules.vulnerableMin) }} · ผู้ค้าใหม่ ≥ {{ pct(run.rules.newMin) }} · สำรอง {{ run.rules.waitlistPerGroup }} คนต่อกลุ่ม</dd>
@@ -226,7 +237,7 @@
 
                 <!-- The decision comes after the evidence: the officer reads the result before approving or rejecting it -->
                 @if (run.status === 'Draft') {
-                  <div class="decision" role="group" aria-label="ตัดสินผลจัดสรร">
+                  <div id="decision" class="decision" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
                   @if (run.status === 'Draft' && rejecting() === run.id) {
                     <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
                       <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
@@ -340,7 +351,7 @@
 
           @if (insightList().length > 0) {
             <p-tabpanel value="insight">
-              <section aria-label="Allocation Insight">
+              <section aria-label="ข้อสังเกตการจัดสรร">
                 <p class="muted small-note">ข้อสังเกตให้ตรวจสอบ ไม่มีผลกับสิทธิ์โดยอัตโนมัติ</p>
                 <ul class="insights">
                   @for (f of insightList(); track $index) {
@@ -367,10 +378,10 @@
 
   <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->
   <p-drawer [visible]="auditTarget() !== null" (visibleChange)="$event || auditTarget.set(null)" position="right"
-    [modal]="false" [style]="{ width: 'min(36rem, 100vw)' }" ariaCloseLabel="ปิด audit trail">
+    [modal]="false" [style]="{ width: 'min(36rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ">
     <ng-template #header>
       @if (auditTarget(); as t) {
-        <h2 id="audit-heading" class="audit-heading">Audit trail · {{ t.label }}</h2>
+        <h2 id="audit-heading" class="audit-heading">ประวัติการดำเนินการ · {{ t.label }}</h2>
       }
     </ng-template>
     @if (auditTarget(); as t) {
@@ -404,7 +415,8 @@
     <ng-template #body let-r>
       @let round = asRound(r);
       <!-- The whole row opens the round; the name is the keyboard and screen-reader way in -->
-      <tr class="pick" [class.selected]="round.id === selectedId()" (click)="select(round)">
+      <tr class="pick" [class.selected]="round.id === selectedId()" [attr.aria-current]="round.id === selectedId() ? 'true' : null"
+        (click)="select(round)">
         <td>
           <p-button link [label]="round.spaceName" [ariaLabel]="'เปิดรอบ ' + round.spaceName + ' ' + date(round.startsOn)"
             (onClick)="select(round)" />

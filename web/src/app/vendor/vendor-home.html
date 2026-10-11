@@ -51,10 +51,11 @@
                         <p [id]="'ask-' + req.id" class="ask-title">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</p>
                         <p class="ask-detail">ยกเลิกไม่ได้ ล็อค {{ req.lockCode }} จะส่งต่อให้ผู้สำรองกลุ่มเดียวกันทันที</p>
                       </div>
-                      <p-button severity="danger" fluid [label]="acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์'"
+                      <!-- The safe choice is the filled one and comes first; the forfeit is outlined in the warn colour -->
+                      <p-button fluid label="ไม่สละ" (onClick)="confirmingForfeit.set(null)" [disabled]="acting() !== null" />
+                      <p-button severity="danger" variant="outlined" fluid
+                        [label]="acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์'"
                         (onClick)="forfeit(req)" [disabled]="acting() !== null" />
-                      <p-button variant="outlined" fluid label="ไม่สละ" (onClick)="confirmingForfeit.set(null)"
-                        [disabled]="acting() !== null" />
                     } @else {
                       <p-button fluid [label]="acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์'" (onClick)="confirm(req)"
                         [disabled]="acting() !== null" />

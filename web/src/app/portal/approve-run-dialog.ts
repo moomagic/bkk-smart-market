@@ -17,7 +17,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
     <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" [modal]="true" [draggable]="false"
       [style]="{ width: 'min(32rem, calc(100vw - 32px))' }" header="อนุมัติผลจัดสรร">
       @let run = this.run();
-      <p>อนุมัติผล <strong class="mono">{{ run.referenceNo }}</strong> · seed <span class="mono">{{ run.seed }}</span></p>
+      <p>อนุมัติผล <strong class="mono">{{ run.referenceNo }}</strong> · เลขตั้งต้นการสุ่ม <span class="mono">{{ run.seed }}</span></p>
       <table>
         <caption class="sr-only">ผู้ได้สิทธิ์เทียบโควตา</caption>
         <thead>

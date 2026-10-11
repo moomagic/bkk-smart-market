@@ -106,7 +106,8 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
     </ng-template>
   `,
   styles: `
-    app-audit-timeline .panel { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: var(--space-4) var(--space-4) 2px; }
+    /* The timeline sits in the drawer's own surface: no second bordered box inside it */
+    app-audit-timeline .panel { display: block; padding-top: var(--space-2); }
     app-audit-timeline .p-timeline-left .p-timeline-event-opposite { flex: 0 0 150px; padding: 1px var(--space-3) 0 0; text-align: left; white-space: nowrap; }
     app-audit-timeline .what { padding-bottom: var(--space-4); }
     app-audit-timeline .when { font-size: var(--text-small); color: var(--muted); }
