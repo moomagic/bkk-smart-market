@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, NavigationStart, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
@@ -245,14 +245,13 @@ export class VendorShell {
   private readonly location = inject(Location);
 
   constructor() {
+    afterNextRender(() => this.store.scroller.set(this.scroller().nativeElement));
     this.router.events.pipe(takeUntilDestroyed()).subscribe((e) => {
-      if (e instanceof NavigationStart) {
-        // Every screen is a fresh one: the last screen's notice stays behind (a submit sets its own after arriving)
-        this.store.notice.set(null);
-        // The screens share one scroll container, which the router's scroll restoration (window only) never
-        // touches. Reset before the next screen renders, so a screen that scrolls itself (the chat) has the last word.
-        this.scroller().nativeElement.scrollTo({ top: 0 });
-      }
+      // Every screen is a fresh one: the last screen's notice stays behind (a submit sets its own after arriving)
+      if (e instanceof NavigationStart) this.store.notice.set(null);
+      // The screens share one scroll container, which the router's scroll restoration (window only) never touches.
+      // The new screen renders after this, so one that scrolls itself on arrival (the chat) still has the last word.
+      if (e instanceof NavigationEnd) this.scroller().nativeElement.scrollTo({ top: 0 });
     });
   }
 

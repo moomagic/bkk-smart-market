@@ -147,10 +147,7 @@ export class VendorStore {
     this.matchCall?.unsubscribe();
     m.busy.set(true);
     m.error.set(null);
-    this.matchCall = this.api
-      .matchSpaces(m.product().trim(), m.area().trim(), m.time())
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
+    this.matchCall = this.api.matchSpaces(m.product().trim(), m.area().trim(), m.time()).subscribe({
       next: (r) => {
         m.busy.set(false);
         m.results.set(r);
@@ -179,14 +176,19 @@ export class VendorStore {
     busy: signal(false),
   };
 
-  /** Asks the Vendor Assistant; the answer, or why there is none, joins the conversation. */
-  ask(question: string): void {
+  /** The vendor app's scrolling screen, set by the shell: the one element a screen may scroll itself. */
+  readonly scroller = signal<HTMLElement | null>(null);
+
+  /**
+   * Asks the Vendor Assistant; the answer, or why there is none, joins the conversation. `fromDraft` when the
+   * question is the one typed in the box, which then empties; a suggestion leaves the box as it was.
+   */
+  ask(question: string, fromDraft = false): void {
     const a = this.assistant;
     const q = question.trim();
     if (!q || a.busy()) return;
     a.busy.set(true);
-    // A suggestion leaves whatever the vendor was typing in the box
-    if (q === a.draft().trim()) a.draft.set('');
+    if (fromDraft) a.draft.set('');
     a.messages.update((m) => [...m, { from: 'me', text: q }]);
     this.api.askAssistant(q).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (ans) => {

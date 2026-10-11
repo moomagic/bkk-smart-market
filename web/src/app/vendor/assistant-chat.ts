@@ -45,7 +45,7 @@ import { VendorStore } from './vendor-store';
         </div>
       }
 
-      <form (submit)="$event.preventDefault(); ask(draft())">
+      <form (submit)="$event.preventDefault(); ask(draft(), true)">
         <label class="sr-only" for="assistant-question">คำถาม</label>
         <input
           pInputText
@@ -66,7 +66,8 @@ import { VendorStore } from './vendor-store';
     .hint { color: var(--muted); font-size: var(--text-small); margin: 0 0 var(--space-3); }
     .start { flex: 1; }
     .start p { margin: 0 0 var(--space-3); }
-    .messages:empty { display: none; }
+    /* Empty, the live region stays in the page (and the accessibility tree) but takes no room */
+    .messages:empty { flex: 0; }
     .messages { flex: 1; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
     .messages li { white-space: pre-line; background: var(--accent-soft); border-radius: 12px 12px 12px 4px; padding: var(--space-2) var(--space-3); max-width: 88%; }
     .messages li.me { align-self: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 12px 12px 4px 12px; }
@@ -102,26 +103,32 @@ export class AssistantChat {
     let first = true;
     effect(() => {
       const messages = this.messages();
-      const scroller = this.scroller();
+      const scroller = this.store.scroller();
+      if (!scroller) return;
       // Follow the conversation, but leave a vendor who scrolled up to reread an answer where they are:
       // always on arriving at the tab and after their own question, otherwise only if they were at the end
-      const atEnd = !scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
-      const follow = first || atEnd || messages.at(-1)?.from === 'me';
+      const last = messages.at(-1);
+      const atEnd = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+      const arriving = first;
       first = false;
-      if (follow) {
-        afterNextRender(() => scroller?.scrollTo({ top: scroller.scrollHeight }), { injector: this.injector });
-      }
+      if (!arriving && !atEnd && last?.from !== 'me') return;
+      afterNextRender(
+        () => {
+          const answer = this.host.nativeElement.querySelector<HTMLElement>('.messages > li:last-child');
+          if (!arriving && last?.from === 'assistant' && answer) {
+            // A new answer opens at its first line; a long one would otherwise land with only its end in view
+            const top = answer.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+            scroller.scrollTo({ top: scroller.scrollTop + top - 16 });
+          } else {
+            scroller.scrollTo({ top: scroller.scrollHeight });
+          }
+        },
+        { injector: this.injector },
+      );
     });
   }
 
-  /** The screen's scroll container (the shell's); only it scrolls, never the page or the phone frame. */
-  private scroller(): HTMLElement | null {
-    let el = this.host.nativeElement.parentElement;
-    while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
-    return el;
-  }
-
-  protected ask(question: string): void {
-    this.store.ask(question);
+  protected ask(question: string, fromDraft = false): void {
+    this.store.ask(question, fromDraft);
   }
 }
