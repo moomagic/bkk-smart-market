@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -204,14 +204,37 @@ export class PortalHome {
   protected readonly tab = computed<RoundTab>(() => {
     const choice = this.tabChoice();
     const available = (t: RoundTab) =>
-      t === 'requests' || (t === 'run' && !!this.latestRun()) || (t === 'reviews' && this.reviewList().length > 0) ||
+      t === 'requests' || (t === 'run' && this.hasRun()) || (t === 'reviews' && this.reviewList().length > 0) ||
       (t === 'insight' && this.insightList().length > 0);
     if (choice && available(choice)) return choice;
     // Unanswered reviews have a deadline; a drawn round waits for a decision; otherwise the requests
     if (this.pendingReviews() > 0) return 'reviews';
     const status = this.selected()?.status;
-    if ((status === 'Drawn' || status === 'Approved') && this.latestRun()) return 'run';
+    // Decided from the round's status, not from the run arriving: the tab is right on first paint instead of
+    // jumping across once the runs load
+    if (status === 'Drawn' || status === 'Approved') return 'run';
     return 'requests';
+  });
+
+  private readonly tabList = viewChild(TabList);
+
+  constructor() {
+    // PrimeNG places the active-tab bar when the selected tab changes, not when a tab's width does. The counts on
+    // the tabs arrive after the round opens and widen them, so re-place the bar once they have rendered.
+    afterRenderEffect(() => {
+      this.requestRows().length;
+      this.reviewList().length;
+      this.pendingReviews();
+      this.insightList().length;
+      this.tab();
+      this.tabList()?.updateInkBar();
+    });
+  }
+
+  /** The round has a run to show, or will once the runs load (a drawn or approved round always has one). */
+  protected readonly hasRun = computed(() => {
+    const status = this.selected()?.status;
+    return !!this.latestRun() || status === 'Drawn' || status === 'Approved';
   });
 
   protected pickTab(value: string | number | undefined): void {

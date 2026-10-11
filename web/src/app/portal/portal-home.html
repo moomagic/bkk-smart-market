@@ -82,7 +82,7 @@
       <p-tabs [value]="tab()" (valueChange)="pickTab($event)">
         <p-tablist>
           <p-tab value="requests">คำขอ <p-badge [value]="requestRows().length" severity="secondary" /></p-tab>
-          <p-tab value="run" [disabled]="!latestRun()">ผลจัดสรร</p-tab>
+          <p-tab value="run" [disabled]="!hasRun()">ผลจัดสรร</p-tab>
           @if (reviewList().length > 0) {
             <p-tab value="reviews">
               คำขอทบทวน
@@ -273,6 +273,10 @@
                   </ul>
                 }
               </section>
+            } @else if (runs()?.state === 'error') {
+              <p class="error">โหลดผลจัดสรรไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+            } @else {
+              <p class="muted">กำลังโหลด…</p>
             }
           </p-tabpanel>
 
