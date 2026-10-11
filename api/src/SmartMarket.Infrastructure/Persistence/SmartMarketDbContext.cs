@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SmartMarket.Application.Common;
 using SmartMarket.Domain.Allocation;
 using SmartMarket.Domain.Audit;
@@ -58,6 +59,17 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
 
     public Task CommitAsSystemAsync(string action, AuditSubject subject, CancellationToken ct) => Commit(action, subject, true, ct);
 
+    public async Task<T> SerializedForVendorAsync<T>(Guid vendorId, Func<Task<T>> work, CancellationToken ct)
+    {
+        await using var transaction = await Database.BeginTransactionAsync(ct);
+        // Row lock on the vendor until commit: a concurrent command for the same vendor blocks here, then reads committed
+        // rows. NO KEY UPDATE leaves inserts that only reference the vendor (assignments, audit) unblocked.
+        await Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"Vendors\" WHERE \"Id\" = {vendorId} FOR NO KEY UPDATE", ct);
+        var result = await work();
+        await transaction.CommitAsync(ct);
+        return result;
+    }
+
     private async Task Commit(string action, AuditSubject? subject, bool bySystem, CancellationToken ct)
     {
         PendingAuditAction = action;
@@ -66,6 +78,13 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
         try
         {
             await SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg)
+        {
+            // Nothing was saved — the audit entry was part of the same SaveChanges, so it went too. Drop what is still
+            // tracked so nothing in this request can save it by accident.
+            ChangeTracker.Clear();
+            throw new ConcurrentUpdateException(pg.ConstraintName, e);
         }
         finally
         {

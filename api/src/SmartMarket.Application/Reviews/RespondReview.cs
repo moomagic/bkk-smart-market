@@ -36,9 +36,21 @@ public sealed class RespondReviewHandler(IAppDbContext db, IClock clock, ICurren
         if (response.Length > MaxResponseLength)
             return Error.Invalid("review.response_too_long", $"คำตอบยาวเกิน {MaxResponseLength} ตัวอักษร");
 
-        var review = await db.Reviews.SingleOrDefaultAsync(r => r.Id == reviewId, ct);
-        if (review is null)
+        var vendorId = await (
+            from r in db.Reviews.AsNoTracking()
+            join q in db.StallRequests on r.StallRequestId equals q.Id
+            where r.Id == reviewId
+            select (Guid?)q.VendorId).SingleOrDefaultAsync(ct);
+        if (vendorId is null)
             return Error.NotFound("review.not_found", "ไม่พบคำขอทบทวนนี้");
+
+        // A correction re-opens a finished request, so it checks ADR-0003 like a submit does — one at a time per vendor.
+        return await db.SerializedForVendorAsync(vendorId.Value, () => Answer(reviewId, outcome, response, ct), ct);
+    }
+
+    private async Task<Result<ReviewDto>> Answer(Guid reviewId, ReviewOutcome outcome, string response, CancellationToken ct)
+    {
+        var review = await db.Reviews.SingleAsync(r => r.Id == reviewId, ct);
         if (!review.IsOpen)
             return Error.Conflict("review.answered", "คำขอทบทวนนี้ตอบไปแล้ว");
         var request = await db.StallRequests.SingleAsync(q => q.Id == review.StallRequestId, ct);

@@ -4,6 +4,7 @@ using SmartMarket.Application.Common;
 using SmartMarket.Application.Rounds;
 using SmartMarket.Domain.Rounds;
 using SmartMarket.Domain.StallRequests;
+using SmartMarket.Domain.Vendors;
 
 namespace SmartMarket.Application.StallRequests;
 
@@ -11,19 +12,40 @@ public sealed record SubmitStallRequest(Guid RoundId);
 
 /// <summary>
 /// Vendor submits a request for an open round. Rules: the round must be accepting requests (by <see cref="IClock"/>),
-/// and the vendor may not hold another unfinished request in the district for an overlapping round period.
+/// and the vendor may not hold another unfinished request in the district for an overlapping round period — checked
+/// and saved under a lock on the vendor, so two submits at once can't both pass (#26).
 /// </summary>
 public sealed class SubmitStallRequestHandler(IAppDbContext db, IClock clock, ICurrentActor actor, IOptions<RulesOptions> rules)
 {
     public const string Action = "StallRequest.Submit";
+
+    /// <summary>The unique (RoundId, VendorId) index on StallRequests (named by EF's convention).</summary>
+    private const string OneRequestPerRoundIndex = "IX_StallRequests_RoundId_VendorId";
+
+    private Error AlreadyOpen(IReadOnlyList<string> spaces) => Error.Conflict("request.already_open",
+        spaces.Count == 0
+            ? $"มีคำขอที่ยังไม่สิ้นสุดอยู่แล้ว — ยื่นได้ {rules.Value.MaxOpenRequestsPerVendorInDistrict} คำขอต่อช่วงรอบในเขต"
+            : $"มีคำขอที่ยังไม่สิ้นสุดอยู่แล้วที่ {string.Join(", ", spaces)} — ยื่นได้ {rules.Value.MaxOpenRequestsPerVendorInDistrict} คำขอต่อช่วงรอบในเขต");
 
     public async Task<Result<StallRequestDto>> Handle(SubmitStallRequest command, CancellationToken ct)
     {
         var now = clock.Now;
         if (await VendorLookup.Current(db, actor, ct) is not { } vendor)
             return VendorLookup.Unknown;
-        var vendorId = vendor.Id;
+        try
+        {
+            return await db.SerializedForVendorAsync(vendor.Id, () => Submit(command, vendor, now, ct), ct);
+        }
+        catch (ConcurrentUpdateException e) when (e.Constraint == OneRequestPerRoundIndex)
+        {
+            // Safety net: the same round twice at once is serialized above, but the index has the last word.
+            return AlreadyOpen([]);
+        }
+    }
 
+    private async Task<Result<StallRequestDto>> Submit(SubmitStallRequest command, Vendor vendor, DateTimeOffset now, CancellationToken ct)
+    {
+        var vendorId = vendor.Id;
         var target = await (
             from r in db.Rounds
             join s in db.Spaces on r.SpaceId equals s.Id
@@ -44,8 +66,7 @@ public sealed class SubmitStallRequestHandler(IAppDbContext db, IClock clock, IC
                   && !StallRequest.Finished.Contains(req.Status)
             select s.Name).Take(limit).ToListAsync(ct);
         if (blocking.Count >= limit)
-            return Error.Conflict("request.already_open",
-                $"มีคำขอที่ยังไม่สิ้นสุดอยู่แล้วที่ {string.Join(", ", blocking)} — ยื่นได้ {limit} คำขอต่อช่วงรอบในเขต");
+            return AlreadyOpen(blocking);
 
         var previousRoundId = await RoundQueries.PreviousRoundId(db, target.Space.Id, target.Round.StartsOn, ct);
         var heldLockHere = previousRoundId is not null && await db.StallRequests.AnyAsync(

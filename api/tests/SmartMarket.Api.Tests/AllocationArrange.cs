@@ -28,9 +28,23 @@ internal static class AllocationArrange
 
     public static HttpClient Officer(this ApiFactory api) => api.ClientAs("officer", "officer-bangphlat");
 
-    /// <summary>A fresh non-food space with 4 locks and an open round holding the given requests, eligibility already checked.</summary>
+    /// <summary>A fresh round (see <see cref="OpenRound"/>) holding the given requests, eligibility already checked.</summary>
     /// <param name="banned">Extra New-group vendors under a ban, so eligibility marks them Ineligible.</param>
     public static async Task<Guid> CheckedRound(this ApiFactory api, int legacy, int vulnerable, int @new, int banned = 0)
+    {
+        var roundId = await api.OpenRound();
+        foreach (var (category, count) in new[] { (Category.Legacy, legacy), (Category.Vulnerable, vulnerable), (Category.New, @new) })
+            for (var i = 0; i < count; i++)
+                await api.AddRequest(roundId, category, StallRequestStatus.Submitted);
+        for (var i = 0; i < banned; i++)
+            await api.AddRequest(roundId, Category.New, StallRequestStatus.Submitted, bannedUntil: new DateOnly(2027, 12, 31));
+
+        (await api.Officer().PostAsync($"/api/rounds/{roundId}/eligibility", null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        return roundId;
+    }
+
+    /// <summary>A fresh non-food space with 4 locks and a round accepting requests (1 พ.ย. 2569 – 30 เม.ย. 2570).</summary>
+    public static async Task<Guid> OpenRound(this ApiFactory api)
     {
         var roundId = Guid.NewGuid();
         await using (var scope = api.Services.CreateAsyncScope())
@@ -47,13 +61,6 @@ internal static class AllocationArrange
                 SeedData.CurrentApplyOpensAt, SeedData.CurrentApplyClosesAt, RoundStatus.Open));
             await db.CommitAsync("Test.Arrange", CancellationToken.None);
         }
-        foreach (var (category, count) in new[] { (Category.Legacy, legacy), (Category.Vulnerable, vulnerable), (Category.New, @new) })
-            for (var i = 0; i < count; i++)
-                await api.AddRequest(roundId, category, StallRequestStatus.Submitted);
-        for (var i = 0; i < banned; i++)
-            await api.AddRequest(roundId, Category.New, StallRequestStatus.Submitted, bannedUntil: new DateOnly(2027, 12, 31));
-
-        (await api.Officer().PostAsync($"/api/rounds/{roundId}/eligibility", null)).StatusCode.Should().Be(HttpStatusCode.OK);
         return roundId;
     }
 

@@ -42,4 +42,11 @@ public interface IAppDbContext
     /// (e.g. forfeiting a missed deadline while someone reads): the audit entry names actor "system", not the reader.
     /// </summary>
     Task CommitAsSystemAsync(string action, AuditSubject subject, CancellationToken ct);
+
+    /// <summary>
+    /// Runs <paramref name="work"/> — its checks and its commit — one at a time per vendor, so two commands for the same
+    /// vendor can't both pass a rule that looks at the vendor's other rows (ADR-0003, #26). The second waits, then sees
+    /// what the first committed. (A database row lock on the vendor — not a stall ล็อค.)
+    /// </summary>
+    Task<T> SerializedForVendorAsync<T>(Guid vendorId, Func<Task<T>> work, CancellationToken ct);
 }

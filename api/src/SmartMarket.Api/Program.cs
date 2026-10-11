@@ -20,6 +20,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(DemoPolicies.Vendor, p => p.RequireRole("vendor"))
     .AddPolicy(DemoPolicies.Officer, p => p.RequireRole("officer", "executive"));
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ConcurrentUpdateHandler>();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer<DemoHeadersDocument>());
 
