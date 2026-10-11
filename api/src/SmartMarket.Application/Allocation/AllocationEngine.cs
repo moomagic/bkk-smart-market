@@ -145,6 +145,42 @@ public static class AllocationEngine
         return new PromotionResult(result with { Outcomes = outcomes, UnassignedLockCodes = unassigned }, head?.VendorId);
     }
 
+    /// <summary>
+    /// A request found eligible by a Corrected review after approval (ADR-0005): it takes a lock left vacant, if any
+    /// (lowest code first), otherwise the end of its group's waitlist — past the waitlist cap if need be, since it was
+    /// wrongly kept out of the draw. Winners already decided stay as they are.
+    /// </summary>
+    public static (AllocationResult Result, Outcome Admitted) AdmitCorrected(AllocationResult result, Guid vendorId, Category category, int weight)
+    {
+        if (result.Outcomes.Any(o => o.VendorId == vendorId))
+            throw new InvalidOperationException("The vendor is already in this result.");
+
+        Outcome admitted;
+        var vacant = SortLockCodes(result.UnassignedLockCodes);
+        if (vacant.Count > 0)
+        {
+            var code = vacant[0];
+            admitted = new Outcome(vendorId, category, weight, OutcomeKind.Won, code, null, false,
+                $"ได้ล็อคที่ว่างอยู่จากผลทบทวน (แก้ไขผลตรวจสิทธิ) · ล็อค {code}");
+        }
+        else
+        {
+            var position = result.Outcomes
+                .Where(o => o.Category == category && o.Kind == OutcomeKind.Waitlisted)
+                .Select(o => o.WaitlistPosition ?? 0).DefaultIfEmpty(0).Max() + 1;
+            admitted = new Outcome(vendorId, category, weight, OutcomeKind.Waitlisted, null, position, false,
+                $"เข้าท้ายสำรองจากผลทบทวน (แก้ไขผลตรวจสิทธิ) · {WaitlistReason(position, category)}");
+        }
+
+        return (result with
+        {
+            Outcomes = [.. result.Outcomes, admitted],
+            UnassignedLockCodes = [.. result.UnassignedLockCodes.Where(c => c != admitted.LockCode)],
+            // A pooled draw (N=1) promotes in pooled order; without this the vendor could never move up.
+            PooledOrder = result.PooledDraw ? [.. result.PooledOrder, vendorId] : result.PooledOrder,
+        }, admitted);
+    }
+
     private static Dictionary<Category, int> BaseQuota(int n, IReadOnlyDictionary<Category, int> counts, RulesSnapshot rules)
     {
         if (n == 2)

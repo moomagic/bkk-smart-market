@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartMarket.Domain.Allocation;
 using SmartMarket.Domain.Audit;
+using SmartMarket.Domain.Reviews;
 using SmartMarket.Domain.CheckIns;
 using SmartMarket.Domain.Districts;
 using SmartMarket.Domain.Rounds;
@@ -21,6 +22,7 @@ public interface IAppDbContext
     DbSet<AllocationRun> AllocationRuns { get; }
     DbSet<Assignment> Assignments { get; }
     DbSet<CheckIn> CheckIns { get; }
+    DbSet<Review> Reviews { get; }
     DbSet<AuditEntry> AuditEntries { get; }
 
     /// <summary>

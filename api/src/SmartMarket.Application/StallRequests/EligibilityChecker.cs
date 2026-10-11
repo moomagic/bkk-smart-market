@@ -49,7 +49,10 @@ public static class EligibilityChecker
         if (failures.Count > 0)
             return new EligibilityDecision(false, string.Join(" · ", failures), 1);
 
-        var weight = facts.PreviousRoundOutcomeHere is { } previous && MissedOut.Contains(previous) ? limits.CarryOverWeight : 1;
-        return new EligibilityDecision(true, null, weight);
+        return new EligibilityDecision(true, null, Weight(facts.PreviousRoundOutcomeHere, limits.CarryOverWeight));
     }
+
+    /// <summary>Carry-over weight: ×<paramref name="carryOverWeight"/> after missing out at the same space last round, else 1.</summary>
+    public static int Weight(StallRequestStatus? previousRoundOutcomeHere, int carryOverWeight) =>
+        previousRoundOutcomeHere is { } previous && MissedOut.Contains(previous) ? carryOverWeight : 1;
 }

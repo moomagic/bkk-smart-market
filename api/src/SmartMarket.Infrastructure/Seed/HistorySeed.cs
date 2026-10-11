@@ -106,7 +106,7 @@ public static class HistorySeed
             db.Vendors.Add(vendor);
             var request = new StallRequest(Id(7, h.Spaces, n), h.RoundId, vendor.Id, At(h.ApplyOpens.AddDays(1 + i % 10)),
                 applicants[i].Category);
-            request.MarkEligible(applicants[i].Weight);
+            request.MarkEligible(applicants[i].Weight, At(h.RanAt.AddHours(-1)));
             db.StallRequests.Add(request);
             requests[vendor.Id] = request;
         }

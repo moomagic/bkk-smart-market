@@ -12,7 +12,7 @@ namespace SmartMarket.Application.Rounds;
 /// Officer checks every request of a round in one go: Eligible (with carry-over weight) or Ineligible (with reason).
 /// Re-runnable until the draw. One audit entry per run, filed under the Round.
 /// </summary>
-public sealed class CheckRoundEligibilityHandler(IAppDbContext db, IOptions<RulesOptions> rules)
+public sealed class CheckRoundEligibilityHandler(IAppDbContext db, IClock clock, IOptions<RulesOptions> rules)
 {
     public const string Action = "Round.CheckEligibility";
 
@@ -29,9 +29,11 @@ public sealed class CheckRoundEligibilityHandler(IAppDbContext db, IOptions<Rule
             return Error.Conflict("round.already_drawn", "รอบนี้จับฉลากแล้ว ตรวจสิทธิใหม่ไม่ได้");
 
         var round = target.Round;
+        var now = clock.Now;
         var space = target.Space;
         var requests = await db.StallRequests
-            .Where(q => q.RoundId == roundId && StallRequest.AwaitingDraw.Contains(q.Status))
+            // A request a Corrected review fixed stays as the review left it (its window and weight too).
+            .Where(q => q.RoundId == roundId && StallRequest.AwaitingDraw.Contains(q.Status) && !q.CorrectedByReview)
             .ToListAsync(ct);
         var vendorIds = requests.Select(q => q.VendorId).ToList();
         var vendors = await db.Vendors.AsNoTracking().Where(v => vendorIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, ct);
@@ -78,8 +80,8 @@ public sealed class CheckRoundEligibilityHandler(IAppDbContext db, IOptions<Rule
                 OtherOpenRequestsInPeriod: otherOpen.GetValueOrDefault(request.VendorId),
                 PreviousRoundOutcomeHere: previousOutcome.TryGetValue(request.VendorId, out var p) ? p : null), limits);
 
-            if (decision.Eligible) request.MarkEligible(decision.Weight);
-            else request.MarkIneligible(decision.Reason!);
+            if (decision.Eligible) request.MarkEligible(decision.Weight, now);
+            else request.MarkIneligible(decision.Reason!, now);
         }
 
         await db.CommitAsync(Action, AuditSubject.For<Round>(roundId), ct);

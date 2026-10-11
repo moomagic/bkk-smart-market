@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, RoundRequestRow, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AuditTimeline } from './audit-timeline';
 import {
   CATEGORY_LABEL,
   OUTCOME_LABEL,
+  REVIEW_OUTCOME_LABEL,
   ROUND_STATUS_LABEL,
   RUN_STATUS_LABEL,
   STATUS_LABEL,
@@ -34,6 +35,7 @@ export class PortalHome {
   protected readonly dateTime = formatThaiDateTime;
   protected readonly runStatus = RUN_STATUS_LABEL;
   protected readonly outcome = OUTCOME_LABEL;
+  protected readonly reviewOutcome = REVIEW_OUTCOME_LABEL;
 
   protected readonly isOfficer = computed(() => this.session.role() !== 'vendor');
   /** Past the round's reject limit only an executive may reject (ADR-0002). */
@@ -79,6 +81,21 @@ export class PortalHome {
     const r = this.runs();
     return r?.state === 'ready' ? r.data : [];
   });
+
+  protected readonly reviews = toSignal(
+    combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
+      switchMap(([id]) => (id ? load(this.api.roundReviews(id)) : of(null))),
+    ),
+    { initialValue: null as Load<RoundReview[]> | null },
+  );
+
+  protected readonly reviewList = computed(() => {
+    const r = this.reviews();
+    return r?.state === 'ready' ? r.data : [];
+  });
+
+  /** Review being answered, with the chosen outcome and the answer typed so far. */
+  protected readonly answering = signal<{ id: string; outcome: ReviewOutcome; response: string } | null>(null);
 
   protected readonly latestRun = computed(() => this.runList()[0] ?? null);
 
@@ -171,6 +188,31 @@ export class PortalHome {
         this.rejecting.set(null);
         this.rejectReason.set('');
         this.notice.set({ kind: 'ok', text: `ปฏิเสธผล ${r.referenceNo} แล้ว · ตรวจสิทธิใหม่ได้แล้วรันจัดสรรอีกครั้ง (seed ใหม่)` });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.deciding.set(false);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
+  }
+
+  protected answer(review: RoundReview): void {
+    const a = this.answering();
+    if (!a || a.id !== review.id || !a.response.trim()) return;
+    this.deciding.set(true);
+    this.notice.set(null);
+    this.api.respondReview(review.id, a.outcome, a.response.trim()).subscribe({
+      next: (r) => {
+        this.deciding.set(false);
+        this.answering.set(null);
+        const approved = this.selected()?.status === 'Approved';
+        const hadDraft = this.runList().some((run) => run.status === 'Draft');
+        const after = a.outcome !== 'Corrected' ? ''
+          : approved ? ' · ได้ล็อคที่ว่างอยู่ หรือเข้าท้ายสำรองของกลุ่ม — ผู้ได้สิทธิ์เดิมไม่เปลี่ยน'
+          : hadDraft ? ' · ผ่านการตรวจสิทธิ และร่างผลจัดสรรถูกปฏิเสธโดยไม่นับลิมิต — รันจัดสรรใหม่ได้'
+          : ' · ผ่านการตรวจสิทธิแล้ว';
+        this.notice.set({ kind: 'ok', text: `ตอบคำขอทบทวนของ ${review.vendorName}: ${REVIEW_OUTCOME_LABEL[r.outcome!]}${after}` });
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {

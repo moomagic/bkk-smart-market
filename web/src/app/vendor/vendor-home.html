@@ -73,6 +73,32 @@
                 @if (req.referenceNo) {
                   <p class="meta">เลขอ้างอิง <span class="mono">{{ req.referenceNo }}</span></p>
                 }
+                @if (req.review; as rv) {
+                  <div class="review">
+                    <p class="meta">ขอทบทวนผลเมื่อ {{ dateTime(rv.submittedAt) }} · "{{ rv.reason }}"</p>
+                    @if (rv.outcome) {
+                      <p><strong>ผลการทบทวน: {{ reviewOutcome[rv.outcome] }}</strong> — {{ rv.response }}</p>
+                    } @else {
+                      <p class="meta">รอเขตตอบ</p>
+                    }
+                  </div>
+                }
+                @if (canReview(req)) {
+                  @if (reviewing() === req.id) {
+                    <form class="review-form" (submit)="$event.preventDefault(); fileReview(req)">
+                      <label [attr.for]="'review-' + req.id">เหตุผลที่ขอทบทวน</label>
+                      <textarea [id]="'review-' + req.id" rows="2" maxlength="500" [value]="reviewReason()"
+                        (input)="reviewReason.set($any($event.target).value)"></textarea>
+                      <p class="meta">ทบทวนได้เฉพาะผลการตรวจสิทธิ ผลการจับฉลากทบทวนไม่ได้ · ยื่นได้ครั้งเดียวภายในกำหนดหลังประกาศผล</p>
+                      <div class="actions">
+                        <button type="submit" [disabled]="acting() !== null || reviewReason().trim().length === 0">ส่งคำขอทบทวน</button>
+                        <button type="button" class="secondary" (click)="reviewing.set(null)">ยกเลิก</button>
+                      </div>
+                    </form>
+                  } @else {
+                    <button type="button" class="link-button" (click)="reviewing.set(req.id)">ขอทบทวนผล</button>
+                  }
+                }
                 @if (req.runs.length > 0) {
                   <details class="runs">
                     <summary>ผลจัดสรรทุกครั้งของรอบนี้ ({{ req.runs.length }})</summary>

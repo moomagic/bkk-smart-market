@@ -20,13 +20,9 @@ public sealed class RejectAllocationRunHandler(IAppDbContext db, IClock clock, I
     public const string ExecutiveRole = "executive";
     public const int MaxReasonLength = 500;
 
-    public Task<Result<AllocationRunDto>> Handle(Guid runId, RejectAllocationRun command, CancellationToken ct) =>
-        Reject(runId, command.Reason, countsTowardLimit: true, ct);
-
-    /// <summary>Shared with a Corrected review (#19), whose reject does not count toward the limit.</summary>
-    internal async Task<Result<AllocationRunDto>> Reject(Guid runId, string? reason, bool countsTowardLimit, CancellationToken ct)
+    public async Task<Result<AllocationRunDto>> Handle(Guid runId, RejectAllocationRun command, CancellationToken ct)
     {
-        reason = reason?.Trim();
+        var reason = command.Reason?.Trim();
         if (string.IsNullOrEmpty(reason))
             return Error.Invalid("reject.reason_required", "กรุณาระบุเหตุผลในการปฏิเสธผลจัดสรร");
         if (reason.Length > MaxReasonLength)
@@ -38,27 +34,34 @@ public sealed class RejectAllocationRunHandler(IAppDbContext db, IClock clock, I
         if (run.Status != AllocationRunStatus.Draft)
             return Error.Conflict("allocation_run.not_draft", "ปฏิเสธได้เฉพาะผลจัดสรรที่เป็นร่าง");
 
-        if (countsTowardLimit && actor.Role != ExecutiveRole)
+        if (actor.Role != ExecutiveRole)
         {
             var max = rules.Value.Reject.MaxPerRoundWithoutExecutive;
-            var counted = await RejectQueries.Counted(db, run.RoundId, ct);
+            var counted = await db.AllocationRuns.Where(AllocationRun.CountedReject).CountAsync(r => r.RoundId == run.RoundId, ct);
             if (counted >= max)
                 return Error.Forbidden("reject.limit_reached",
                     $"รอบนี้ปฏิเสธผลครบ {max} ครั้งแล้ว ครั้งต่อไปต้องให้ผู้บริหารเป็นผู้ปฏิเสธ");
         }
 
-        var round = await db.Rounds.SingleAsync(r => r.Id == run.RoundId, ct);
-        run.Reject(clock.Now, actor.Actor, reason, countsTowardLimit);
-        round.ReopenForRedraw();
-        await db.CommitAsync(Action, AuditSubject.For<Round>(round.Id), ct);
+        await Rejection.Apply(db, run, reason, clock.Now, actor.Actor, countsTowardLimit: true, ct);
+        await db.CommitAsync(Action, AuditSubject.For<Round>(run.RoundId), ct);
 
         return (await AllocationRunQueries.Dtos(db, db.AllocationRuns.Where(r => r.Id == run.Id), ct)).Single();
     }
 }
 
-internal static class RejectQueries
+/// <summary>
+/// Rejecting a draft, without committing — the officer's reject and a Corrected review's reject each commit it as
+/// their own single command.
+/// </summary>
+internal static class Rejection
 {
-    /// <summary>Rejects in the round that count toward the limit (a Corrected-review reject does not).</summary>
-    public static Task<int> Counted(IAppDbContext db, Guid roundId, CancellationToken ct) =>
-        db.AllocationRuns.Where(AllocationRun.CountedReject).CountAsync(r => r.RoundId == roundId, ct);
+    /// <param name="countsTowardLimit">False only for a reject caused by a Corrected review (ADR-0002).</param>
+    public static async Task Apply(
+        IAppDbContext db, AllocationRun run, string reason, DateTimeOffset at, string by, bool countsTowardLimit, CancellationToken ct)
+    {
+        var round = await db.Rounds.SingleAsync(r => r.Id == run.RoundId, ct);
+        run.Reject(at, by, reason, countsTowardLimit);
+        round.ReopenForRedraw();
+    }
 }

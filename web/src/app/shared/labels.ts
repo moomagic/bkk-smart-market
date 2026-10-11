@@ -1,4 +1,4 @@
-import { AllocationRunStatus, Category, OutcomeKind, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
+import { AllocationRunStatus, Category, OutcomeKind, ReviewOutcome, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
 
 export const SPACE_TYPE_LABEL: Record<SpaceType, string> = {
   Relaxation: 'จุดผ่อนผัน',
@@ -44,6 +44,11 @@ export const OUTCOME_LABEL: Record<OutcomeKind, string> = {
   Forfeited: 'สละสิทธิ์',
 };
 
+export const REVIEW_OUTCOME_LABEL: Record<ReviewOutcome, string> = {
+  Upheld: 'ยืนตามเดิม',
+  Corrected: 'แก้ไขแล้ว',
+};
+
 /** Audit Action (use-case name) → what the officer reads on the timeline. */
 export const AUDIT_ACTION_LABEL: Record<string, string> = {
   'StallRequest.Submit': 'ยื่นคำขอ',
@@ -54,6 +59,9 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   'Round.ForfeitAssignment': 'สละสิทธิ์',
   'Round.ExpireAssignment': 'ไม่ยืนยันภายในกำหนด (ระบบ)',
   'Round.CheckIn': 'เช็คอิน',
+  'Round.RejectAllocation': 'ปฏิเสธผลจัดสรร',
+  'Round.FileReview': 'ยื่นขอทบทวนผล',
+  'Round.RespondReview': 'ตอบคำขอทบทวน',
 };
 
 export const ROLE_LABEL: Record<string, string> = {

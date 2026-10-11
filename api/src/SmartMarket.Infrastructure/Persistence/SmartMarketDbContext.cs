@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartMarket.Application.Common;
 using SmartMarket.Domain.Allocation;
 using SmartMarket.Domain.Audit;
+using SmartMarket.Domain.Reviews;
 using SmartMarket.Domain.CheckIns;
 using SmartMarket.Domain.Districts;
 using SmartMarket.Domain.Rounds;
@@ -23,6 +24,7 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     public DbSet<AllocationRun> AllocationRuns => Set<AllocationRun>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
+    public DbSet<Review> Reviews => Set<Review>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     /// <summary>Use-case name for the save in progress; read by <see cref="Audit.AuditInterceptor"/>.</summary>

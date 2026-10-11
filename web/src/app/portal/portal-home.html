@@ -122,6 +122,57 @@
       }
     </section>
 
+    @if (reviewList().length > 0) {
+      <section aria-labelledby="reviews-heading">
+        <h2 id="reviews-heading">คำขอทบทวน</h2>
+        <ul class="reviews">
+          @for (rv of reviewList(); track rv.id) {
+            <li>
+              <div class="review-head">
+                <strong>{{ rv.vendorName }}</strong>
+                <span class="muted">· {{ category[rv.category] }} · {{ status[rv.requestStatus] }}</span>
+                @if (rv.outcome) {
+                  <span class="tag">{{ reviewOutcome[rv.outcome] }}</span>
+                } @else {
+                  <span class="tag draft">ตอบภายใน {{ date(rv.respondBy) }}</span>
+                }
+              </div>
+              @if (rv.ineligibleReason) {
+                <p class="muted small-note">ผลตรวจสิทธิ: {{ rv.ineligibleReason }}</p>
+              }
+              <p>เหตุผลของผู้ค้า: "{{ rv.reason }}" <span class="muted small">{{ dateTime(rv.submittedAt) }}</span></p>
+              @if (rv.outcome) {
+                <p class="muted">คำตอบ: {{ rv.response }}</p>
+              } @else if (answering()?.id === rv.id) {
+                <form class="reject-form" (submit)="$event.preventDefault(); answer(rv)">
+                  <fieldset class="outcomes">
+                    <legend class="sr-only">ผลการทบทวน</legend>
+                    <label><input type="radio" name="outcome" [checked]="answering()!.outcome === 'Upheld'"
+                      (change)="answering.set({ id: rv.id, outcome: 'Upheld', response: answering()!.response })" /> ยืนตามเดิม</label>
+                    <label [class.muted]="rv.requestStatus !== 'Ineligible'">
+                      <input type="radio" name="outcome" [checked]="answering()!.outcome === 'Corrected'"
+                        [disabled]="rv.requestStatus !== 'Ineligible'"
+                        (change)="answering.set({ id: rv.id, outcome: 'Corrected', response: answering()!.response })" />
+                      แก้ไข (ตรวจสิทธิผิด)
+                    </label>
+                  </fieldset>
+                  <label [attr.for]="'answer-' + rv.id">คำตอบถึงผู้ค้า</label>
+                  <textarea [id]="'answer-' + rv.id" rows="2" maxlength="1000" [value]="answering()!.response"
+                    (input)="answering.set({ id: rv.id, outcome: answering()!.outcome, response: $any($event.target).value })"></textarea>
+                  <div class="actions">
+                    <button type="submit" [disabled]="deciding() || answering()!.response.trim().length === 0">ส่งคำตอบ</button>
+                    <button type="button" class="link" (click)="answering.set(null)">ยกเลิก</button>
+                  </div>
+                </form>
+              } @else {
+                <button type="button" class="secondary" (click)="answering.set({ id: rv.id, outcome: 'Upheld', response: '' })">ตอบคำขอ</button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
     @if (latestRun(); as run) {
       <section aria-labelledby="run-heading">
         <div class="section-head">

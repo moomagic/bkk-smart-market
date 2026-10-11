@@ -145,6 +145,8 @@ GET    /stall-requests/me                 สถานะคำขอของ�
 POST   /stall-requests/{id}/confirm
 POST   /stall-requests/{id}/forfeit
 POST   /stall-requests/{id}/reviews       ขอทบทวนผล
+GET    /rounds/{id}/reviews               คำขอทบทวนของรอบ (portal)
+POST   /reviews/{id}/respond              ตอบคำขอทบทวน Upheld | Corrected
 POST   /rounds/{id}/eligibility           ตรวจสิทธิทั้งรอบ (portal)
 POST   /rounds/{id}/allocation-runs       รันจัดสรร → Draft
 POST   /allocation-runs/{id}/approve

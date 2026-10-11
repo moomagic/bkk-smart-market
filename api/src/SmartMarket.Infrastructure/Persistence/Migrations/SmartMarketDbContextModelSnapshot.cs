@@ -240,6 +240,46 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SmartMarket.Domain.Reviews.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RespondedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Response")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("StallRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StallRequestId")
+                        .IsUnique();
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("SmartMarket.Domain.Rounds.Round", b =>
                 {
                     b.Property<Guid>("Id")
@@ -663,6 +703,12 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<bool>("CorrectedByReview")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("EligibilityCheckedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("IneligibleReason")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -699,6 +745,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0000-000000000001"),
                             CarryOverWeight = 1,
                             Category = "Legacy",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0001-000000000001"),
                             Status = "Confirmed",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 4, 3, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -709,6 +756,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0000-000000000002"),
                             CarryOverWeight = 1,
                             Category = "Legacy",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0001-000000000001"),
                             Status = "Confirmed",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 4, 5, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -719,6 +767,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0000-000000000007"),
                             CarryOverWeight = 1,
                             Category = "New",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0001-000000000001"),
                             Status = "NotSelected",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 4, 8, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -729,6 +778,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000002"),
                             CarryOverWeight = 1,
                             Category = "Legacy",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 2, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -739,6 +789,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000003"),
                             CarryOverWeight = 1,
                             Category = "Vulnerable",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 3, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -749,6 +800,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000004"),
                             CarryOverWeight = 1,
                             Category = "Vulnerable",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 3, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -759,6 +811,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000005"),
                             CarryOverWeight = 1,
                             Category = "Vulnerable",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 6, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -769,6 +822,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000006"),
                             CarryOverWeight = 1,
                             Category = "New",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 7, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -779,6 +833,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000007"),
                             CarryOverWeight = 1,
                             Category = "New",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 9, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -789,6 +844,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000008"),
                             CarryOverWeight = 1,
                             Category = "New",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 12, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -799,6 +855,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000009"),
                             CarryOverWeight = 1,
                             Category = "New",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 14, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -809,6 +866,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000010"),
                             CarryOverWeight = 1,
                             Category = "New",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -819,6 +877,7 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Id = new Guid("60000000-0000-0000-0001-000000000011"),
                             CarryOverWeight = 1,
                             Category = "New",
+                            CorrectedByReview = false,
                             RoundId = new Guid("50000000-0000-0000-0000-000000000001"),
                             Status = "Submitted",
                             SubmittedAt = new DateTimeOffset(new DateTime(2026, 10, 20, 3, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -1020,6 +1079,15 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.HasOne("SmartMarket.Domain.Allocation.Assignment", null)
                         .WithMany()
                         .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartMarket.Domain.Reviews.Review", b =>
+                {
+                    b.HasOne("SmartMarket.Domain.StallRequests.StallRequest", null)
+                        .WithMany()
+                        .HasForeignKey("StallRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

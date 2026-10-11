@@ -7,6 +7,7 @@ import { AssistantChat } from './assistant-chat';
 import { SpaceMatching } from './space-matching';
 import {
   CATEGORY_LABEL,
+  REVIEW_OUTCOME_LABEL,
   RUN_STATUS_LABEL,
   SPACE_TYPE_LABEL,
   STATUS_LABEL,
@@ -33,6 +34,10 @@ export class VendorHome {
   protected readonly date = formatThaiDate;
   protected readonly dateTime = formatThaiDateTime;
   protected readonly runStatus = RUN_STATUS_LABEL;
+  protected readonly reviewOutcome = REVIEW_OUTCOME_LABEL;
+  /** Request id whose review form is open, and the reason typed so far. */
+  protected readonly reviewing = signal<string | null>(null);
+  protected readonly reviewReason = signal('');
 
   /** Bumped after a submit so both lists reload. */
   private readonly refresh = signal(0);
@@ -131,6 +136,31 @@ export class VendorHome {
             ? `เช็คอินแล้ว · ${c.spaceName} ล็อค ${c.lockCode} · ${formatThaiDateTime(c.at)}`
             : `เช็คอินแล้ว แต่ตำแหน่งอยู่นอกพื้นที่ — บันทึกไว้ให้เจ้าหน้าที่ตรวจสอบ`,
         });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.acting.set(null);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
+  }
+
+  /** Only an Ineligible result can be reviewed (draw outcomes cannot), once per request; the server checks the window. */
+  protected canReview(req: StallRequest): boolean {
+    return req.status === 'Ineligible' && !req.review;
+  }
+
+  protected fileReview(req: StallRequest): void {
+    const reason = this.reviewReason().trim();
+    if (!reason) return;
+    this.acting.set(req.id);
+    this.notice.set(null);
+    this.api.fileReview(req.id, reason).subscribe({
+      next: () => {
+        this.acting.set(null);
+        this.reviewing.set(null);
+        this.reviewReason.set('');
+        this.notice.set({ kind: 'ok', text: `ยื่นขอทบทวนผลแล้ว · ${req.spaceName} — รอเขตตอบ` });
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {

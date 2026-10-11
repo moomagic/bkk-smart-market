@@ -167,3 +167,32 @@ app-space-matching {
   display: block;
   margin-top: 20px;
 }
+.review {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.review p {
+  margin: 2px 0;
+}
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.review-form textarea {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+button.link-button {
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font-weight: 600;
+  width: auto;
+}

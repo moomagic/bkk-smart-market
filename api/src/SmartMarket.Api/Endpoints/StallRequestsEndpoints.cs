@@ -1,4 +1,5 @@
 using SmartMarket.Api.Auth;
+using SmartMarket.Application.Reviews;
 using SmartMarket.Application.StallRequests;
 
 namespace SmartMarket.Api.Endpoints;
@@ -20,6 +21,9 @@ public static class StallRequestsEndpoints
 
         group.MapPost("/{id:guid}/forfeit", async (Guid id, ForfeitStallRequestHandler handler, CancellationToken ct) =>
             ResultHttp.Ok(await handler.Handle(id, ct)));
+
+        group.MapPost("/{id:guid}/reviews", async (Guid id, FileReview command, FileReviewHandler handler, CancellationToken ct) =>
+            ResultHttp.Created(await handler.Handle(id, command, ct), r => $"/api/reviews/{r.Id}"));
 
         return api;
     }

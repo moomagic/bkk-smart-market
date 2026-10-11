@@ -29,7 +29,8 @@ internal static class AllocationArrange
     public static HttpClient Officer(this ApiFactory api) => api.ClientAs("officer", "officer-bangphlat");
 
     /// <summary>A fresh non-food space with 4 locks and an open round holding the given requests, eligibility already checked.</summary>
-    public static async Task<Guid> CheckedRound(this ApiFactory api, int legacy, int vulnerable, int @new)
+    /// <param name="banned">Extra New-group vendors under a ban, so eligibility marks them Ineligible.</param>
+    public static async Task<Guid> CheckedRound(this ApiFactory api, int legacy, int vulnerable, int @new, int banned = 0)
     {
         var roundId = Guid.NewGuid();
         await using (var scope = api.Services.CreateAsyncScope())
@@ -49,18 +50,21 @@ internal static class AllocationArrange
         foreach (var (category, count) in new[] { (Category.Legacy, legacy), (Category.Vulnerable, vulnerable), (Category.New, @new) })
             for (var i = 0; i < count; i++)
                 await api.AddRequest(roundId, category, StallRequestStatus.Submitted);
+        for (var i = 0; i < banned; i++)
+            await api.AddRequest(roundId, Category.New, StallRequestStatus.Submitted, bannedUntil: new DateOnly(2027, 12, 31));
 
         (await api.Officer().PostAsync($"/api/rounds/{roundId}/eligibility", null)).StatusCode.Should().Be(HttpStatusCode.OK);
         return roundId;
     }
 
     /// <returns>The new vendor's id.</returns>
-    public static async Task<Guid> AddRequest(this ApiFactory api, Guid roundId, Category category, StallRequestStatus status)
+    public static async Task<Guid> AddRequest(
+        this ApiFactory api, Guid roundId, Category category, StallRequestStatus status, DateOnly? bannedUntil = null)
     {
         await using var scope = api.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
         var vendor = new Vendor(Guid.NewGuid(), "ผู้ค้า ทดสอบจัดสรร", "089-000-1000",
-            category == Category.Vulnerable ? "ผู้สูงอายุ" : null, "ทั่วไป", true, null, TestClock.DemoNow);
+            category == Category.Vulnerable ? "ผู้สูงอายุ" : null, "ทั่วไป", true, bannedUntil, TestClock.DemoNow);
         db.Vendors.Add(vendor);
         db.StallRequests.Add(new StallRequest(Guid.NewGuid(), roundId, vendor.Id, TestClock.DemoNow, category, status));
         await db.CommitAsync("Test.Arrange", CancellationToken.None);
@@ -69,9 +73,9 @@ internal static class AllocationArrange
 
     /// <summary>A fresh round drawn and approved; returns the approved run as the officer saw its draft.</summary>
     public static async Task<(Guid RoundId, AllocationRunTests.RunDto Run)> ApprovedRound(
-        this ApiFactory api, int legacy, int vulnerable, int @new)
+        this ApiFactory api, int legacy, int vulnerable, int @new, int banned = 0)
     {
-        var roundId = await api.CheckedRound(legacy, vulnerable, @new);
+        var roundId = await api.CheckedRound(legacy, vulnerable, @new, banned);
         var response = await api.Officer().PostAsync($"/api/rounds/{roundId}/allocation-runs", null);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var run = (await response.Content.ReadFromJsonAsync<AllocationRunTests.RunDto>(AllocationRunTests.Json))!;

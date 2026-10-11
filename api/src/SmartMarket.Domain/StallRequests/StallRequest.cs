@@ -19,6 +19,12 @@ public sealed class StallRequest
     public string? IneligibleReason { get; private set; }
     public int CarryOverWeight { get; private set; }
 
+    /// <summary>When eligibility last decided this request; starts the review window for an Ineligible one.</summary>
+    public DateTimeOffset? EligibilityCheckedAt { get; private set; }
+
+    /// <summary>A Corrected review overrode the eligibility check; later checks leave this request alone.</summary>
+    public bool CorrectedByReview { get; private set; }
+
     /// <summary>Position in the waitlist of the request's own category (1..3) while Waitlisted.</summary>
     public int? WaitlistPosition { get; private set; }
 
@@ -39,20 +45,54 @@ public sealed class StallRequest
     public static readonly StallRequestStatus[] AwaitingDraw =
         [StallRequestStatus.Submitted, StallRequestStatus.Eligible, StallRequestStatus.Ineligible];
 
-    public void MarkEligible(int carryOverWeight)
+    public void MarkEligible(int carryOverWeight, DateTimeOffset at)
     {
         EnsureAwaitingDraw();
+        if (Status != StallRequestStatus.Eligible) EligibilityCheckedAt = at; // a re-check with the same result keeps the date
         Status = StallRequestStatus.Eligible;
         IneligibleReason = null;
         CarryOverWeight = carryOverWeight;
     }
 
-    public void MarkIneligible(string reason)
+    public void MarkIneligible(string reason, DateTimeOffset at)
     {
         EnsureAwaitingDraw();
+        // A re-check with the same result keeps the date, so re-running eligibility doesn't stretch the review window.
+        if (Status != StallRequestStatus.Ineligible || IneligibleReason != reason) EligibilityCheckedAt = at;
         Status = StallRequestStatus.Ineligible;
         IneligibleReason = reason;
         CarryOverWeight = 1;
+    }
+
+    // A Corrected review fixes an eligibility mistake. Before approval the request joins the next draw; after approval
+    // it goes to the end of its group's waitlist, leaving the winners as they are.
+
+    public void CorrectToEligible(int carryOverWeight)
+    {
+        Correct(carryOverWeight);
+        Status = StallRequestStatus.Eligible;
+    }
+
+    public void CorrectToWon(int carryOverWeight)
+    {
+        Correct(carryOverWeight);
+        Status = StallRequestStatus.Won;
+    }
+
+    public void CorrectToWaitlist(int carryOverWeight, int position)
+    {
+        Correct(carryOverWeight);
+        Status = StallRequestStatus.Waitlisted;
+        WaitlistPosition = position;
+    }
+
+    private void Correct(int carryOverWeight)
+    {
+        if (Status != StallRequestStatus.Ineligible)
+            throw new InvalidOperationException($"Only an ineligible request can be corrected; this one is {Status}.");
+        IneligibleReason = null;
+        CarryOverWeight = carryOverWeight;
+        CorrectedByReview = true;
     }
 
     // Outcomes of an approved run. Only an Eligible request was drawn, so only it can receive one.

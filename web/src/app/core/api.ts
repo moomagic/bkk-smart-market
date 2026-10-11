@@ -50,6 +50,35 @@ export interface StallRequest {
   /** Every run of the round, newest first. */
   runs: RunReference[];
   lastCheckInAt: string | null;
+  /** The latest review of this request and the district's answer, if any. */
+  review: Review | null;
+}
+
+export type ReviewOutcome = 'Upheld' | 'Corrected';
+
+export interface Review {
+  id: string;
+  stallRequestId: string;
+  reason: string;
+  submittedAt: string;
+  outcome: ReviewOutcome | null;
+  response: string | null;
+  respondedAt: string | null;
+}
+
+export interface RoundReview {
+  id: string;
+  stallRequestId: string;
+  vendorName: string;
+  category: Category;
+  requestStatus: StallRequestStatus;
+  ineligibleReason: string | null;
+  reason: string;
+  submittedAt: string;
+  respondBy: string;
+  outcome: ReviewOutcome | null;
+  response: string | null;
+  respondedAt: string | null;
 }
 
 export interface CheckIn {
@@ -256,6 +285,18 @@ export class Api {
 
   forfeitStallRequest(requestId: string) {
     return this.http.post<StallRequest>(`/api/stall-requests/${requestId}/forfeit`, null);
+  }
+
+  fileReview(stallRequestId: string, reason: string) {
+    return this.http.post<Review>(`/api/stall-requests/${stallRequestId}/reviews`, { reason });
+  }
+
+  roundReviews(roundId: string) {
+    return this.http.get<RoundReview[]>(`/api/rounds/${roundId}/reviews`);
+  }
+
+  respondReview(reviewId: string, outcome: ReviewOutcome, response: string) {
+    return this.http.post<Review>(`/api/reviews/${reviewId}/respond`, { outcome, response });
   }
 
   checkIn(stallRequestId: string, qrCode: string, withinGeofence: boolean) {

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartMarket.Application.Allocation;
 using SmartMarket.Application.Common;
+using SmartMarket.Application.Reviews;
 using SmartMarket.Domain.Allocation;
 
 namespace SmartMarket.Application.StallRequests;
@@ -52,6 +53,11 @@ internal static class MyStallRequests
                 LastCheckInAt = db.CheckIns.Where(c => c.AssignmentId == a.Id).Max(c => (DateTimeOffset?)c.At),
             }).ToDictionaryAsync(a => a.RoundId, ct);
 
+        var requestIds = requests.Select(x => x.Request.Id).ToList();
+        var reviews = (await db.Reviews.AsNoTracking().Where(r => requestIds.Contains(r.StallRequestId)).ToListAsync(ct))
+            .GroupBy(r => r.StallRequestId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.SubmittedAt).First());
+
         return [.. requests.Select(x =>
         {
             var (req, round) = (x.Request, x.Round);
@@ -65,7 +71,8 @@ internal static class MyStallRequests
                 req.Status, req.IneligibleReason, req.WaitlistPosition, assignment?.Code, outcome?.Reason,
                 approved?.ReferenceNo, assignment?.ConfirmBy,
                 [.. runs[round.Id].Select(r => new RunReference(r.ReferenceNo, r.Status, r.RanAt, r.RejectReason))],
-                assignment?.LastCheckInAt);
+                assignment?.LastCheckInAt,
+                reviews.TryGetValue(req.Id, out var review) ? ReviewDto.From(review) : null);
         })];
     }
 }

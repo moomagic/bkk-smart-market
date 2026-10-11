@@ -40,6 +40,7 @@ api.MapCheckIns();
 api.MapAudit();
 api.MapAssistant();
 api.MapDashboard();
+api.MapReviews();
 if (app.Environment.IsDevelopment())
     api.MapDemo();
 
