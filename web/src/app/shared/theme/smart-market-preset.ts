@@ -108,6 +108,11 @@ export const SmartMarketPreset = definePreset(Aura, {
       columnTitle: { fontWeight: '600' },
       bodyCell: { padding: '8px 12px' },
     },
+    // Audit timeline: entries as tall as their content, flat markers
+    timeline: {
+      event: { minHeight: '0' },
+      eventMarker: { content: { insetShadow: 'none' } },
+    },
     // Cards are bordered panels, not shadowed
     card: {
       root: { borderRadius: '{border.radius.lg}', shadow: 'none' },
