@@ -16,17 +16,7 @@ h2 {
 .section-head h2 {
   margin: 0;
 }
-.table-wrap {
-  overflow-x: auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.92rem;
-}
+/* Cell rules apply to the cells in our p-table templates */
 th,
 td {
   text-align: left;
@@ -42,16 +32,13 @@ th {
   font-weight: 600;
   font-size: 0.8rem;
 }
-tbody tr:last-child td {
-  border-bottom: 0;
-}
 tr.selected > td {
   background: var(--accent-soft);
 }
-/* PrimeNG tables: the same bordered panel as .table-wrap */
+/* PrimeNG tables in a bordered panel */
 .frame {
   display: block;
-  overflow: hidden;
+  overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -67,26 +54,6 @@ tr.selected > td {
   color: var(--warn);
   font-weight: 600;
 }
-button {
-  font: inherit;
-  font-weight: 600;
-  padding: 8px 14px;
-  color: var(--surface);
-  background: var(--accent);
-  border: 0;
-  border-radius: 6px;
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-button.link {
-  padding: 0;
-  background: none;
-  color: var(--accent);
-  font-weight: 600;
-}
 /* p-message is display: grid (its enter/leave animation collapses the rows), so only spacing here */
 .notice {
   margin: 0 0 12px;
@@ -98,13 +65,9 @@ button.link {
 }
 .actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-button.secondary {
-  color: var(--accent);
-  background: var(--surface);
-  border: 1px solid var(--accent);
 }
 h3 {
   font-size: 0.95rem;
@@ -114,19 +77,9 @@ h3 {
   font-size: 0.85rem;
   margin: 0 0 10px;
 }
-.tag {
-  font-size: 0.8rem;
-  font-weight: 600;
+h2 app-status-tag {
   margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  color: var(--muted);
   vertical-align: middle;
-}
-.tag.draft {
-  color: var(--warn);
-  border-color: var(--warn);
 }
 .run-meta {
   display: grid;
@@ -172,9 +125,6 @@ h3 {
   font-size: 0.9rem;
   color: var(--muted);
 }
-button.danger {
-  background: var(--warn);
-}
 .reject-form {
   background: var(--surface);
   border: 1px solid var(--warn);
@@ -185,12 +135,6 @@ button.danger {
   flex-direction: column;
   gap: 6px;
 }
-.reject-form textarea {
-  font: inherit;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-}
 .reviews {
   list-style: none;
   margin: 0;
@@ -199,11 +143,11 @@ button.danger {
   flex-direction: column;
   gap: 10px;
 }
-.reviews > li {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px 14px;
+.answer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
 }
 .reviews p {
   margin: 4px 0;
@@ -220,6 +164,11 @@ button.danger {
   margin: 0;
   display: flex;
   gap: 16px;
+}
+.outcome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .insights {
   list-style: none;
@@ -240,8 +189,8 @@ button.danger {
 .insights > li[data-severity='Critical'] {
   border-left-color: var(--warn);
 }
-.insights .tag {
-  margin: 0 8px 0 0;
+.insights p-tag {
+  margin-right: 8px;
 }
 .insights .mono {
   margin-left: 6px;

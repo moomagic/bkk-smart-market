@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { RadioButton } from 'primeng/radiobutton';
+import { Tag } from 'primeng/tag';
+import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
@@ -23,7 +28,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-portal-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, Message, TableModule, AuditTimeline, StatusTag],
+  imports: [FormsModule, Button, Card, Message, RadioButton, TableModule, Tag, Textarea, AuditTimeline, StatusTag],
   templateUrl: './portal-home.html',
   styleUrl: './portal-home.scss',
 })
@@ -166,6 +171,19 @@ export class PortalHome {
 
   protected asRequestRow(row: RoundRequestRow): RoundRequestRow {
     return row;
+  }
+
+  protected asQuota(row: AllocationRun['quota'][number]): AllocationRun['quota'][number] {
+    return row;
+  }
+
+  protected asOutcome(row: AllocationRun['outcomes'][number]): AllocationRun['outcomes'][number] {
+    return row;
+  }
+
+  /** Radio change for the review being answered; the literal keeps the outcome typed. */
+  protected pickOutcome(outcome: ReviewOutcome): void {
+    this.answering.update((a) => (a ? { ...a, outcome } : a));
   }
 
   protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);

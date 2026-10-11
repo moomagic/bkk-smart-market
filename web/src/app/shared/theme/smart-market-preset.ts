@@ -89,8 +89,9 @@ export const SmartMarketPreset = definePreset(Aura, {
   components: {
     // Buttons as before: semibold, 8px × 14px, outlined ones bordered in the full accent
     button: {
-      // Link buttons sit flush with the text around them
-      css: '.p-button-link { padding: 0; }',
+      // Link buttons read as inline links: flush with the text around them and, unless sized, in its size
+      // (so a link in a table row keeps the row's height)
+      css: '.p-button-link { padding: 0; } .p-button-link:not(.p-button-sm):not(.p-button-lg) { font-size: inherit; line-height: inherit; }',
       root: { paddingX: '14px', paddingY: '8px', label: { fontWeight: '600' } },
       colorScheme: {
         light: {
