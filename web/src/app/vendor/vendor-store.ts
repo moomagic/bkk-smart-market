@@ -7,6 +7,8 @@ import { DemoRole, DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
 
 const FINISHED = new Set<StallRequestStatus>(['NotSelected', 'Forfeited']);
+/** Over as far as applying again goes (ADR-0003): Ineligible too, though its card stays among the current ones. */
+const CLOSED = new Set<StallRequestStatus>(['Ineligible', 'NotSelected', 'Forfeited']);
 
 export type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 export type Notice = { kind: 'ok' | 'warn' | 'error'; text: string };
@@ -71,12 +73,22 @@ export class VendorStore {
       .sort((a, b) => a.confirmBy!.localeCompare(b.confirmBy!)),
   );
 
-  /** A round is open and the vendor has no request in any open round: applying is their next step. */
+  /**
+   * A round is open and the vendor may apply to it: they hold no unfinished request in a round whose period
+   * overlaps it (one person, one open request across the district — ADR-0003; Ineligible, NotSelected and
+   * Forfeited are finished). The server still decides; this only says when to offer it.
+   */
   readonly canApplyNow = computed(() => {
-    const open = this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.id] : []));
-    const requested = this.requestStatusByRound();
-    return this.session.role() === 'vendor' && open.length > 0 && !open.some((id) => requested.has(id));
+    if (this.session.role() !== 'vendor') return false;
+    const open = this.spaceList().flatMap((s) => (s.openRound ? [s.openRound] : []));
+    const holding = this.requestList().filter((r) => !CLOSED.has(r.status));
+    return open.some(
+      (round) => !holding.some((r) => r.roundStartsOn <= round.endsOn && r.roundEndsOn >= round.startsOn),
+    );
   });
+
+  /** A won lock is waiting on the vendor: the requests tab carries a dot. */
+  readonly hasTodo = computed(() => this.awaitingConfirm().length > 0);
 
   /** The vendor's request status in each round they applied to. */
   readonly requestStatusByRound = computed(

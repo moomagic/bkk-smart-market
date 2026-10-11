@@ -4,7 +4,7 @@
     <p class="greet">สวัสดี {{ who }}</p>
     <!-- Only with requests on screen: an empty list makes its own offer below -->
     @if (todo(); as t) {
-      @if (myRequests()?.state === 'ready' && current().length + finished().length > 0) {
+      @if (hasRequests()) {
         <div class="todo" data-testid="todo" [class.urgent]="t.urgent">
           @if (t.requestId) {
             <a [routerLink]="[t.requestId]">{{ t.text }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></a>

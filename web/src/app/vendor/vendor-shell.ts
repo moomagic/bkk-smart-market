@@ -68,7 +68,7 @@ const TABS = [
         @for (tab of tabs; track tab.path) {
           <!-- A won lock waiting to be confirmed marks the requests tab from every screen; the dot is described, not named -->
           <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page"
-            [attr.aria-describedby]="tab.path === 'requests' && store.awaitingConfirm().length > 0 ? 'tab-todo' : null">
+            [attr.aria-describedby]="tab.path === 'requests' && store.hasTodo() ? 'tab-todo' : null">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               @switch (tab.path) {
                 @case ('requests') {
@@ -83,12 +83,13 @@ const TABS = [
               }
             </svg>
             <span>{{ tab.label }}</span>
-            @if (tab.path === 'requests' && store.awaitingConfirm().length > 0) {
+            @if (tab.path === 'requests' && store.hasTodo()) {
               <span class="dot" aria-hidden="true"></span>
             }
           </a>
         }
-        <span id="tab-todo" class="sr-only">มีคำขอที่รอยืนยันสิทธิ์</span>
+        <!-- Hidden: read only as the tab's description, never as content of its own -->
+        <span id="tab-todo" hidden>มีคำขอที่รอยืนยันสิทธิ์</span>
       </nav>
     }
   `,

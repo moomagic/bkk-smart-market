@@ -231,5 +231,7 @@ test('the requests tab carries a dot only while a won lock waits to be confirmed
   await expect(page.getByRole('status')).toContainText('ยืนยันสิทธิ์แล้ว');
   await page.getByRole('button', { name: 'ย้อนกลับ' }).click();
   await expect(tab).toHaveAccessibleDescription('');
-  await expect(page.getByTestId('todo')).not.toContainText('ยืนยันสิทธิ์ล็อค');
+  // Holding B2 for this period, nothing else is to do: no other open round may be applied to (ADR-0003)
+  await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
+  await expect(page.getByTestId('todo')).toHaveCount(0);
 });

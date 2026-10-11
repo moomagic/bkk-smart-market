@@ -59,6 +59,11 @@ export class VendorRequests {
   });
 
   protected readonly myRequests = this.store.myRequests;
+  /** Loaded and not empty: the todo line shows only then (an empty list makes its own offer). */
+  protected readonly hasRequests = computed(() => {
+    const mine = this.myRequests();
+    return mine?.state === 'ready' && mine.data.length > 0;
+  });
   protected readonly current = this.store.current;
   protected readonly finished = this.store.finished;
 
