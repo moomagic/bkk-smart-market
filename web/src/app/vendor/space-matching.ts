@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
-import { Card } from 'primeng/card';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
 import { StatusTag } from '../shared/status-tag';
@@ -10,12 +9,11 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
 @Component({
   selector: 'app-space-matching',
-  imports: [FormsModule, Button, Card, InputText, Select, StatusTag],
+  imports: [FormsModule, Button, InputText, Select, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section aria-labelledby="match-heading">
-      <p-card>
-      <h1 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h1>
+    <section aria-labelledby="match-heading" class="panel">
+      <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
       <!-- ngNoForm: FormsModule is here only for the select; the form keeps its plain submit -->
       <form ngNoForm (submit)="$event.preventDefault(); find()">
         <label>
@@ -34,8 +32,12 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
           <p-select ariaLabelledBy="match-time-label" appendTo="body" fluid placeholder="ไม่ระบุ" [options]="times"
             optionLabel="label" optionValue="value" [ngModel]="time()" (ngModelChange)="time.set($event)" />
         </div>
+        <!-- Disabled until there is something to match on; the hint says so instead of leaving a dead button -->
         <p-button class="find" type="submit" fluid [label]="busy() ? 'กำลังหา…' : 'แนะนำพื้นที่'"
           [disabled]="busy() || product().trim().length === 0" />
+        @if (product().trim().length === 0) {
+          <p class="find-hint">กรอกสิ่งที่ขายก่อน แล้วระบบจะแนะนำพื้นที่ 3 อันดับพร้อมเหตุผล</p>
+        }
       </form>
 
       @if (error(); as e) {
@@ -49,7 +51,7 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
             @for (m of list; track m.spaceId; let i = $index) {
               <li>
                 <div class="head">
-                  <h2>{{ i + 1 }}. {{ m.name }}</h2>
+                  <h3>{{ i + 1 }}. {{ m.name }}</h3>
                   <span class="score mono">{{ m.score }}/100</span>
                 </div>
                 <ul class="reasons">
@@ -60,19 +62,21 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
                 @if (requestStatus()(m.spaceId); as status) {
                   <p class="requested"><app-status-tag [request]="status" /></p>
                 } @else if (canSubmit()(m.spaceId); as space) {
-                  <p-button class="submit-here" variant="outlined" label="ยื่นคำขอที่นี่" (onClick)="submit.emit(space)"
-                    [disabled]="submitting()" />
+                  <!-- The best match carries the page's one filled button; the others stay outlined -->
+                  <p-button class="submit-here" [variant]="i === 0 ? undefined : 'outlined'" label="ยื่นคำขอที่นี่"
+                    (onClick)="submit.emit(space)" [disabled]="submitting()" />
                 }
               </li>
             }
           </ol>
         }
       }
-      </p-card>
     </section>
   `,
   styles: `
-    h1 { font-size: 1.1rem; margin: 0 0 10px; }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+    .panel > h2 { font-size: 1.05rem; margin: 0 0 10px; }
+    .find-hint { grid-column: 1 / -1; margin: 0; font-size: 0.85rem; color: var(--muted); }
     form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-items: end; }
     label, .field { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); min-width: 0; }
     label:first-child { grid-column: 1 / -1; }
@@ -81,7 +85,7 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
     .results { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
     .results > li { border-top: 1px solid var(--line); padding-top: 10px; }
     .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-    h2 { font-size: 1rem; margin: 0; }
+    h3 { font-size: 1rem; margin: 0; }
     .score { color: var(--accent); font-weight: 600; }
     .reasons { margin: 6px 0 0; padding-left: 18px; font-size: 0.9rem; }
     .requested { margin: 6px 0 0; }

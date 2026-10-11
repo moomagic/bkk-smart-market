@@ -18,6 +18,13 @@ import { RoleSwitcher } from './shared/role-switcher';
     app-role-switcher, .role-placeholder { margin-left: auto; }
     .role-placeholder { min-width: 150px; min-height: 32px; font-size: 0.8rem; }
     main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+    /* Phone: one row — brand, the mock-data badge (Guardrail 5) and the role select, which also switches area */
+    @media (max-width: 640px) {
+      .bar-inner { flex-wrap: nowrap; gap: 8px; padding: 8px 16px; }
+      .brand { font-size: 0.95rem; white-space: nowrap; }
+      nav { display: none; }
+      .role-placeholder { min-width: 120px; }
+    }
   `,
 })
 export class App {}

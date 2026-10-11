@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -21,6 +21,8 @@ import {
   formatThaiDate,
   formatThaiDateTime,
 } from '../shared/labels';
+
+const IN_PLAY = new Set<StallRequestStatus>(['Submitted', 'Eligible', 'Ineligible', 'Won', 'Waitlisted']);
 
 type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
@@ -92,6 +94,31 @@ export class VendorHome {
       return (round && requested.get(round.id)) ?? null;
     };
   });
+
+  /** The one apply-by date of every open round, when they share it; otherwise each space states its own. */
+  protected readonly closesAt = computed(() => {
+    const dates = new Set(this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.applyClosesAt] : [])));
+    return dates.size === 1 ? [...dates][0] : null;
+  });
+
+  /**
+   * The assistant starts open until the vendor has an application in play (submitted, being checked, won or
+   * waitlisted, or in a round open now); decided once, on first load, so it never folds away under the vendor's
+   * hand after a submit. A lock already confirmed from an earlier round does not count: that vendor may be
+   * asking about the next one.
+   */
+  protected readonly assistantOpen = signal(true);
+
+  constructor() {
+    let decided = false;
+    effect(() => {
+      const mine = this.myRequests();
+      if (decided || mine?.state !== 'ready' || this.spaces().state !== 'ready') return;
+      decided = true;
+      const open = new Set(this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.id] : [])));
+      this.assistantOpen.set(!mine.data.some((r) => IN_PLAY.has(r.status) || open.has(r.roundId)));
+    });
+  }
 
   protected readonly submitting = signal<string | null>(null);
   /** Request id with a confirm/forfeit in flight. */

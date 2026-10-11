@@ -1,3 +1,5 @@
+<h1 class="sr-only">บริการผู้ค้า เขตบางพลัด</h1>
+
 <!-- One live region that is always there; the message inside is presentational, so a notice that is still
      animating out never makes a second status (or alert) -->
 <div role="status">
@@ -8,7 +10,7 @@
 
 @if (myRequests(); as mine) {
   <section aria-labelledby="mine-heading">
-    <h1 id="mine-heading">คำขอของฉัน</h1>
+    <h2 id="mine-heading">คำขอของฉัน</h2>
     @switch (mine.state) {
       @case ('loading') {
         <p class="muted">กำลังโหลด…</p>
@@ -24,7 +26,7 @@
             @for (req of mine.data; track req.id) {
               <li><p-card>
                 <div class="head">
-                  <h2>{{ req.spaceName }}</h2>
+                  <h3>{{ req.spaceName }}</h3>
                   <app-status-tag [request]="req.status" />
                 </div>
                 <p class="meta">
@@ -128,7 +130,7 @@
   </section>
 }
 
-<app-assistant-chat />
+<app-assistant-chat [(open)]="assistantOpen" />
 
 <app-space-matching
   [canSubmit]="submittable()"
@@ -138,8 +140,13 @@
 />
 
 <section aria-labelledby="spaces-heading">
-  <h1 id="spaces-heading">พื้นที่ค้าขายในเขตบางพลัด</h1>
-  <p class="lead">พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ</p>
+  <h2 id="spaces-heading">พื้นที่ค้าขายในเขตบางพลัด</h2>
+  <p class="lead">
+    พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ
+    @if (closesAt(); as close) {
+      · <strong>รับคำขอถึง {{ date(close) }}</strong>
+    }
+  </p>
 
   @switch (spaces().state) {
     @case ('loading') {
@@ -149,35 +156,34 @@
       <p class="error">โหลดรายการพื้นที่ไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
     }
     @case ('ready') {
-      <ul class="list">
+      <!-- One list, rows divided: the spaces are peers, not a stack of cards -->
+      <ul class="spaces">
         @for (space of spaceList(); track space.id) {
-          <li><p-card>
+          <li>
             <div class="head">
-              <h2>{{ space.name }}</h2>
+              <h3>{{ space.name }}</h3>
               <span class="type">{{ typeLabel[space.type] }}</span>
             </div>
-            <dl>
-              <div><dt>ล็อค</dt><dd class="mono">{{ space.lockCount }}</dd></div>
-              <div><dt>สินค้า</dt><dd>{{ space.productTypes.join(' · ') }}</dd></div>
-              <div><dt>เวลา</dt><dd>{{ space.openHours }}</dd></div>
-              @if (space.openRound; as round) {
-                <div>
-                  <dt>รอบ</dt>
-                  <dd>{{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับ {{ date(round.applyClosesAt) }}</dd>
-                </div>
-              }
-            </dl>
+            <p class="facts"><span class="mono">{{ space.lockCount }}</span> ล็อค · {{ space.productTypes.join(' · ') }} · {{ space.openHours }}</p>
+            @if (space.openRound; as round) {
+              <p class="meta">
+                รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}
+                @if (!closesAt()) {
+                  · ปิดรับ {{ date(round.applyClosesAt) }}
+                }
+              </p>
+            }
             @if (space.openRound && session.role() === 'vendor') {
               @if (requestStatusByRound().get(space.openRound.id); as status) {
                 <p class="submitted"><app-status-tag [request]="status" /></p>
               } @else {
-                <p-button class="submit" fluid [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
+                <p-button class="submit" variant="outlined" [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
                   (onClick)="submit(space)" [disabled]="submitting() !== null" />
               }
             } @else if (!space.openRound) {
-              <p class="muted small">ไม่มีรอบที่เปิดรับคำขอ</p>
+              <p class="meta">ไม่มีรอบที่เปิดรับคำขอ</p>
             }
-          </p-card></li>
+          </li>
         } @empty {
           <li class="muted">ยังไม่มีพื้นที่</li>
         }

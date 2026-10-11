@@ -33,7 +33,13 @@ import { DEMO_ROLES, DemoRole, DemoSession } from '../core/demo-session';
   styles: `
     :host { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .label { color: var(--muted); font-size: 0.8rem; }
-    .who { color: var(--muted); font-size: 0.7rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .who { color: var(--muted); font-size: 0.75rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Phone: the select alone; its name stays for screen readers, the API identity echo is a desktop detail */
+    @media (max-width: 640px) {
+      :host { flex-wrap: nowrap; }
+      .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .who { display: none; }
+    }
   `,
 })
 export class RoleSwitcher {

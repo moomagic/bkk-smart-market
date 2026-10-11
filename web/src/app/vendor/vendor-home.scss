@@ -1,5 +1,15 @@
+:host {
+  display: block;
+  /* A phone-first page: on a laptop it keeps a readable column instead of stretching cards across 1280px */
+  max-width: 36rem;
+  margin: 0 auto;
+}
 section + section {
   margin-top: 24px;
+}
+section > h2 {
+  font-size: 1.25rem;
+  margin: 8px 0;
 }
 .lead {
   color: var(--muted);
@@ -23,7 +33,7 @@ section + section {
   flex-shrink: 0;
   white-space: nowrap;
 }
-h2 {
+h3 {
   font-size: 1.05rem;
   margin: 0;
 }
@@ -41,24 +51,26 @@ p-button[fluid] {
   width: 100%;
 }
 .submit {
-  margin-top: 12px;
+  display: block;
+  margin-top: 10px;
 }
-dl {
-  margin: 10px 0 0;
-  display: grid;
-  gap: 4px;
+/* Spaces: one bordered list, rows divided */
+.spaces {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
-dl div {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 8px;
+.spaces > li {
+  padding: 14px 16px;
 }
-dt {
-  color: var(--muted);
-  font-size: 0.85rem;
+.spaces > li + li {
+  border-top: 1px solid var(--line);
 }
-dd {
-  margin: 0;
+.facts {
+  margin: 4px 0 0;
 }
 .meta {
   margin: 6px 0 0;
