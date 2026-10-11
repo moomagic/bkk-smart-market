@@ -81,7 +81,11 @@ export async function switchRole(
 }
 
 /** What the switcher shows for each role. */
-export const ROLE_LABEL = { vendor: 'ผู้ค้า', officer: 'เจ้าหน้าที่เขต', executive: 'ผู้บริหาร' } as const;
+export const ROLE_LABEL = {
+  vendor: 'ผู้ค้า',
+  officer: 'เจ้าหน้าที่เขต',
+  executive: 'ผู้บริหาร',
+} as const;
 
 /** Guardrail 5: every screen says the data is mock. */
 export async function expectMockBadge(page: Page): Promise<void> {

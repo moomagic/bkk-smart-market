@@ -1,6 +1,6 @@
 # แผนย้าย UI ไป PrimeNG
 
-การตัดสินใจ: [ADR-0006](../adr/0006-primeng-replaces-no-ui-library-rule.md) · สถานะ: วางแผนแล้ว ยังไม่เริ่ม implement
+การตัดสินใจ: [ADR-0006](../adr/0006-primeng-replaces-no-ui-library-rule.md) · สถานะ: **ย้ายครบแล้ว** (M0–M5 · #28–#38) · M6 ยังไม่ทำ
 
 เป้าหมาย: ใช้ PrimeNG เป็น UI library หลัก · ธีม minimal สม่ำเสมอทั้งแอป · ลด CSS ซ้ำ · **ไม่เปลี่ยน** business logic, API contract, validation, permission, ข้อความ guardrail และ UX flow
 
@@ -158,3 +158,15 @@ Branch `feat/primeng-migration` จาก tag `pre-primeng` (commit ที่เ
 
 - Inline confirm (forfeit / reject / reset) vs `p-confirmPopup` — ตัดสินหลัง pilot
 - push tag `pre-primeng` ขึ้น GitHub หรือไม่ — ถามตอนเริ่ม M0
+
+## 8. ผลลัพธ์ (M5)
+
+| เรื่อง | ผล |
+|---|---|
+| หน้าจอ | `/vendor` `/portal` `/dashboard` ใช้ PrimeNG ทั้งหมด · ไม่เหลือ `<button>`/`<table>` เดิม · CSS ที่เหลือคือ layout และความหมายของ domain |
+| Initial bundle | 259.33 → 482.99 kB raw (72.70 → 115.26 kB transfer) · ต่ำกว่าเกณฑ์เตือน 500 kB (`maximumWarning`; build fail ที่ 1 MB) · `p-select` ใน shell โหลดแบบ `@defer` |
+| Lazy chunks | vendor-home ~106 kB · portal-home ~363 kB (`p-table`, `p-timeline`) · dashboard-home ~257 kB (Chart.js) |
+| Test | `npm run e2e` 10 test · `npm run e2e:visual` 4 snapshot (390/1280 · baseline macOS) · `docker compose up` จาก image ใหม่ผ่าน |
+| Pilot review (#33) | preset ผ่านตามที่เป็น · confirm แบบ inline คงไว้ |
+| ข้อจำกัดที่รู้ | visual baseline บันทึกเฉพาะ macOS (OS อื่นบันทึกครั้งแรกเอง · แยก project จาก `npm run e2e` แล้ว) · p-timeline ไม่มี trackBy (reload audit สร้าง DOM ใหม่) · สีและฟอนต์ของกราฟอ่านจาก CSS ครั้งเดียวต่อการวาด · annotation plugin register ทั้งแอป |
+

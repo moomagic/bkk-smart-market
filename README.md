@@ -95,6 +95,8 @@ scripts/check-wording.sh
 ANTHROPIC_API_KEY= docker compose up -d --build
 (cd web && npx playwright install chromium)   # ครั้งแรกครั้งเดียว
 (cd web && npm run e2e)                       # E2E_BASE_URL=... เพื่อชี้ไปที่อื่น (ค่าเริ่มต้น http://localhost:8080)
+# Visual snapshot ของหน้าตาหลังย้ายไป PrimeNG (baseline บันทึกบน macOS) — เปลี่ยนหน้าตาโดยตั้งใจแล้วเติม -- --update-snapshots
+(cd web && npm run e2e:visual)
 ```
 
 โครงสร้าง, domain model, กติกา และ guardrail อยู่ใน `CLAUDE.md` · ศัพท์ใน `CONTEXT.md` · การตัดสินใจที่ย้อนยากใน `docs/adr/`

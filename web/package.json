@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "e2e": "playwright test"
+    "e2e": "playwright test --project=e2e",
+    "e2e:visual": "playwright test --project=visual"
   },
   "private": true,
   "packageManager": "npm@11.13.0",

@@ -19,5 +19,10 @@ export default defineConfig({
     baseURL: process.env['E2E_BASE_URL'] ?? 'http://localhost:8080',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    // Behaviour: demo script, guardrails, regression traps. Runs anywhere.
+    { name: 'e2e', testIgnore: /visual\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+    // Pixel baselines of the PrimeNG look, recorded on macOS (…-visual-darwin.png): `npm run e2e:visual`.
+    { name: 'visual', testMatch: /visual\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+  ],
 });
