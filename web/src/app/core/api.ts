@@ -140,6 +140,27 @@ export interface AllocationRun {
   unassignedLockCodes: string[];
 }
 
+export interface AuditChange {
+  Entity: string;
+  Id: string;
+  State: 'Added' | 'Modified' | 'Deleted';
+  Before: Record<string, unknown> | null;
+  After: Record<string, unknown> | null;
+}
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  actor: string;
+  /** Masked name for vendors. */
+  actorName: string;
+  actorRole: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  changes: AuditChange[];
+}
+
 export interface Session {
   user: string;
   role: string;
@@ -191,6 +212,10 @@ export class Api {
 
   checkIn(stallRequestId: string, qrCode: string, withinGeofence: boolean) {
     return this.http.post<CheckIn>('/api/check-ins', { stallRequestId, qrCode, withinGeofence });
+  }
+
+  auditTrail(entityType: string, entityId: string) {
+    return this.http.get<AuditEntry[]>('/api/audit', { params: { entityType, entityId } });
   }
 
   /** Development only: 404 elsewhere. */

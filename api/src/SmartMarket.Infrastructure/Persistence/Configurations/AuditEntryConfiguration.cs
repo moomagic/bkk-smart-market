@@ -16,5 +16,7 @@ internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEn
         b.Property(x => x.Changes).HasColumnType("jsonb");
         b.HasIndex(x => new { x.EntityType, x.EntityId });
         b.HasIndex(x => x.At);
+        // The audit trail matches entities inside Changes with jsonb containment (@>).
+        b.HasIndex(x => x.Changes).HasMethod("gin");
     }
 }

@@ -16,6 +16,7 @@ public static class ResultHttp
         {
             ErrorKind.NotFound => StatusCodes.Status404NotFound,
             ErrorKind.Conflict => StatusCodes.Status409Conflict,
+            ErrorKind.Invalid => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status403Forbidden,
         },
         title: error.Code,

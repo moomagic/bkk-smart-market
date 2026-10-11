@@ -3,6 +3,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { AllocationRun, Api, RoundRequestRow, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
+import { AuditTimeline } from './audit-timeline';
 import {
   CATEGORY_LABEL,
   OUTCOME_LABEL,
@@ -18,6 +19,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-portal-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [AuditTimeline],
   templateUrl: './portal-home.html',
   styleUrl: './portal-home.scss',
 })
@@ -105,6 +107,10 @@ export class PortalHome {
     { initialValue: null as string | null },
   );
 
+  /** What the audit panel shows: the selected round, or one request in it. */
+  protected readonly auditTarget = signal<{ type: string; id: string; label: string } | null>(null);
+  protected readonly refreshCount = this.refresh.asReadonly();
+
   protected readonly running = signal(false);
   protected readonly approving = signal(false);
   protected readonly checking = signal(false);
@@ -112,6 +118,7 @@ export class PortalHome {
 
   protected select(round: RoundSummary): void {
     this.notice.set(null);
+    this.auditTarget.set(null);
     this.selectedId.set(round.id);
   }
 
@@ -175,6 +182,14 @@ export class PortalHome {
       },
       error: (err) => this.notice.set({ kind: 'error', text: problemMessage(err) }),
     });
+  }
+
+  protected showRoundAudit(round: RoundSummary): void {
+    this.auditTarget.set({ type: 'Round', id: round.id, label: `รอบ ${round.spaceName}` });
+  }
+
+  protected showRequestAudit(row: RoundRequestRow): void {
+    this.auditTarget.set({ type: 'StallRequest', id: row.requestId, label: `คำขอของ ${row.vendorName}` });
   }
 }
 

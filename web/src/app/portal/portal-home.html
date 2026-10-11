@@ -74,6 +74,7 @@
           <button type="button" (click)="runAllocation(round)" [disabled]="running() || checking() || !canRun()">
             {{ running() ? 'กำลังรัน…' : 'รันจัดสรร' }}
           </button>
+          <button type="button" class="secondary" (click)="showRoundAudit(round)">Audit trail ของรอบ</button>
         </div>
       </div>
 
@@ -99,6 +100,7 @@
                 <th scope="col">สถานะ</th>
                 <th scope="col" class="num">น้ำหนัก</th>
                 <th scope="col">เหตุผล</th>
+                <th scope="col"><span class="sr-only">ประวัติ</span></th>
               </tr>
             </thead>
             <tbody>
@@ -109,9 +111,10 @@
                   <td [class.warn]="row.status === 'Ineligible'">{{ status[row.status] }}</td>
                   <td class="num mono">×{{ row.carryOverWeight }}</td>
                   <td>{{ row.ineligibleReason ?? '' }}</td>
+                  <td><button type="button" class="link" (click)="showRequestAudit(row)">ประวัติ</button></td>
                 </tr>
               } @empty {
-                <tr><td colspan="5" class="muted">ยังไม่มีคำขอ</td></tr>
+                <tr><td colspan="6" class="muted">ยังไม่มีคำขอ</td></tr>
               }
             </tbody>
           </table>
@@ -204,6 +207,22 @@
             }
           </ul>
         }
+      </section>
+    }
+
+    @if (auditTarget(); as t) {
+      <section aria-labelledby="audit-heading">
+        <div class="section-head">
+          <h2 id="audit-heading">Audit trail · {{ t.label }}</h2>
+          <button type="button" class="link" (click)="auditTarget.set(null)">ปิด</button>
+        </div>
+        <p class="muted small-note">ข้อมูลส่วนบุคคลแสดงเป็น *** ตามหลัก PDPA</p>
+        <app-audit-timeline
+          [entityType]="t.type"
+          [entityId]="t.id"
+          [version]="refreshCount()"
+          (openEntity)="auditTarget.set({ type: $event.type, id: $event.id, label: $event.type + ' …' + $event.id.slice(-8) })"
+        />
       </section>
     }
   }

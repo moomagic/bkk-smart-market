@@ -37,6 +37,7 @@ api.MapStallRequests();
 api.MapRounds();
 api.MapAllocationRuns();
 api.MapCheckIns();
+api.MapAudit();
 if (app.Environment.IsDevelopment())
     api.MapDemo();
 

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.Allocation;
+using SmartMarket.Application.Audit;
 using SmartMarket.Application.Common;
 using SmartMarket.Infrastructure.Allocation;
 using SmartMarket.Infrastructure.Audit;
@@ -31,6 +32,7 @@ public static class DependencyInjection
             .UseNpgsql(config.GetConnectionString("SmartMarket"))
             .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<SmartMarketDbContext>());
+        services.AddScoped<IAuditTrail, AuditTrail>();
         return services;
     }
 

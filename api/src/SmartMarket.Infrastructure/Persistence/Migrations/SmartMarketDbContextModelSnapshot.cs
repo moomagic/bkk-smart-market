@@ -177,6 +177,10 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("At");
 
+                    b.HasIndex("Changes");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Changes"), "gin");
+
                     b.HasIndex("EntityType", "EntityId");
 
                     b.ToTable("AuditEntries");

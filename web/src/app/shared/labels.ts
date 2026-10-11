@@ -44,6 +44,25 @@ export const OUTCOME_LABEL: Record<OutcomeKind, string> = {
   Forfeited: 'สละสิทธิ์',
 };
 
+/** Audit Action (use-case name) → what the officer reads on the timeline. */
+export const AUDIT_ACTION_LABEL: Record<string, string> = {
+  'StallRequest.Submit': 'ยื่นคำขอ',
+  'Round.CheckEligibility': 'ตรวจสิทธิทั้งรอบ',
+  'Round.RunAllocation': 'รันจัดสรร (ร่าง)',
+  'Round.ApproveAllocation': 'อนุมัติผลจัดสรร',
+  'Round.ConfirmAssignment': 'ยืนยันสิทธิ์',
+  'Round.ForfeitAssignment': 'สละสิทธิ์',
+  'Round.ExpireAssignment': 'ไม่ยืนยันภายในกำหนด (ระบบ)',
+  'Round.CheckIn': 'เช็คอิน',
+};
+
+export const ROLE_LABEL: Record<string, string> = {
+  vendor: 'ผู้ค้า',
+  officer: 'เจ้าหน้าที่เขต',
+  executive: 'ผู้บริหาร',
+  system: 'ระบบ',
+};
+
 const thaiDate = new Intl.DateTimeFormat('th-TH', {
   day: 'numeric',
   month: 'short',
