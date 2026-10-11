@@ -15,33 +15,28 @@
   @if (data(); as k) {
     <section class="kpis" aria-label="ตัวชี้วัดหลัก">
       <article class="tile"><p-card styleClass="fill">
-        <h2>การใช้พื้นที่</h2>
+        <h2 title="Occupancy">การใช้พื้นที่</h2>
         <p class="value">{{ pct(k.occupancy) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
-        <!-- The KPI's name in the spec, for anyone matching the card to the report -->
-        <p class="code" lang="en">Occupancy</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
-        <h2>ความเร็วในการประกาศผล</h2>
+        <h2 title="LeadTime">ความเร็วในการประกาศผล</h2>
         <p class="value">@if (k.leadTime.medianDays === null) {
           –
         } @else {
           {{ k.leadTime.medianDays }}<span class="unit">วัน</span>
         }</p>
         <p class="detail">ค่ามัธยฐานจากวันปิดรับคำขอถึงวันอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
-        <p class="code" lang="en">LeadTime</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
-        <h2>ผู้ค้าหน้าใหม่</h2>
+        <h2 title="NewVendors">ผู้ค้าหน้าใหม่</h2>
         <p class="value">{{ pct(k.newVendors) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ {{ k.newVendors.of }} คน เป็นกลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} คน</p>
-        <p class="code" lang="en">NewVendors</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
-        <h2>การหมุนเวียนสิทธิ์</h2>
+        <h2 title="FairRotation">การหมุนเวียนสิทธิ์</h2>
         <p class="value">{{ pct(k.fairRotation) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ {{ k.fairRotation.of }} คน ไม่ได้ถือล็อคที่เดิมในรอบก่อน {{ k.fairRotation.count }} คน</p>
-        <p class="code" lang="en">FairRotation</p>
       </p-card></article>
     </section>
 
@@ -76,7 +71,7 @@
 
     <section aria-labelledby="spaces-heading">
       <h2 id="spaces-heading">รายพื้นที่</h2>
-      <p class="muted small">ช่องกลุ่มผู้ค้า = ได้สิทธิ์จริง / โควตา · <span class="off-quota">ตัวเลขสีนี้</span> ต่างจากโควตา เพราะโอนโควตาจากกลุ่มที่ผู้สมัครไม่พอ</p>
+      <p class="muted small">ช่องกลุ่มผู้ค้า = ได้สิทธิ์จริง / โควตา · ช่องที่ระบุ <span class="off-quota">เกิน/ขาด</span> ต่างจากโควตา เพราะโอนโควตาจากกลุ่มที่ผู้สมัครไม่พอ</p>
       <p-table class="frame" [value]="k.spaces" dataKey="spaceId">
         <ng-template #header>
             <tr>
@@ -111,8 +106,8 @@
                   <td class="num mono">
                     @if (quotaFor(row, c); as q) {
                       @if (q.winners !== q.base) {
-                        <span class="off-quota">{{ q.winners }}/{{ q.base }}</span>
-                        <span class="sr-only">{{ q.winners > q.base ? 'เกินโควตา' : 'ต่ำกว่าโควตา' }}</span>
+                        <span class="off-quota">{{ q.winners }}/{{ q.base }}
+                          <span class="off-word">{{ q.winners > q.base ? 'เกิน' : 'ขาด' }}</span></span>
                       } @else {
                         {{ q.winners }}/{{ q.base }}
                       }

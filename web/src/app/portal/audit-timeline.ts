@@ -5,7 +5,7 @@ import { Timeline } from 'primeng/timeline';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, of, startWith, switchMap } from 'rxjs';
 import { Api, AuditEntry } from '../core/api';
-import { formatThaiDateTime } from '../shared/labels';
+import { formatThaiDateTimeSeconds } from '../shared/labels';
 import { AuditNames, ChangeView, EntryView, NO_NAMES, describeEntry } from './audit-view';
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: AuditEntry[] };
@@ -145,7 +145,7 @@ export class AuditTimeline {
   /** The officer wants the trail of one entity from a change line; label is how that line named it. */
   readonly openEntity = output<{ type: string; id: string; label: string }>();
 
-  protected readonly dateTime = formatThaiDateTime;
+  protected readonly dateTime = formatThaiDateTimeSeconds;
   protected readonly listSemantics = { root: { role: 'list' }, event: { role: 'listitem' } };
 
   /** Bumped by "ลองอีกครั้ง" after a failed load. */

@@ -66,7 +66,7 @@ h3 app-status-tag {
   margin-left: var(--space-2);
   vertical-align: middle;
 }
-/* Run summary: provenance on the left, quota beside it, the hash folded underneath — one panel */
+/* Run summary: provenance, quota beside it, evidence folded below */
 .run-summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
@@ -123,16 +123,6 @@ h3 app-status-tag {
 .group-title:first-of-type {
   margin-top: 0;
 }
-/* Rounds: the whole row opens a round */
-tr.pick {
-  cursor: pointer;
-}
-tr.pick:hover > td {
-  background: var(--ground);
-}
-tr.selected > td {
-  background: var(--accent-soft);
-}
 /* Group rows sit in the body, outside the preset's header-cell padding */
 tr.group > th {
   padding: var(--space-2) var(--space-3);
@@ -146,11 +136,6 @@ tr.group > th {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-2);
-}
-.demo-now {
-  margin: 0;
-  font-size: var(--text-small);
-  color: var(--muted);
 }
 .audit-heading {
   font-size: var(--text-h3);
@@ -246,8 +231,24 @@ tr.group > th {
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
 }
-.decision-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--text-small);
+/* Workspace: one column on narrow screens; from 1024px the rounds sit left and stay in view */
+@media (min-width: 1024px) {
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: start;
+  }
+  .rounds-pane {
+    position: sticky;
+    top: var(--space-4);
+    max-height: calc(100vh - var(--space-6));
+    overflow-y: auto;
+  }
+  .workspace > section {
+    margin-top: var(--space-5);
+  }
+}
+.past {
+  margin-top: var(--space-4);
 }

@@ -32,7 +32,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
             <tr>
               <td>{{ category[q.category] }}</td>
               <!-- Above or below quota only through rollover; marked so the officer sees it before approving -->
-              <td class="num mono" [class.off]="q.allocated !== q.base">{{ count(q.category, 'Won') }} / {{ q.base }}</td>
+              <td class="num mono" [class.off]="count(q.category, 'Won') !== q.base">{{ count(q.category, 'Won') }}/{{ q.base }}</td>
               <td class="num mono">{{ count(q.category, 'Waitlisted') }}</td>
             </tr>
           }
@@ -43,7 +43,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
         ไม่ได้สิทธิ์ {{ count(null, 'NotSelected') }} คน
       </p>
       <p class="consequence">
-        ผู้ค้า {{ run.outcomes.length }} คนจะเห็นผลนี้ทันที และผู้ได้สิทธิ์ต้องยืนยันสิทธิ์ภายในกำหนด ·
+        ผู้ค้าที่ผ่านการตรวจสิทธิ {{ run.outcomes.length }} คนจะเห็นผลนี้ทันที และผู้ได้สิทธิ์ต้องยืนยันสิทธิ์ภายในกำหนด ·
         อนุมัติแล้วปฏิเสธหรือจับฉลากใหม่ไม่ได้
       </p>
       <ng-template #footer>

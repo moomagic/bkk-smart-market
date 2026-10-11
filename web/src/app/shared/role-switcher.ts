@@ -7,7 +7,7 @@ import { Select } from 'primeng/select';
 import { Api } from '../core/api';
 import { DEMO_ROLES, DemoRole, DemoSession } from '../core/demo-session';
 
-/** Top-right role switcher. Shows who the API says we are, to prove the headers arrive. */
+/** Top-right role switcher. Who the API says we are (proof the demo headers arrive) is in its tooltip. */
 @Component({
   selector: 'app-role-switcher',
   imports: [FormsModule, Select],
@@ -26,19 +26,21 @@ import { DEMO_ROLES, DemoRole, DemoSession } from '../core/demo-session';
       [ngModel]="session.role()"
       (ngModelChange)="switch($event)"
     />
-    @if (confirmed(); as s) {
-      <span class="who mono" title="ตัวตนที่ API ได้รับ">{{ s.role }} · {{ s.user }}</span>
-    }
+
   `,
+  // Who the API says we are, kept as a tooltip and data attributes rather than raw ids in the header
+  host: {
+    '[attr.title]': "confirmed() ? 'ตัวตนที่ API ได้รับ: ' + confirmed()!.role + ' · ' + confirmed()!.user : null",
+    '[attr.data-confirmed-role]': 'confirmed()?.role',
+    '[attr.data-confirmed-user]': 'confirmed()?.user',
+  },
   styles: `
     :host { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
     .label { color: var(--muted); font-size: var(--text-small); }
-    .who { color: var(--muted); font-size: var(--text-caption); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* Phone: the select alone; its name stays for screen readers, the API identity echo is a desktop detail */
     @media (max-width: 640px) {
       :host { flex-wrap: nowrap; }
       .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-      .who { display: none; }
     }
   `,
 })

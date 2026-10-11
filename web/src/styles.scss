@@ -115,6 +115,15 @@ h1 {
   color: var(--warn);
 }
 
+/* A note in a flex row or a popover: small text, no paragraph margin */
+.text-small {
+  font-size: var(--text-small);
+}
+
+.flush {
+  margin: 0;
+}
+
 /* A fold the reader opens on purpose ("หลักฐานการสุ่ม"): accent label, quiet marker */
 .disclosure > summary {
   cursor: pointer;

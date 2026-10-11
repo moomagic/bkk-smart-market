@@ -96,13 +96,13 @@ section {
   font-size: var(--text-small);
   margin: 0 0 var(--space-2);
 }
-.code {
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-caption);
-  color: var(--muted);
-}
 /* Off quota is allowed (rollover) but worth a look: weight and the warn colour, explained above the table */
 .off-quota {
   color: var(--warn);
   font-weight: 600;
+}
+.off-word {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  margin-left: 2px;
 }

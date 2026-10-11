@@ -87,7 +87,7 @@ test('demo script 1–6', async ({ page, request }) => {
     await run.getByRole('button', { name: 'อนุมัติผล' }).click();
     const confirm = page.getByRole('dialog', { name: 'อนุมัติผลจัดสรร' });
     await expect(confirm).toContainText(ref);
-    await expect(confirm).toContainText('ผู้ค้า 10 คนจะเห็นผลนี้ทันที');
+    await expect(confirm).toContainText('ผู้ค้าที่ผ่านการตรวจสิทธิ 10 คนจะเห็นผลนี้ทันที');
     await confirm.getByRole('button', { name: 'ยืนยันอนุมัติผล' }).click();
     await expect(confirm).toBeHidden();
     await expect(run).toContainText('อนุมัติแล้ว');
@@ -140,7 +140,7 @@ test('demo script 1–6', async ({ page, request }) => {
     await switchRole(page, 'executive');
     await expect(page).toHaveURL(/\/dashboard$/);
     await expectMockBadge(page);
-    const occupancy = page.getByRole('article').filter({ hasText: 'Occupancy' });
+    const occupancy = page.getByRole('article').filter({ hasText: 'การใช้พื้นที่' });
     await expect(occupancy).toContainText(
       `ผู้ได้สิทธิ์ยืนยันแล้ว ${before.count + 1} จาก ${before.of} ล็อค`,
     );

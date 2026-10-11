@@ -6,7 +6,7 @@
       (onClick)="demoTools.toggle($event)" />
     <p-popover #demoTools (onHide)="confirmReset.set(false)">
       <div class="demo-clock" role="group" aria-label="เครื่องมือ demo">
-        <p class="demo-now">เวลา demo <span class="mono">{{ dateTime(now) }}</span></p>
+        <p class="muted text-small flush">เวลา demo <span class="mono">{{ dateTime(now) }}</span></p>
         <div class="actions">
           <p-button variant="outlined" size="small" label="+1 วัน" (onClick)="advanceClock(1)" />
           <p-button variant="outlined" size="small" label="+4 วัน" (onClick)="advanceClock(4)" />
@@ -30,7 +30,9 @@
 @if (!isOfficer()) {
   <p class="muted">สลับบทบาทเป็นเจ้าหน้าที่เขตที่มุมขวาบนเพื่อใช้งาน</p>
 } @else {
-  <section aria-labelledby="rounds-heading">
+  <!-- Two columns from 1024px: the rounds stay in view on the left while the selected round is worked on the right -->
+  <div class="workspace">
+  <section class="rounds-pane" aria-labelledby="rounds-heading">
     <h2 id="rounds-heading">รอบ</h2>
     @switch (rounds().state) {
       @case ('loading') {
@@ -42,11 +44,14 @@
       @case ('ready') {
         @if (currentRounds().length > 0) {
           <h3 class="group-title">รอบที่ต้องดำเนินการ</h3>
-          <ng-container *ngTemplateOutlet="roundTable; context: { $implicit: currentRounds(), label: 'รอบที่ต้องดำเนินการ' }" />
+          <app-round-list label="รอบที่ต้องดำเนินการ" [rounds]="currentRounds()" [selectedId]="selectedId()" (pick)="select($event)" />
         }
         @if (pastRounds().length > 0) {
-          <h3 class="group-title">รอบที่อนุมัติผลแล้ว</h3>
-          <ng-container *ngTemplateOutlet="roundTable; context: { $implicit: pastRounds(), label: 'รอบที่อนุมัติผลแล้ว' }" />
+          <!-- Nothing left to decide in these; folded unless the round being worked on is one of them -->
+          <details class="disclosure past" [open]="selected()?.status === 'Approved'">
+            <summary>รอบที่อนุมัติผลแล้ว ({{ pastRounds().length }})</summary>
+            <app-round-list label="รอบที่อนุมัติผลแล้ว" [rounds]="pastRounds()" [selectedId]="selectedId()" (pick)="select($event)" />
+          </details>
         }
       }
     }
@@ -57,7 +62,7 @@
       <div class="section-head">
         <h2 id="round-heading">
           {{ round.spaceName }}
-          <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}</span>
+          <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับ {{ date(round.applyClosesAt) }}</span>
           <app-status-tag [round]="round.status" />
         </h2>
         <!-- Only the actions for where the round stands; the step strip below already shows what is done -->
@@ -161,7 +166,6 @@
                 <!-- Summary first: who ran it, with which seed, against which quota -->
                 <div class="run-summary">
                   <dl class="run-meta">
-                    <div><dt>เลขอ้างอิง</dt><dd class="mono">{{ run.referenceNo }}</dd></div>
                     <div><dt>เลขตั้งต้นการสุ่ม (seed)</dt><dd class="mono">{{ run.seed }}</dd></div>
                     <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
                     @if (run.decidedAt) {
@@ -189,10 +193,13 @@
                     </p-table>
                     @if (run.pooledDraw) {
                       <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
+                    } @else if (offQuota(run)) {
+                      <p class="muted small-note">ตัวเลขที่ต่างจากโควตามาจากการโอนโควตาของกลุ่มที่ผู้สมัครไม่พอให้กลุ่มถัดไป</p>
                     }
                   </div>
                   <details class="disclosure evidence">
                     <summary>หลักฐานการสุ่ม</summary>
+                    <p class="muted small-note">รันซ้ำด้วยเลขตั้งต้นการสุ่มและข้อมูลนำเข้าชุดเดิมจะได้ผลเดิมทุกครั้ง ค่าแฮชยืนยันว่าข้อมูลนำเข้าไม่ถูกเปลี่ยน</p>
                     <dl>
                       <div><dt>ค่าแฮชข้อมูลนำเข้า (SHA-256)</dt><dd class="mono hash">{{ run.inputHash }}</dd></div>
                       <div>
@@ -260,7 +267,7 @@
                     </form>
                   }
                     <div class="decision-bar">
-                      <p class="decision-note">ตรวจผลรายคนครบแล้ว อนุมัติเพื่อประกาศผล หรือปฏิเสธเพื่อจับฉลากใหม่ด้วย seed ใหม่</p>
+                      <p class="muted text-small flush">ตรวจผลรายคนครบแล้ว อนุมัติเพื่อประกาศผล หรือปฏิเสธเพื่อจับฉลากใหม่ด้วย seed ใหม่</p>
                       <div class="actions">
                         <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
                           [disabled]="deciding() || rejecting() === run.id" />
@@ -368,7 +375,12 @@
         </p-tabpanels>
       </p-tabs>
     </section>
+  } @else if (rounds().state === 'ready') {
+    <section class="round round-empty" aria-label="รายละเอียดรอบ">
+      <p class="muted">เลือกรอบทางซ้ายเพื่อดูคำขอ ผลจัดสรร และประวัติการดำเนินการ</p>
+    </section>
   }
+  </div>
 
   <!-- Approving publishes the result to every applicant and cannot be undone: the dialog restates what is approved -->
   @if (latestRun(); as run) {
@@ -399,36 +411,3 @@
   </p-drawer>
 }
 
-<ng-template #roundTable let-list let-label="label">
-  <p-table class="frame" [value]="list" dataKey="id" [attr.aria-label]="label">
-    <ng-template #header>
-      <tr>
-        <th scope="col">พื้นที่</th>
-        <th scope="col">ช่วงรอบ</th>
-        <th scope="col">ปิดรับ</th>
-        <th scope="col">สถานะ</th>
-        <th scope="col" class="num">คำขอ</th>
-        <th scope="col" class="num">ผ่าน</th>
-        <th scope="col" class="num">ไม่ผ่าน</th>
-      </tr>
-    </ng-template>
-    <ng-template #body let-r>
-      @let round = asRound(r);
-      <!-- The whole row opens the round; the name is the keyboard and screen-reader way in -->
-      <tr class="pick" [class.selected]="round.id === selectedId()" [attr.aria-current]="round.id === selectedId() ? 'true' : null"
-        (click)="select(round)">
-        <td>
-          <p-button link [label]="round.spaceName" [ariaLabel]="'เปิดรอบ ' + round.spaceName + ' ' + date(round.startsOn)"
-            (onClick)="select(round)" />
-        </td>
-        <td>{{ date(round.startsOn) }} – {{ date(round.endsOn) }}</td>
-        <td>{{ date(round.applyClosesAt) }}</td>
-        <td><app-status-tag [round]="round.status" /></td>
-        <td class="num mono">{{ round.requestCount }}</td>
-        <!-- After the draw, eligible requests have become won or waitlisted: the eligible count no longer means "passed" -->
-        <td class="num mono">{{ round.status === 'Drawn' || round.status === 'Approved' ? '–' : round.eligibleCount }}</td>
-        <td class="num mono">{{ round.ineligibleCount }}</td>
-      </tr>
-    </ng-template>
-  </p-table>
-</ng-template>

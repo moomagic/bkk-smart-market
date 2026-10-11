@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, Injector, afterNextRender, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, afterRenderEffect, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Badge } from 'primeng/badge';
 import { Drawer } from 'primeng/drawer';
@@ -16,6 +15,7 @@ import { Observable, catchError, combineLatest, map, of, startWith, switchMap } 
 import { AllocationRun, Api, Category, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
+import { RoundList } from './round-list';
 import { RoundStep, RoundSteps } from './round-steps';
 import { AuditTimeline } from './audit-timeline';
 import { AuditNames } from './audit-view';
@@ -40,7 +40,6 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    NgTemplateOutlet,
     Badge,
     Button,
     Drawer,
@@ -56,6 +55,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
     Tag,
     Textarea,
     ApproveRunDialog,
+    RoundList,
     RoundSteps,
     AuditTimeline,
     StatusTag,
@@ -219,6 +219,17 @@ export class PortalHome {
   private readonly tabList = viewChild(TabList);
 
   constructor() {
+    // On arrival, open the round that needs the officer now: a draw waiting for a decision, else unchecked requests
+    let picked = false;
+    effect(() => {
+      const list = this.roundList();
+      if (picked || this.rounds().state !== 'ready' || untracked(this.selectedId)) return;
+      picked = true;
+      const next =
+        list.find((r) => r.status === 'Drawn') ??
+        list.find((r) => (r.status === 'Open' || r.status === 'Closed') && r.requestCount > r.eligibleCount + r.ineligibleCount);
+      if (next) untracked(() => this.selectedId.set(next.id));
+    });
     // PrimeNG places the active-tab bar when the selected tab changes, not when a tab's width does. The counts on
     // the tabs arrive after the round opens and widen them, so re-place the bar once they have rendered.
     afterRenderEffect(() => {
@@ -259,6 +270,11 @@ export class PortalHome {
   /** Retry after a failed load. */
   protected reload(): void {
     this.refresh.update((n) => n + 1);
+  }
+
+  /** Some group won more or fewer seats than its quota (rollover). */
+  protected offQuota(run: AllocationRun): boolean {
+    return run.quota.some((q) => q.allocated !== q.base);
   }
 
   protected quotaOf(run: AllocationRun, category: Category): number {
@@ -336,6 +352,12 @@ export class PortalHome {
     this.notice.set(null);
     this.tabChoice.set(null);
     this.selectedId.set(round.id);
+    // One column (under 1024px): the round opens below the list, so bring its heading into view
+    if (window.innerWidth < 1024) {
+      afterNextRender(() => document.getElementById('round-heading')?.scrollIntoView({ block: 'start' }), {
+        injector: this.injector,
+      });
+    }
   }
 
   protected checkEligibility(round: RoundSummary): void {

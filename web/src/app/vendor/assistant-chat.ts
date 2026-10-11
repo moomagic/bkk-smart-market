@@ -38,7 +38,7 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source
       <div class="suggestions">
         @for (q of suggestions; track q) {
           <!-- Buttons, not p-chip: each suggestion is an action -->
-          <p-button rounded variant="outlined" severity="secondary" size="small" [label]="q" (onClick)="ask(q)" [disabled]="busy()" />
+          <p-button variant="outlined" severity="secondary" size="small" [label]="q" (onClick)="ask(q)" [disabled]="busy()" />
         }
       </div>
 

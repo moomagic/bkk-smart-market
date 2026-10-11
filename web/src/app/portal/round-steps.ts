@@ -55,6 +55,7 @@ export interface RoundStep {
       color: var(--ink);
       font-weight: 600;
     }
+    .steps li[data-state='done']::after,
     .steps li[data-state='current']::after {
       content: '';
       order: -1;
@@ -62,6 +63,9 @@ export interface RoundStep {
       height: 8px;
       border-radius: 50%;
       border: 2px solid var(--accent);
+    }
+    .steps li[data-state='done']::after {
+      background: var(--accent);
     }
   `,
 })

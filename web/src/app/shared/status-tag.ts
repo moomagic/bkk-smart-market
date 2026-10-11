@@ -22,7 +22,8 @@ const REQUEST_SEVERITY: Record<StallRequestStatus, Severity> = {
 };
 
 const ROUND_SEVERITY: Record<RoundStatus, Severity> = {
-  Open: 'success',
+  // Accepting requests: in progress, not a result — success stays for won, confirmed and approved
+  Open: 'info',
   Closed: 'info',
   // Drawn waits on the officer's approve or reject
   Drawn: 'warn',

@@ -15,7 +15,7 @@ test('the role switcher still shows the chosen role after a reload', async ({ pa
 
   await page.reload();
   await expect(page.getByRole('combobox', { name: 'บทบาท' })).toHaveText(ROLE_LABEL.officer);
-  await expect(page.locator('app-role-switcher')).toContainText('officer · officer-bangphlat');
+  await expect(page.locator('app-role-switcher')).toHaveAttribute('data-confirmed-user', 'officer-bangphlat');
 });
 
 test('running the allocation is blocked until every request has been checked', async ({ page }) => {

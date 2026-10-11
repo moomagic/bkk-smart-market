@@ -162,3 +162,21 @@ app-space-matching {
   display: block;
   margin-top: var(--space-2);
 }
+.next {
+  margin: var(--space-2) 0 0;
+  font-weight: 600;
+}
+/* Notices stay in view at the top of the phone while the thumb is down at the card that caused them */
+.notices {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.toggle.demo {
+  padding: 2px var(--space-2);
+  border: 1px dashed var(--muted);
+  border-radius: 2px;
+}
+.finished {
+  margin-top: var(--space-3);
+}

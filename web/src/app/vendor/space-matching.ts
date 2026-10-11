@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
+import { Panel } from 'primeng/panel';
 import { Select } from 'primeng/select';
 import { StatusTag } from '../shared/status-tag';
 import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, problemMessage } from '../core/api';
@@ -9,11 +10,14 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
 @Component({
   selector: 'app-space-matching',
-  imports: [FormsModule, Button, InputText, Select, StatusTag],
+  imports: [FormsModule, Button, InputText, Panel, Select, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section aria-labelledby="match-heading" class="panel">
-      <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
+    <section aria-labelledby="match-heading">
+      <p-panel toggleable toggler="header" [collapsed]="!open()" (collapsedChange)="open.set(!$event)">
+      <ng-template #header>
+        <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
+      </ng-template>
       <!-- ngNoForm: FormsModule is here only for the select; the form keeps its plain submit -->
       <form ngNoForm (submit)="$event.preventDefault(); find()">
         <label>
@@ -71,11 +75,11 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
           </ol>
         }
       }
+      </p-panel>
     </section>
   `,
   styles: `
-    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: var(--space-4) var(--space-4); }
-    .panel > h2 { font-size: var(--text-h3); margin: 0 0 var(--space-3); }
+    h2 { font-size: var(--text-h3); margin: 0; }
     .find-hint { grid-column: 1 / -1; margin: 0; font-size: var(--text-small); color: var(--muted); }
     form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); align-items: end; }
     label, .field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-small); color: var(--muted); min-width: 0; }
@@ -101,6 +105,8 @@ export class SpaceMatching {
   /** A submit is in flight (from here or from the list below). */
   readonly submitting = input(false);
   readonly submit = output<SpaceSummary>();
+  /** Two-way: the page sets where it starts (open until an application is in play); the vendor's folding wins. */
+  readonly open = model(true);
 
   protected readonly product = signal('');
   protected readonly area = signal('');

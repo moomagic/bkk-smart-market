@@ -154,13 +154,14 @@ export const SmartMarketPreset = definePreset(Aura, {
       },
     },
     // Status pills: small, semibold, 4px corners. Four roles (shared/status-tag.ts), so colour stays rare:
-    //   success   — a good, standing result (won, confirmed, approved run, open round): the accent on accent-soft
-    //   info      — in progress, nothing to do yet (submitted, eligible, waitlisted): ink on the surface, outlined
+    //   success   — a good, standing result (won, confirmed, approved run): the accent on accent-soft
+    //   info      — in progress, nothing to do yet (submitted, eligible, waitlisted, open round): ink, outlined
     //   secondary — over and done (not selected, forfeited, approved round): muted on a quiet fill
     //   warn      — someone has to act (ineligible, a draft awaiting decision, a reply due): --warn on its tint, 4.7:1
     tag: {
       root: {
-        fontSize: '0.75rem',
+        // 13px: Thai tone marks stay legible in a semibold pill
+        fontSize: '0.8125rem',
         fontWeight: '600',
         padding: '2px 8px',
         borderRadius: '{border.radius.sm}',
