@@ -93,7 +93,7 @@ test('a vendor forfeit asks for a second, deliberate click', async ({ page, requ
   await page.goto('/vendor/spaces');
   // สมศรี ใ. submits through the UI, then the officer side is driven through the API.
   await page
-    .getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })
+    .getByRole('region', { name: 'พื้นที่ทั้งหมด' })
     .getByRole('listitem')
     .filter({ hasText: 'ปากซอยจรัญฯ 79' })
     .getByRole('button', { name: 'ยื่นคำขอ' })
@@ -142,7 +142,7 @@ test('← on a request goes back where the vendor came from, or to the requests 
   // A submit from the spaces tab opens the new request; ← goes back to the spaces tab
   await vendorTab(page, 'หาพื้นที่');
   await page
-    .getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })
+    .getByRole('region', { name: 'พื้นที่ทั้งหมด' })
     .getByRole('listitem')
     .filter({ hasText: 'ปากซอยจรัญฯ 79' })
     .getByRole('button', { name: 'ยื่นคำขอ' })
@@ -173,7 +173,7 @@ test('the vendor app opens on its requests tab, with its own app bar instead of 
 
   await vendorTab(page, 'หาพื้นที่');
   await expect(page).toHaveURL(/\/vendor\/spaces$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'หาพื้นที่ขายของ' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'หาพื้นที่ขาย' })).toBeVisible();
   await expect(tabs.getByRole('link', { name: 'หาพื้นที่', exact: true })).toHaveAttribute('aria-current', 'page');
 
   // A direct link to a tab works too
@@ -196,7 +196,7 @@ test('the requests tab greets the vendor and leads to the spaces tab while a rou
   await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
   // สมศรี has only her previous round's request: nothing to do there, the open round is the next step
   await expect(page.getByTestId('todo')).toContainText('รับคำขอรอบใหม่ถึง 31 ต.ค. 2569');
-  await page.getByRole('link', { name: 'หาพื้นที่ขายของ' }).click();
+  await page.getByRole('link', { name: 'หาพื้นที่ขาย' }).click();
   await expect(page).toHaveURL(/\/vendor\/spaces$/);
 });
 
@@ -205,7 +205,7 @@ test('a vendor with no request at all gets an empty state that leads to the spac
   await page.route('**/api/stall-requests/me', (route) => route.fulfill({ json: [] }));
   await page.goto('/vendor');
   await expect(page.getByRole('region', { name: 'คำขอของฉัน' })).toContainText('ยังไม่มีคำขอ');
-  await page.getByRole('link', { name: 'หาพื้นที่ขายของ' }).click();
+  await page.getByRole('link', { name: 'หาพื้นที่ขาย' }).click();
   await expect(page).toHaveURL(/\/vendor\/spaces$/);
 });
 
@@ -241,11 +241,11 @@ test('the spaces tab shows matches in place of the list, keeps them through a su
 }) => {
   await page.setViewportSize(PHONE);
   await page.goto('/vendor/spaces');
-  const all = page.getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' });
+  const all = page.getByRole('region', { name: 'พื้นที่ทั้งหมด' });
   await expect(all).toContainText('ตลาดนัดเขตบางพลัด');
 
   const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
-  await match.getByLabel('ขายอะไร').fill('ข้าวแกง');
+  await match.getByLabel('สินค้าที่ขาย').fill('ข้าวแกง');
   await match.getByLabel('ย่านที่สะดวก').fill('จรัญฯ');
   await match.getByRole('button', { name: 'แนะนำพื้นที่' }).click();
   const first = match.getByRole('listitem').filter({ hasText: '1. ปากซอยจรัญฯ 79' });
@@ -257,14 +257,14 @@ test('the spaces tab shows matches in place of the list, keeps them through a su
   await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toContainText('ยื่นคำขอแล้ว');
   await page.getByRole('button', { name: 'ย้อนกลับ' }).click();
   // Back on the tab, the search is where it was, with the space now marked as applied
-  await expect(match.getByLabel('ขายอะไร')).toHaveValue('ข้าวแกง');
+  await expect(match.getByLabel('สินค้าที่ขาย')).toHaveValue('ข้าวแกง');
   await expect(first).toContainText('ยื่นคำขอแล้ว');
   await expect(first.getByRole('button', { name: 'ยื่นคำขอที่นี่' })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'ดูพื้นที่ทั้งหมด' }).click();
   await expect(all).toContainText('ตลาดนัดเขตบางพลัด');
   // The button pressed is gone with the matches; focus lands on the list it brought back
-  await expect(page.getByRole('heading', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'พื้นที่ทั้งหมด' })).toBeFocused();
   await expect(all.getByRole('listitem').filter({ hasText: 'ปากซอยจรัญฯ 79' })).toContainText('ยื่นคำขอแล้ว');
   await expect(match.getByRole('listitem')).toHaveCount(0);
 });
@@ -274,10 +274,10 @@ test('a search with no match keeps the full list in view', async ({ page }) => {
   await page.route('**/api/spaces/match', (route) => route.fulfill({ json: [] }));
   await page.goto('/vendor/spaces');
   const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
-  await match.getByLabel('ขายอะไร').fill('ของที่ไม่มีที่ไหนรับ');
+  await match.getByLabel('สินค้าที่ขาย').fill('ของที่ไม่มีที่ไหนรับ');
   await match.getByRole('button', { name: 'แนะนำพื้นที่' }).click();
   await expect(match).toContainText('ไม่พบพื้นที่ที่รับสินค้านี้');
-  await expect(page.getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })).toContainText('ตลาดนัดเขตบางพลัด');
+  await expect(page.getByRole('region', { name: 'พื้นที่ทั้งหมด' })).toContainText('ตลาดนัดเขตบางพลัด');
 });
 
 test('the assistant is a full-screen chat that keeps its history across tabs', async ({ page }) => {

@@ -24,7 +24,7 @@ export const VENDOR_ROUTES: Routes = [
         path: 'spaces',
         loadComponent: () => import('./vendor-spaces').then((m) => m.VendorSpaces),
         title: 'หาพื้นที่ · BKK Smart Market',
-        data: { heading: 'หาพื้นที่ขายของ' },
+        data: { heading: 'หาพื้นที่ขาย' },
       },
       {
         path: 'assistant',

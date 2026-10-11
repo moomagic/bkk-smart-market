@@ -3,12 +3,13 @@
 <!-- Once there are matches, they are the list: one list to scroll on a phone, not two -->
 @if (!matching()) {
   <section aria-labelledby="spaces-heading">
-    <h2 id="spaces-heading" tabindex="-1">พื้นที่ค้าขายในเขตบางพลัด</h2>
+    <h2 id="spaces-heading" tabindex="-1">พื้นที่ทั้งหมด</h2>
+    <!-- The deadline, and that a request enters a draw rather than taking a lock (Guardrail 4) -->
     <p class="lead">
-      พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ
       @if (closesAt(); as close) {
-        · <strong>รับคำขอถึง {{ date(close) }}</strong>
+        <strong>รับคำขอถึง {{ date(close) }}</strong> ·
       }
+      คัดเลือกโดยจับฉลาก
     </p>
 
     @switch (spaces().state) {
@@ -22,29 +23,19 @@
         <!-- One list, rows divided: the spaces are peers, not a stack of cards -->
         <ul class="spaces">
           @for (space of spaceList(); track space.id) {
+            @let status = space.openRound ? requestStatusByRound().get(space.openRound.id) : undefined;
             <li>
               <div class="head">
                 <h3>{{ space.name }}</h3>
-                <span class="type">{{ typeLabel[space.type] }}</span>
-              </div>
-              <p class="facts"><span class="mono">{{ space.lockCount }}</span> ล็อค · {{ space.productTypes.join(' · ') }} · {{ space.openHours }}</p>
-              @if (space.openRound; as round) {
-                <p class="meta">
-                  รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}
-                  @if (!closesAt()) {
-                    · ปิดรับ {{ date(round.applyClosesAt) }}
-                  }
-                </p>
-              }
-              @if (space.openRound && session.role() === 'vendor') {
-                @if (requestStatusByRound().get(space.openRound.id); as status) {
-                  <p class="submitted"><app-status-tag [request]="status" /></p>
-                } @else {
-                  <p-button class="submit" variant="outlined" [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
-                    (onClick)="submit(space)" [disabled]="submitting() !== null" />
+                @if (status) {
+                  <app-status-tag [request]="status" />
                 }
-              } @else if (!space.openRound) {
-                <p class="meta">ไม่มีรอบที่เปิดรับคำขอ</p>
+              </div>
+              <app-space-facts [space]="space" [showCloses]="!closesAt()" />
+              <!-- One request per round: once submitted, the status above replaces the button -->
+              @if (space.openRound && !status && session.role() === 'vendor') {
+                <p-button class="submit" variant="outlined" [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
+                  (onClick)="submit(space)" [disabled]="submitting() !== null" />
               }
             </li>
           } @empty {
