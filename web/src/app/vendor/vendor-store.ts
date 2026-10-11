@@ -2,7 +2,7 @@ import { DestroyRef, Injectable, computed, inject, linkedSignal, signal } from '
 import { Router } from '@angular/router';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
-import { Api, AssistantSource, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
+import { Api, AssistantAnswer, AssistantSource, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoRole, DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
 
@@ -12,7 +12,16 @@ const CLOSED = new Set<StallRequestStatus>(['Ineligible', 'NotSelected', 'Forfei
 
 export type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 export type Notice = { kind: 'ok' | 'warn' | 'error'; text: string };
-export type ChatMessage = { from: 'me' | 'assistant'; text: string; found?: boolean; source?: AssistantSource };
+export type ChatMessage = {
+  from: 'me' | 'assistant';
+  text: string;
+  found?: boolean;
+  source?: AssistantSource;
+  /** The rules sections the answer used, as the assistant returned them. */
+  citations?: AssistantAnswer['citations'];
+  /** The question never reached an answer (network or server problem): the text says why. */
+  failed?: boolean;
+};
 
 /**
  * The vendor area's data and actions, shared by every screen in it: the spaces, the vendor's own requests, the
@@ -193,11 +202,11 @@ export class VendorStore {
     this.api.askAssistant(q).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (ans) => {
         a.busy.set(false);
-        a.messages.update((m) => [...m, { from: 'assistant', text: ans.text, found: ans.found, source: ans.source }]);
+        a.messages.update((m) => [...m, { from: 'assistant', text: ans.text, found: ans.found, source: ans.source, citations: ans.citations }]);
       },
       error: (err) => {
         a.busy.set(false);
-        a.messages.update((m) => [...m, { from: 'assistant', text: problemMessage(err), found: false }]);
+        a.messages.update((m) => [...m, { from: 'assistant', text: problemMessage(err), found: false, failed: true }]);
       },
     });
   }
