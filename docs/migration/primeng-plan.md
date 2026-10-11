@@ -92,7 +92,7 @@ Keep = คงไว้ (เปลี่ยนแค่ token) · Replace = แ�
 
 1. **เงื่อนไข `[disabled]`/`@if`** หลุดระหว่างย้าย template → พฤติกรรมเปลี่ยนเงียบๆ (กันด้วย e2e)
 2. **390px**: padding/font ของ Aura ใหญ่กว่าเดิม → ปุ่มสองปุ่มใน `.actions` ตกบรรทัด, ตารางล้น
-3. **Specificity**: style ของ PrimeNG ชนกับ CSS เดิม → ใช้ `cssLayer` และลบ CSS เดิมในคอมมิตเดียวกับที่ย้าย
+3. **Specificity**: PrimeNG อยู่ใน `@layer primeng` ดังนั้น CSS เดิมของแอป (นอก layer) **ชนะเสมอ** รวมถึง element selector อย่าง `button`, `th`, `input`, `select`, `label` ใน component scss — ต้องลบ rule เหล่านั้นในคอมมิตเดียวกับที่ใส่ PrimeNG component ไม่อย่างนั้น `p-button outlined`/`severity` จะถูกทับเงียบๆ
 4. **Bundle**: theme + components เพิ่ม initial size · chart.js ต้องไม่หลุดเข้า initial
 5. **ข้อความ guardrail**: "ยื่นคำขอแล้ว" และ "ข้อมูลจำลอง" ต้องคงทุกหน้า
 

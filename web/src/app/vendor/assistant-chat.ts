@@ -60,7 +60,6 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source
     input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; }
     form button { font: inherit; font-weight: 600; padding: 8px 14px; color: var(--surface); background: var(--accent); border: 0; border-radius: 6px; cursor: pointer; }
     button:disabled { opacity: 0.6; cursor: default; }
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   `,
 })
 export class AssistantChat {

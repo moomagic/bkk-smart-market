@@ -81,8 +81,6 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, problemMessage } from '..
     .score { color: var(--accent); font-weight: 600; }
     .reasons { margin: 6px 0 0; padding-left: 18px; font-size: 0.9rem; }
     .requested { margin: 6px 0 0; font-weight: 600; color: var(--accent); }
-    .muted { color: var(--muted); }
-    .error { color: var(--warn); }
   `,
 })
 export class SpaceMatching {

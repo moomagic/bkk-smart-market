@@ -65,8 +65,6 @@ const STATE_LABEL: Record<AuditChange['State'], string> = { Added: 'สร้า
     .action { font-size: 0.75rem; color: var(--muted); }
     .changes { margin: 4px 0 0; padding-left: 16px; font-size: 0.85rem; overflow-wrap: anywhere; }
     .entity { font: inherit; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; }
-    .muted { color: var(--muted); }
-    .error { color: var(--warn); }
     @media (max-width: 640px) { .timeline > li { grid-template-columns: 1fr; gap: 2px; } }
   `,
 })

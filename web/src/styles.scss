@@ -53,6 +53,27 @@ h1 {
   font-family: var(--font-mono);
 }
 
+/* Shared text utilities. ".small" stays per component: each area sizes and spaces it differently. */
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--warn);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

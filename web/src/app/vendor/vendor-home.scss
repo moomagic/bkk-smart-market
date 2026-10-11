@@ -86,16 +86,11 @@ button:disabled {
   padding: 10px 12px;
   margin: 0 0 16px;
 }
-.notice.error,
-.error {
-  color: var(--warn);
-}
 .notice.error {
+  /* .notice sets ink, which outranks the global .error */
+  color: var(--warn);
   background: var(--surface);
   border: 1px solid var(--warn);
-}
-.muted {
-  color: var(--muted);
 }
 .small {
   font-size: 0.85rem;
