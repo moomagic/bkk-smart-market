@@ -14,7 +14,7 @@ namespace SmartMarket.Api.Tests;
 public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task Somsri_submits_as_the_11th_officer_checks_runs_and_approves_and_she_wins_B2()
+    public async Task Somsri_submits_as_the_11th_officer_checks_runs_and_approves_and_she_wins_and_confirms_B2()
     {
         var officer = api.Officer();
         var somsri = api.ClientAs("vendor", SeedData.Somsri.ToString());
@@ -48,5 +48,10 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
         mine.ReferenceNo.Should().Be("BPL-2569-1025-01");
         mine.ResultReason.Should().Contain("ได้สิทธิ์ในโควตากลุ่มผู้ค้าเดิม");
         mine.ConfirmBy.Should().NotBeNull();
+
+        (await somsri.PostAsync($"/api/stall-requests/{mine.Id}/confirm", null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await somsri.GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
+            .Single(r => r.RoundId == SeedData.CharanCurrentRound)
+            .Should().Match<MyRequestDto>(r => r.Status == "Confirmed" && r.LockCode == "B2");
     }
 }

@@ -166,6 +166,23 @@ export class Api {
     return this.http.get<AllocationRun[]>(`/api/rounds/${roundId}/allocation-runs`);
   }
 
+  confirmStallRequest(requestId: string) {
+    return this.http.post<StallRequest>(`/api/stall-requests/${requestId}/confirm`, null);
+  }
+
+  forfeitStallRequest(requestId: string) {
+    return this.http.post<StallRequest>(`/api/stall-requests/${requestId}/forfeit`, null);
+  }
+
+  /** Development only: 404 elsewhere. */
+  demoClock() {
+    return this.http.get<{ now: string }>('/api/demo/clock');
+  }
+
+  setDemoClock(now: string) {
+    return this.http.post<{ now: string }>('/api/demo/clock', { now });
+  }
+
   approveAllocationRun(runId: string) {
     return this.http.post<AllocationRun>(`/api/allocation-runs/${runId}/approve`, null);
   }

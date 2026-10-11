@@ -29,7 +29,7 @@
                 @if (req.ineligibleReason) {
                   <p class="error">{{ req.ineligibleReason }}</p>
                 }
-                @if (req.status === 'Won' && req.lockCode) {
+                @if ((req.status === 'Won' || req.status === 'Confirmed') && req.lockCode) {
                   <p class="won">ได้ล็อค <span class="mono">{{ req.lockCode }}</span></p>
                 }
                 @if (req.resultReason) {
@@ -37,6 +37,24 @@
                 }
                 @if (req.confirmBy && req.status === 'Won') {
                   <p class="deadline">ยืนยันสิทธิ์ภายใน {{ dateTime(req.confirmBy) }}</p>
+                  <div class="actions">
+                    @if (confirmingForfeit() === req.id) {
+                      <span class="ask">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</span>
+                      <button type="button" class="danger" (click)="forfeit(req)" [disabled]="acting() !== null">
+                        {{ acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์' }}
+                      </button>
+                      <button type="button" class="secondary" (click)="confirmingForfeit.set(null)" [disabled]="acting() !== null">
+                        ไม่สละ
+                      </button>
+                    } @else {
+                      <button type="button" (click)="confirm(req)" [disabled]="acting() !== null">
+                        {{ acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์' }}
+                      </button>
+                      <button type="button" class="secondary" (click)="confirmingForfeit.set(req.id)" [disabled]="acting() !== null">
+                        สละสิทธิ์
+                      </button>
+                    }
+                  </div>
                 }
                 @if (req.referenceNo) {
                   <p class="meta">เลขอ้างอิง <span class="mono">{{ req.referenceNo }}</span></p>

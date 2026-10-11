@@ -39,13 +39,13 @@ public sealed class StallRequestsTests(ApiFactory api) : IDisposable
     public async Task Submitting_writes_one_audit_entry_attributed_to_the_demo_user()
     {
         var vendorId = await NewVendor("ทดสอบ ออดิต");
-        var since = await LatestAuditAt();
+        var since = await api.AuditMark();
 
         var response = await api.ClientAs("vendor", vendorId.ToString())
             .PostAsJsonAsync("/api/stall-requests", new { roundId = SeedData.MrtCurrentRound });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var entries = await AuditSince(since);
+        var entries = await api.AuditSince(since);
         var entry = entries.Should().ContainSingle().Subject;
         entry.Action.Should().Be("StallRequest.Submit");
         entry.EntityType.Should().Be("StallRequest");
@@ -157,19 +157,5 @@ public sealed class StallRequestsTests(ApiFactory api) : IDisposable
                 TestClock.DemoNow.AddMonths(-6), Category.New, StallRequestStatus.Confirmed));
         await db.CommitAsync("Test.CreateVendor", CancellationToken.None);
         return vendor.Id;
-    }
-
-    private async Task<DateTimeOffset> LatestAuditAt()
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.MaxAsync(a => (DateTimeOffset?)a.At) ?? DateTimeOffset.MinValue;
-    }
-
-    private async Task<List<Domain.Audit.AuditEntry>> AuditSince(DateTimeOffset since)
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.Where(a => a.At > since).ToListAsync();
     }
 }

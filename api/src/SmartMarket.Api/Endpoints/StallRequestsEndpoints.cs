@@ -15,6 +15,12 @@ public static class StallRequestsEndpoints
         group.MapGet("/me", async (ListMyStallRequestsHandler handler, CancellationToken ct) =>
             ResultHttp.Ok(await handler.Handle(ct)));
 
+        group.MapPost("/{id:guid}/confirm", async (Guid id, ConfirmStallRequestHandler handler, CancellationToken ct) =>
+            ResultHttp.Ok(await handler.Handle(id, ct)));
+
+        group.MapPost("/{id:guid}/forfeit", async (Guid id, ForfeitStallRequestHandler handler, CancellationToken ct) =>
+            ResultHttp.Ok(await handler.Handle(id, ct)));
+
         return api;
     }
 }

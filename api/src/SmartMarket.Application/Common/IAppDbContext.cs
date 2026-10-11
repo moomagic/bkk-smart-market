@@ -32,4 +32,10 @@ public interface IAppDbContext
     /// <paramref name="subject"/> and is written even when nothing changed (e.g. a re-run eligibility check).
     /// </summary>
     Task CommitAsync(string action, AuditSubject subject, CancellationToken ct);
+
+    /// <summary>
+    /// As <see cref="CommitAsync(string, AuditSubject, CancellationToken)"/>, for what the system does on its own
+    /// (e.g. forfeiting a missed deadline while someone reads): the audit entry names actor "system", not the reader.
+    /// </summary>
+    Task CommitAsSystemAsync(string action, AuditSubject subject, CancellationToken ct);
 }

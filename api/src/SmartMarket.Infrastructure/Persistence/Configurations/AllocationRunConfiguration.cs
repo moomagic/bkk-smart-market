@@ -13,6 +13,7 @@ internal sealed class AllocationRunConfiguration : IEntityTypeConfiguration<Allo
         b.Property(x => x.InputHash).HasMaxLength(64);
         b.Property(x => x.RulesSnapshot).HasColumnType("jsonb");
         b.Property(x => x.ResultJson).HasColumnType("jsonb");
+        b.Property(x => x.CurrentResultJson).HasColumnType("jsonb");
         b.Property(x => x.RanBy).HasMaxLength(100);
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         b.Property(x => x.RejectReason).HasMaxLength(500);

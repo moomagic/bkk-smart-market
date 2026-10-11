@@ -28,6 +28,10 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CurrentResultJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<DateTimeOffset?>("DecidedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -103,6 +107,9 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("ConfirmedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("ForfeitedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("LockId")
                         .HasColumnType("uuid");
 
@@ -119,7 +126,8 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.HasIndex("VendorId");
 
                     b.HasIndex("RoundId", "LockId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"ForfeitedAt\" IS NULL");
 
                     b.HasIndex("RoundId", "VendorId")
                         .IsUnique();

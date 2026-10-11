@@ -20,7 +20,9 @@ public static class DependencyInjection
             .Validate(r => r.IsComplete(), $"appsettings section '{RulesOptions.Section}' is missing or incomplete")
             .ValidateOnStart();
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IClock, DemoClock>();
+        services.AddSingleton<DemoClock>();
+        services.AddSingleton<IDemoClock>(sp => sp.GetRequiredService<DemoClock>());
+        services.AddSingleton<IClock>(sp => sp.GetRequiredService<IDemoClock>());
         services.AddSingleton<ISeedSource>(_ => new DemoSeedSource(new CryptoSeedSource()));
 
         services.AddScoped<AuditInterceptor>();

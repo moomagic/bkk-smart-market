@@ -29,14 +29,20 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     /// <summary>Explicit audit subject for the save in progress, if the command named one.</summary>
     internal AuditSubject? PendingAuditSubject { get; private set; }
 
-    public Task CommitAsync(string action, CancellationToken ct) => Commit(action, null, ct);
+    /// <summary>The save in progress is the system's own doing, not the current actor's.</summary>
+    internal bool PendingAuditBySystem { get; private set; }
 
-    public Task CommitAsync(string action, AuditSubject subject, CancellationToken ct) => Commit(action, subject, ct);
+    public Task CommitAsync(string action, CancellationToken ct) => Commit(action, null, false, ct);
 
-    private async Task Commit(string action, AuditSubject? subject, CancellationToken ct)
+    public Task CommitAsync(string action, AuditSubject subject, CancellationToken ct) => Commit(action, subject, false, ct);
+
+    public Task CommitAsSystemAsync(string action, AuditSubject subject, CancellationToken ct) => Commit(action, subject, true, ct);
+
+    private async Task Commit(string action, AuditSubject? subject, bool bySystem, CancellationToken ct)
     {
         PendingAuditAction = action;
         PendingAuditSubject = subject;
+        PendingAuditBySystem = bySystem;
         try
         {
             await SaveChangesAsync(ct);
@@ -45,6 +51,7 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
         {
             PendingAuditAction = null;
             PendingAuditSubject = null;
+            PendingAuditBySystem = false;
         }
     }
 

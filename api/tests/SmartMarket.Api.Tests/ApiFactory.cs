@@ -35,7 +35,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.ConfigureServices(s => s.AddLogging(l => l
             .SetMinimumLevel(LogLevel.Trace)
             .AddProvider(new CapturingLoggerProvider(Logs))));
-        builder.ConfigureTestServices(s => s.AddSingleton<IClock>(Clock));
+        builder.ConfigureTestServices(s =>
+        {
+            s.AddSingleton<IClock>(Clock);
+            s.AddSingleton<IDemoClock>(Clock);
+        });
     }
 
     private sealed class CapturingLoggerProvider(ConcurrentQueue<string> sink) : ILoggerProvider

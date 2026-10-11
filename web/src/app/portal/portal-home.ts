@@ -95,6 +95,16 @@ export class PortalHome {
     );
   });
 
+  /** Demo clock (Development only); null when the API does not offer it. */
+  protected readonly clock = toSignal(
+    combineLatest([toObservable(this.isOfficer), toObservable(this.refresh)]).pipe(
+      switchMap(([officer]) =>
+        officer ? this.api.demoClock().pipe(map((c) => c.now), catchError(() => of(null))) : of(null),
+      ),
+    ),
+    { initialValue: null as string | null },
+  );
+
   protected readonly running = signal(false);
   protected readonly approving = signal(false);
   protected readonly checking = signal(false);
@@ -151,6 +161,19 @@ export class PortalHome {
         this.approving.set(false);
         this.notice.set({ kind: 'error', text: problemMessage(err) });
       },
+    });
+  }
+
+  protected advanceClock(days: number): void {
+    const now = this.clock();
+    if (!now) return;
+    const next = new Date(new Date(now).getTime() + days * 86_400_000).toISOString();
+    this.api.setDemoClock(next).subscribe({
+      next: (c) => {
+        this.notice.set({ kind: 'ok', text: `เลื่อนเวลา demo เป็น ${formatThaiDateTime(c.now)}` });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => this.notice.set({ kind: 'error', text: problemMessage(err) }),
     });
   }
 }

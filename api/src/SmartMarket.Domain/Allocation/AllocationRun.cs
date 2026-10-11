@@ -21,8 +21,11 @@ public sealed class AllocationRun
     public DateTimeOffset RanAt { get; private set; }
     public string RanBy { get; private set; }
 
-    /// <summary>JSON of the engine's result: quota, outcome and reason per vendor.</summary>
+    /// <summary>JSON of the engine's result: quota, outcome and reason per vendor. Never changes — it is the draw record.</summary>
     public string ResultJson { get; private set; }
+
+    /// <summary>The result as it stands after forfeits and promotions; starts as <see cref="ResultJson"/>.</summary>
+    public string CurrentResultJson { get; private set; }
 
     public AllocationRunStatus Status { get; private set; }
 
@@ -47,6 +50,7 @@ public sealed class AllocationRun
         RanAt = ranAt;
         RanBy = ranBy;
         ResultJson = resultJson;
+        CurrentResultJson = resultJson;
         Status = AllocationRunStatus.Draft;
     }
 
@@ -57,6 +61,13 @@ public sealed class AllocationRun
         Status = AllocationRunStatus.Approved;
         DecidedAt = at;
         DecidedBy = by;
+    }
+
+    public void UpdateCurrentResult(string resultJson)
+    {
+        if (Status != AllocationRunStatus.Approved)
+            throw new InvalidOperationException("Only an approved run's result moves on after the draw.");
+        CurrentResultJson = resultJson;
     }
 
     /// <summary>Statuses that stop a round from being run again: a run awaiting a decision, or one already in force.</summary>

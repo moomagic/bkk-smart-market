@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SmartMarket.Application.Allocation;
 using SmartMarket.Application.Common;
 using SmartMarket.Domain.StallRequests;
 
@@ -19,12 +20,13 @@ public sealed class ListRoundsHandler(IAppDbContext db)
             .ToListAsync(ct);
 }
 
-public sealed class ListRoundRequestsHandler(IAppDbContext db)
+public sealed class ListRoundRequestsHandler(IAppDbContext db, AssignmentExpiry expiry)
 {
     public async Task<Result<IReadOnlyList<RoundRequestRow>>> Handle(Guid roundId, CancellationToken ct)
     {
         if (!await db.Rounds.AnyAsync(r => r.Id == roundId, ct))
             return Error.NotFound("round.not_found", "ไม่พบรอบนี้");
+        await expiry.ForfeitExpired([roundId], ct);
         return await Rows(db, roundId, ct);
     }
 

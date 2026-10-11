@@ -5,13 +5,23 @@ using SmartMarket.Domain.Allocation;
 
 namespace SmartMarket.Application.StallRequests;
 
-public sealed class ListMyStallRequestsHandler(IAppDbContext db, ICurrentActor actor)
+public sealed class ListMyStallRequestsHandler(IAppDbContext db, ICurrentActor actor, AssignmentExpiry expiry)
 {
     public async Task<Result<IReadOnlyList<StallRequestDto>>> Handle(CancellationToken ct)
     {
         if (await VendorLookup.Current(db, actor, ct) is not { } vendor)
             return VendorLookup.Unknown;
-        var vendorId = vendor.Id;
+        var roundIds = await db.StallRequests.Where(q => q.VendorId == vendor.Id).Select(q => q.RoundId).ToListAsync(ct);
+        await expiry.ForfeitExpired(roundIds, ct);
+        return await MyStallRequests.For(db, vendor.Id, ct);
+    }
+}
+
+internal static class MyStallRequests
+{
+    /// <summary>The vendor's requests, newest round first, with outcomes from approved runs only.</summary>
+    public static async Task<List<StallRequestDto>> For(IAppDbContext db, Guid vendorId, CancellationToken ct)
+    {
         var requests = await (
             from req in db.StallRequests.AsNoTracking()
             join r in db.Rounds on req.RoundId equals r.Id
@@ -27,17 +37,18 @@ public sealed class ListMyStallRequestsHandler(IAppDbContext db, ICurrentActor a
                 .Select(r => new { r.RoundId, r.ReferenceNo, r.Status, r.RanAt, r.RejectReason })
                 .ToListAsync(ct))
             .ToLookup(r => r.RoundId);
-        // Outcomes come from the approved run only, so a draft never leaks to vendors.
+        // Outcomes come from the approved run only, so a draft never leaks to vendors; the current result, so a
+        // promoted vendor reads why they moved up.
         var approvedResults = await db.AllocationRuns.AsNoTracking()
             .Where(r => roundIds.Contains(r.RoundId) && r.Status == AllocationRunStatus.Approved)
-            .ToDictionaryAsync(r => r.RoundId, r => r.ResultJson, ct);
+            .ToDictionaryAsync(r => r.RoundId, r => r.CurrentResultJson, ct);
         var assignments = await (
-            from a in db.Assignments.AsNoTracking()
+            from a in db.Assignments.AsNoTracking().Where(Assignment.Active)
             join l in db.Locks on a.LockId equals l.Id
             where a.VendorId == vendorId && roundIds.Contains(a.RoundId)
             select new { a.RoundId, l.Code, a.ConfirmBy }).ToDictionaryAsync(a => a.RoundId, ct);
 
-        return requests.Select(x =>
+        return [.. requests.Select(x =>
         {
             var (req, round) = (x.Request, x.Round);
             var approved = runs[round.Id].FirstOrDefault(r => r.Status == AllocationRunStatus.Approved);
@@ -50,6 +61,6 @@ public sealed class ListMyStallRequestsHandler(IAppDbContext db, ICurrentActor a
                 req.Status, req.IneligibleReason, req.WaitlistPosition, assignment?.Code, outcome?.Reason,
                 approved?.ReferenceNo, assignment?.ConfirmBy,
                 [.. runs[round.Id].Select(r => new RunReference(r.ReferenceNo, r.Status, r.RanAt, r.RejectReason))]);
-        }).ToList();
+        })];
     }
 }

@@ -4,21 +4,26 @@ using SmartMarket.Domain.Allocation;
 
 namespace SmartMarket.Application.Allocation;
 
-public sealed class GetAllocationRunHandler(IAppDbContext db)
+public sealed class GetAllocationRunHandler(IAppDbContext db, AssignmentExpiry expiry)
 {
-    public async Task<Result<AllocationRunDto>> Handle(Guid runId, CancellationToken ct) =>
-        (await AllocationRunQueries.Dtos(db, db.AllocationRuns.Where(r => r.Id == runId), ct)).SingleOrDefault() is { } run
-            ? run
-            : Error.NotFound("allocation_run.not_found", "ไม่พบผลการจัดสรรนี้");
+    public async Task<Result<AllocationRunDto>> Handle(Guid runId, CancellationToken ct)
+    {
+        var roundId = await db.AllocationRuns.Where(r => r.Id == runId).Select(r => (Guid?)r.RoundId).SingleOrDefaultAsync(ct);
+        if (roundId is null)
+            return Error.NotFound("allocation_run.not_found", "ไม่พบผลการจัดสรรนี้");
+        await expiry.ForfeitExpired([roundId.Value], ct);
+        return (await AllocationRunQueries.Dtos(db, db.AllocationRuns.Where(r => r.Id == runId), ct)).Single();
+    }
 }
 
 /// <summary>Every run of a round, newest first — rejected ones stay visible (ADR-0002).</summary>
-public sealed class ListRoundAllocationRunsHandler(IAppDbContext db)
+public sealed class ListRoundAllocationRunsHandler(IAppDbContext db, AssignmentExpiry expiry)
 {
     public async Task<Result<IReadOnlyList<AllocationRunDto>>> Handle(Guid roundId, CancellationToken ct)
     {
         if (!await db.Rounds.AnyAsync(r => r.Id == roundId, ct))
             return Error.NotFound("round.not_found", "ไม่พบรอบนี้");
+        await expiry.ForfeitExpired([roundId], ct);
         return await AllocationRunQueries.Dtos(
             db, db.AllocationRuns.Where(r => r.RoundId == roundId).OrderByDescending(r => r.RanAt), ct);
     }
@@ -26,7 +31,10 @@ public sealed class ListRoundAllocationRunsHandler(IAppDbContext db)
 
 internal static class AllocationRunQueries
 {
-    /// <summary>Unpacks the stored result and joins masked names for display.</summary>
+    /// <summary>
+    /// Unpacks the result as it stands now (forfeits and promotions included — the draw record itself is
+    /// <see cref="AllocationRun.ResultJson"/>) and joins masked names for display.
+    /// </summary>
     public static async Task<List<AllocationRunDto>> Dtos(IAppDbContext db, IQueryable<AllocationRun> runs, CancellationToken ct)
     {
         var rows = await (
@@ -46,7 +54,7 @@ internal static class AllocationRunQueries
 
         return [.. rows.Select(x =>
         {
-            var result = AllocationJson.Deserialize<AllocationResult>(x.Run.ResultJson);
+            var result = AllocationJson.Deserialize<AllocationResult>(x.Run.CurrentResultJson);
             var vendors = byRound[x.Run.RoundId].ToDictionary(v => v.VendorId);
             return new AllocationRunDto(
                 x.Run.Id, x.Run.RoundId, x.SpaceName, x.Run.ReferenceNo, x.Run.Seed, x.Run.InputHash, x.Run.Status,

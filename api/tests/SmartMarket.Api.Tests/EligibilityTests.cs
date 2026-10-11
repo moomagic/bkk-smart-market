@@ -52,11 +52,11 @@ public sealed class EligibilityTests(ApiFactory api)
 
         foreach (var _ in Enumerable.Range(0, 2))
         {
-            var since = await LatestAuditAt();
+            var since = await api.AuditMark();
             (await Officer.PostAsync($"/api/rounds/{SeedData.MrtCurrentRound}/eligibility", null))
                 .StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var entry = (await AuditSince(since)).Should().ContainSingle().Subject;
+            var entry = (await api.AuditSince(since)).Should().ContainSingle().Subject;
             entry.Action.Should().Be("Round.CheckEligibility");
             entry.EntityType.Should().Be("Round");
             entry.EntityId.Should().Be(SeedData.MrtCurrentRound.ToString());
@@ -140,19 +140,5 @@ public sealed class EligibilityTests(ApiFactory api)
             Category.New, status));
         await db.CommitAsync("Test.Arrange", CancellationToken.None);
         return vendor.Id;
-    }
-
-    private async Task<DateTimeOffset> LatestAuditAt()
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.MaxAsync(a => (DateTimeOffset?)a.At) ?? DateTimeOffset.MinValue;
-    }
-
-    private async Task<List<Domain.Audit.AuditEntry>> AuditSince(DateTimeOffset since)
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.Where(a => a.At > since).ToListAsync();
     }
 }

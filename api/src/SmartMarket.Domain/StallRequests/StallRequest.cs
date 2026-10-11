@@ -63,6 +63,33 @@ public sealed class StallRequest
 
     public void MarkNotSelected() => Decide(StallRequestStatus.NotSelected, null);
 
+    // After approval: the winner confirms or forfeits; a forfeit promotes someone from a waitlist.
+
+    public void MarkConfirmed() => Move(StallRequestStatus.Won, StallRequestStatus.Confirmed);
+
+    public void MarkForfeited() => Move(StallRequestStatus.Won, StallRequestStatus.Forfeited);
+
+    public void PromoteToWon()
+    {
+        Move(StallRequestStatus.Waitlisted, StallRequestStatus.Won);
+        WaitlistPosition = null;
+    }
+
+    /// <summary>Someone ahead in the same waitlist was promoted.</summary>
+    public void MoveUpWaitlist(int position)
+    {
+        if (Status != StallRequestStatus.Waitlisted)
+            throw new InvalidOperationException($"Only a waitlisted request has a waitlist position; this one is {Status}.");
+        WaitlistPosition = position;
+    }
+
+    private void Move(StallRequestStatus from, StallRequestStatus to)
+    {
+        if (Status != from)
+            throw new InvalidOperationException($"Only a {from} request can become {to}; this one is {Status}.");
+        Status = to;
+    }
+
     private void Decide(StallRequestStatus outcome, int? waitlistPosition)
     {
         if (Status != StallRequestStatus.Eligible)

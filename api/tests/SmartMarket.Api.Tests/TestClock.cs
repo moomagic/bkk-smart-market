@@ -3,7 +3,7 @@ using SmartMarket.Application.Common;
 namespace SmartMarket.Api.Tests;
 
 /// <summary>Frozen clock the tests move by hand. Starts at the demo default (25 ต.ค. 2569, inside the request window).</summary>
-public sealed class TestClock : IClock
+public sealed class TestClock : IDemoClock
 {
     public static readonly DateTimeOffset DemoNow = new(2026, 10, 25, 9, 0, 0, TimeSpan.FromHours(7));
 

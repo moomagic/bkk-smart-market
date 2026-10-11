@@ -128,3 +128,25 @@ button:disabled {
   margin: 6px 0 0;
   padding-left: 18px;
 }
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.actions button {
+  margin-top: 0;
+}
+button.secondary {
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+}
+button.danger {
+  background: var(--warn);
+}
+.ask {
+  flex-basis: 100%;
+  font-weight: 600;
+}

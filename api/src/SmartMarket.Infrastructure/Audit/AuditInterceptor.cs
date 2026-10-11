@@ -23,6 +23,7 @@ public sealed class AuditInterceptor(IClock clock, ICurrentActor actor) : SaveCh
 {
     public const string UnscopedAction = "Unscoped";
     internal const string Masked = "***";
+    public const string SystemActor = "system";
 
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -62,8 +63,9 @@ public sealed class AuditInterceptor(IClock clock, ICurrentActor actor) : SaveCh
         var (entityType, entityId) = subject is not null
             ? (subject.EntityType, subject.EntityId)
             : (changes[0].Entity, changes[0].Id);
+        var (who, role) = smartMarket?.PendingAuditBySystem == true ? (SystemActor, SystemActor) : (actor.Actor, actor.Role);
         context.Add(new AuditEntry(
-            Guid.CreateVersion7(clock.Now), clock.Now, actor.Actor, actor.Role, action,
+            Guid.CreateVersion7(clock.Now), clock.Now, who, role, action,
             entityType, entityId, JsonSerializer.Serialize(changes, Json)));
     }
 

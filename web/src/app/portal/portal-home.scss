@@ -168,3 +168,14 @@ h3 {
   padding-left: 18px;
   color: var(--muted);
 }
+.demo-clock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.demo-clock button {
+  padding: 4px 10px;
+}

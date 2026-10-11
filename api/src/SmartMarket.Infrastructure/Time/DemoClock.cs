@@ -15,10 +15,10 @@ public sealed class DemoOptions
 }
 
 /// <summary>Real time, shifted so the app starts at <see cref="DemoOptions.Now"/>. Always UTC.</summary>
-public sealed class DemoClock : IClock
+public sealed class DemoClock : IDemoClock
 {
     private readonly TimeProvider _time;
-    private readonly TimeSpan _offset;
+    private TimeSpan _offset;
 
     public DemoClock(TimeProvider time, IOptions<DemoOptions> options)
     {
@@ -27,4 +27,6 @@ public sealed class DemoClock : IClock
     }
 
     public DateTimeOffset Now => (_time.GetUtcNow() + _offset).ToUniversalTime();
+
+    public void Set(DateTimeOffset now) => _offset = now - _time.GetUtcNow();
 }

@@ -1,5 +1,13 @@
 <h1>พอร์ทัลเจ้าหน้าที่เขต</h1>
 
+@if (clock(); as now) {
+  <div class="demo-clock" role="group" aria-label="เวลา demo">
+    <span>เวลา demo <span class="mono">{{ dateTime(now) }}</span></span>
+    <button type="button" class="secondary" (click)="advanceClock(1)">+1 วัน</button>
+    <button type="button" class="secondary" (click)="advanceClock(4)">+4 วัน</button>
+  </div>
+}
+
 @if (!isOfficer()) {
   <p class="muted">สลับบทบาทเป็นเจ้าหน้าที่เขตที่มุมขวาบนเพื่อใช้งาน</p>
 } @else {

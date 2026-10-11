@@ -58,6 +58,10 @@ export class VendorHome {
   });
 
   protected readonly submitting = signal<string | null>(null);
+  /** Request id with a confirm/forfeit in flight. */
+  protected readonly acting = signal<string | null>(null);
+  /** Request id whose forfeit is waiting for a second, deliberate click. */
+  protected readonly confirmingForfeit = signal<string | null>(null);
   protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   protected submit(space: SpaceSummary): void {
@@ -76,6 +80,33 @@ export class VendorHome {
       error: (err) => {
         this.submitting.set(null);
         this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
+  }
+
+  protected confirm(req: StallRequest): void {
+    this.act(req, this.api.confirmStallRequest(req.id), (r) => `ยืนยันสิทธิ์แล้ว · ${r.spaceName} ล็อค ${r.lockCode}`);
+  }
+
+  protected forfeit(req: StallRequest): void {
+    this.act(req, this.api.forfeitStallRequest(req.id), (r) => `สละสิทธิ์แล้ว · ${r.spaceName} — ล็อคส่งต่อให้ผู้สำรองตามลำดับ`);
+  }
+
+  private act(req: StallRequest, call: Observable<StallRequest>, message: (r: StallRequest) => string): void {
+    this.acting.set(req.id);
+    this.notice.set(null);
+    call.subscribe({
+      next: (r) => {
+        this.acting.set(null);
+        this.confirmingForfeit.set(null);
+        this.notice.set({ kind: 'ok', text: message(r) });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.acting.set(null);
+        this.confirmingForfeit.set(null);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+        this.refresh.update((n) => n + 1);
       },
     });
   }

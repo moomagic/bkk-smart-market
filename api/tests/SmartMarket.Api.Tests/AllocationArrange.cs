@@ -1,9 +1,9 @@
 using System.Net;
+using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.Common;
-using SmartMarket.Domain.Audit;
 using SmartMarket.Domain.Rounds;
 using SmartMarket.Domain.Spaces;
 using SmartMarket.Domain.StallRequests;
@@ -58,17 +58,22 @@ internal static class AllocationArrange
         return vendor.Id;
     }
 
-    public static async Task<DateTimeOffset> LatestAuditAt(this ApiFactory api)
+    /// <summary>A fresh round drawn and approved; returns the approved run as the officer saw its draft.</summary>
+    public static async Task<(Guid RoundId, AllocationRunTests.RunDto Run)> ApprovedRound(
+        this ApiFactory api, int legacy, int vulnerable, int @new)
     {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.MaxAsync(a => (DateTimeOffset?)a.At) ?? DateTimeOffset.MinValue;
+        var roundId = await api.CheckedRound(legacy, vulnerable, @new);
+        var response = await api.Officer().PostAsync($"/api/rounds/{roundId}/allocation-runs", null);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var run = (await response.Content.ReadFromJsonAsync<AllocationRunTests.RunDto>(AllocationRunTests.Json))!;
+        (await api.Officer().PostAsync($"/api/allocation-runs/{run.Id}/approve", null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        return (roundId, run);
     }
 
-    public static async Task<List<AuditEntry>> AuditSince(this ApiFactory api, DateTimeOffset since)
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.Where(a => a.At > since).ToListAsync();
-    }
+    public static HttpClient Vendor(this ApiFactory api, Guid vendorId) => api.ClientAs("vendor", vendorId.ToString());
+
+    /// <summary>The vendor's own request in the round, as /stall-requests/me shows it.</summary>
+    public static async Task<ApproveAllocationTests.MyRequestDto> Mine(this ApiFactory api, Guid vendorId, Guid roundId) =>
+        (await api.Vendor(vendorId).GetFromJsonAsync<ApproveAllocationTests.MyRequestDto[]>("/api/stall-requests/me", AllocationRunTests.Json))!
+        .Single(r => r.RoundId == roundId);
 }

@@ -14,8 +14,8 @@ internal sealed class AssignmentConfiguration : IEntityTypeConfiguration<Assignm
         b.HasOne<Round>().WithMany().HasForeignKey(x => x.RoundId);
         b.HasOne<Vendor>().WithMany().HasForeignKey(x => x.VendorId);
         b.HasOne<Lock>().WithMany().HasForeignKey(x => x.LockId);
-        // One lock per vendor per round, one holder per lock per round.
+        // One lock per vendor per round, one active holder per lock (a forfeited row stays as history).
         b.HasIndex(x => new { x.RoundId, x.VendorId }).IsUnique();
-        b.HasIndex(x => new { x.RoundId, x.LockId }).IsUnique();
+        b.HasIndex(x => new { x.RoundId, x.LockId }).IsUnique().HasFilter("\"ForfeitedAt\" IS NULL");
     }
 }

@@ -64,13 +64,13 @@ public sealed class ApproveAllocationTests(ApiFactory api)
         var winner = run.Outcomes.First(o => o.Kind == "Won");
         var waitlisted = run.Outcomes.First(o => o.Kind == "Waitlisted" && o.WaitlistPosition == 1);
 
-        var draft = await Mine(winner.VendorId, roundId);
+        var draft = await api.Mine(winner.VendorId, roundId);
         draft.Should().Match<MyRequestDto>(r => r.Status == "Eligible" && r.LockCode == null && r.ResultReason == null && r.ReferenceNo == null);
         draft.Runs.Should().ContainSingle().Which.Should().Match<RunRefDto>(r => r.ReferenceNo == run.ReferenceNo && r.Status == "Draft");
 
         (await Officer.PostAsync($"/api/allocation-runs/{run.Id}/approve", null)).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var won = await Mine(winner.VendorId, roundId);
+        var won = await api.Mine(winner.VendorId, roundId);
         won.Status.Should().Be("Won");
         won.LockCode.Should().Be(winner.LockCode);
         won.ResultReason.Should().Be(winner.Reason);
@@ -78,7 +78,7 @@ public sealed class ApproveAllocationTests(ApiFactory api)
         won.ConfirmBy.Should().BeCloseTo(TestClock.DemoNow.AddDays(3), TimeSpan.FromSeconds(1));
         won.Runs.Should().ContainSingle().Which.Status.Should().Be("Approved");
 
-        var queued = await Mine(waitlisted.VendorId, roundId);
+        var queued = await api.Mine(waitlisted.VendorId, roundId);
         queued.Should().Match<MyRequestDto>(r => r.Status == "Waitlisted" && r.WaitlistPosition == 1 && r.LockCode == null && r.ConfirmBy == null);
         queued.ResultReason.Should().StartWith("สำรองลำดับ 1 · กลุ่ม");
     }
@@ -87,7 +87,7 @@ public sealed class ApproveAllocationTests(ApiFactory api)
     public async Task One_audit_entry_per_approval_filed_under_the_round()
     {
         var (roundId, run) = await DraftRun(legacy: 1, vulnerable: 1, @new: 2);
-        var since = await api.LatestAuditAt();
+        var since = await api.AuditMark();
 
         (await Officer.PostAsync($"/api/allocation-runs/{run.Id}/approve", null)).StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -133,8 +133,4 @@ public sealed class ApproveAllocationTests(ApiFactory api)
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         return (roundId, (await response.Content.ReadFromJsonAsync<RunDto>(Json))!);
     }
-
-    private async Task<MyRequestDto> Mine(Guid vendorId, Guid roundId) =>
-        (await api.ClientAs("vendor", vendorId.ToString()).GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
-        .Single(r => r.RoundId == roundId);
 }

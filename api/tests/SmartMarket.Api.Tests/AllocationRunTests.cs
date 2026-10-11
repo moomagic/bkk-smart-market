@@ -91,7 +91,7 @@ public sealed class AllocationRunTests(ApiFactory api)
     public async Task One_audit_entry_per_run_filed_under_the_round()
     {
         var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
-        var since = await api.LatestAuditAt();
+        var since = await api.AuditMark();
 
         (await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null)).StatusCode.Should().Be(HttpStatusCode.Created);
 

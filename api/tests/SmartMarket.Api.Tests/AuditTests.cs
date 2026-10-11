@@ -16,7 +16,7 @@ public sealed class AuditTests(ApiFactory api)
     public async Task A_command_writes_one_audit_entry_with_personal_data_masked()
     {
         var vendorId = await NewVendor("ต้นฉบับ ทดสอบ", "089-555-0009");
-        var since = await LatestAuditAt();
+        var since = await api.AuditMark();
 
         await Command("Vendor.UpdateContact", async db =>
         {
@@ -24,7 +24,7 @@ public sealed class AuditTests(ApiFactory api)
             vendor.UpdateContact("ทดสอบ สมมุติ", "089-999-0009");
         });
 
-        var entry = (await AuditSince(since)).Should().ContainSingle().Subject;
+        var entry = (await api.AuditSince(since)).Should().ContainSingle().Subject;
         entry.Action.Should().Be("Vendor.UpdateContact");
         entry.EntityType.Should().Be("Vendor");
         entry.EntityId.Should().Be(vendorId.ToString());
@@ -45,7 +45,7 @@ public sealed class AuditTests(ApiFactory api)
     public async Task A_command_touching_several_entities_still_writes_one_entry()
     {
         var ids = new[] { await NewVendor("หนึ่ง ทดสอบ", "089-555-0010"), await NewVendor("สอง ทดสอบ", "089-555-0011") };
-        var since = await LatestAuditAt();
+        var since = await api.AuditMark();
 
         await Command("Vendor.BulkUpdate", async db =>
         {
@@ -53,25 +53,25 @@ public sealed class AuditTests(ApiFactory api)
                 (await db.Vendors.SingleAsync(v => v.Id == id)).UpdateContact("ผู้ค้า ทดสอบ", "089-999-0010");
         });
 
-        var entry = (await AuditSince(since)).Should().ContainSingle().Subject;
+        var entry = (await api.AuditSince(since)).Should().ContainSingle().Subject;
         entry.Changes.Should().Contain(ids[0].ToString()).And.Contain(ids[1].ToString());
     }
 
     [Fact]
     public async Task A_command_that_changes_nothing_writes_no_entry()
     {
-        var since = await LatestAuditAt();
+        var since = await api.AuditMark();
 
         await Command("Vendor.Noop", db => db.Vendors.FirstAsync());
 
-        (await AuditSince(since)).Should().BeEmpty();
+        (await api.AuditSince(since)).Should().BeEmpty();
     }
 
     [Fact]
     public async Task A_bare_save_is_still_audited_as_unscoped()
     {
         var id = await NewVendor("ไม่ระบุ ทดสอบ", "089-555-0008");
-        var since = await LatestAuditAt();
+        var since = await api.AuditMark();
 
         await using (var scope = api.Services.CreateAsyncScope())
         {
@@ -80,7 +80,7 @@ public sealed class AuditTests(ApiFactory api)
             await db.SaveChangesAsync();
         }
 
-        (await AuditSince(since)).Should().ContainSingle().Which.Action.Should().Be("Unscoped");
+        (await api.AuditSince(since)).Should().ContainSingle().Which.Action.Should().Be("Unscoped");
     }
 
     [Fact]
@@ -116,19 +116,5 @@ public sealed class AuditTests(ApiFactory api)
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
         await work(db);
         await db.CommitAsync(action, CancellationToken.None);
-    }
-
-    private async Task<DateTimeOffset> LatestAuditAt()
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.MaxAsync(a => (DateTimeOffset?)a.At) ?? DateTimeOffset.MinValue;
-    }
-
-    private async Task<List<AuditEntry>> AuditSince(DateTimeOffset since)
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.Where(a => a.At > since).ToListAsync();
     }
 }
