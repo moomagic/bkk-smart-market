@@ -5,6 +5,7 @@ import { Api, SpaceSummary, StallRequest, lockQr, problemMessage } from '../core
 import { DemoSession } from '../core/demo-session';
 import { AssistantChat } from './assistant-chat';
 import { SpaceMatching } from './space-matching';
+import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
   REVIEW_OUTCOME_LABEL,
@@ -20,7 +21,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AssistantChat, SpaceMatching],
+  imports: [AssistantChat, SpaceMatching, StatusTag],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })

@@ -75,9 +75,13 @@ export async function switchRole(
   page: Page,
   role: 'vendor' | 'officer' | 'executive',
 ): Promise<void> {
-  await page.getByLabel('บทบาท').selectOption(role);
+  await page.getByRole('combobox', { name: 'บทบาท' }).click();
+  await page.getByRole('option', { name: ROLE_LABEL[role], exact: true }).click();
   await expect(page.locator('app-role-switcher')).toContainText(`${role} ·`);
 }
+
+/** What the switcher shows for each role. */
+export const ROLE_LABEL = { vendor: 'ผู้ค้า', officer: 'เจ้าหน้าที่เขต', executive: 'ผู้บริหาร' } as const;
 
 /** Guardrail 5: every screen says the data is mock. */
 export async function expectMockBadge(page: Page): Promise<void> {

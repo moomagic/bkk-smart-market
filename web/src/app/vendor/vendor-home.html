@@ -21,7 +21,7 @@
               <li class="card">
                 <div class="head">
                   <h2>{{ req.spaceName }}</h2>
-                  <span class="status">{{ statusLabel[req.status] }}</span>
+                  <app-status-tag [request]="req.status" />
                 </div>
                 <p class="meta">
                   รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}
@@ -163,7 +163,7 @@
             </dl>
             @if (space.openRound && session.role() === 'vendor') {
               @if (requestedRoundIds().has(space.openRound.id)) {
-                <p class="status submitted">{{ statusLabel.Submitted }}</p>
+                <p class="submitted"><app-status-tag request="Submitted" /></p>
               } @else {
                 <button type="button" (click)="submit(space)" [disabled]="submitting() !== null">
                   {{ submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ' }}

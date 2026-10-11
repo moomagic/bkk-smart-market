@@ -7,7 +7,15 @@
       <a routerLink="/portal" routerLinkActive="active">เจ้าหน้าที่</a>
       <a routerLink="/dashboard" routerLinkActive="active">ผู้บริหาร</a>
     </nav>
-    <app-role-switcher />
+    <!-- Deferred: PrimeNG Select would otherwise put ~190 kB into the initial bundle of every page.
+         Loaded right after first render; the placeholder holds the switcher's size so the header doesn't jump. -->
+    @defer (on immediate) {
+      <app-role-switcher />
+    } @placeholder {
+      <span class="role-placeholder" aria-hidden="true"></span>
+    } @error {
+      <span class="role-placeholder muted">โหลดตัวเลือกบทบาทไม่สำเร็จ ลองรีเฟรช</span>
+    }
   </div>
 </header>
 <main>

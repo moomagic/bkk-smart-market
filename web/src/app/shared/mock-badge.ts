@@ -1,19 +1,14 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Tag } from 'primeng/tag';
 
 /** Guardrail 5: every screen says the data is mock. */
 @Component({
   selector: 'app-mock-badge',
+  imports: [Tag],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="badge" role="note">ข้อมูลจำลอง</span>`,
+  template: `<p-tag role="note" value="ข้อมูลจำลอง" severity="warn" />`,
   styles: `
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border: 1px solid var(--warn);
-      border-radius: 4px;
-      color: var(--warn);
-      font-size: 0.75rem;
-      font-weight: 600;
+    :host {
       white-space: nowrap;
     }
   `,

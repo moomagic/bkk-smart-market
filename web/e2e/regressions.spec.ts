@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { CHAI, DESKTOP, DemoApi, openRound, switchRole } from './support';
+import { CHAI, DESKTOP, DemoApi, ROLE_LABEL, openRound, switchRole } from './support';
 
 /** Behaviour that a template rewrite can silently lose: enabled/disabled conditions and the role switcher. */
 
@@ -14,7 +14,7 @@ test('the role switcher still shows the chosen role after a reload', async ({ pa
   await expect(page).toHaveURL(/\/portal$/);
 
   await page.reload();
-  await expect(page.getByLabel('บทบาท')).toHaveValue('officer');
+  await expect(page.getByRole('combobox', { name: 'บทบาท' })).toHaveText(ROLE_LABEL.officer);
   await expect(page.locator('app-role-switcher')).toContainText('officer · officer-bangphlat');
 });
 

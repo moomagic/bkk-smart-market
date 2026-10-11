@@ -86,6 +86,24 @@ export const SmartMarketPreset = definePreset(Aura, {
       },
     },
   },
+  components: {
+    // The old status pill: small, semibold, 4px corners; primary text in the accent itself
+    tag: {
+      root: {
+        fontSize: '0.75rem',
+        fontWeight: '600',
+        padding: '2px 8px',
+        borderRadius: '{border.radius.sm}',
+      },
+      // Warn (the mock-data badge, drafts, Ineligible) is the --warn token itself on a light tint: 4.7:1
+      colorScheme: {
+        light: {
+          primary: { background: '{primary.100}', color: '{primary.600}' },
+          warn: { background: '{orange.50}', color: '{orange.500}' },
+        },
+      },
+    },
+  },
 });
 
 function warnScale() {
