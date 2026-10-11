@@ -85,7 +85,7 @@
                 }
                 @if (canReview(req)) {
                   @if (reviewing() === req.id) {
-                    <form class="review-form" (submit)="$event.preventDefault(); fileReview(req)">
+                    <form ngNoForm class="review-form" (submit)="$event.preventDefault(); fileReview(req)">
                       <label [attr.for]="'review-' + req.id">เหตุผลที่ขอทบทวน</label>
                       <textarea pTextarea [id]="'review-' + req.id" rows="2" maxlength="500" [value]="reviewReason()"
                         (input)="reviewReason.set($any($event.target).value)"></textarea>
@@ -127,7 +127,7 @@
 
 <app-space-matching
   [canSubmit]="submittable()"
-  [requested]="hasRequested()"
+  [requestStatus]="requestStatus()"
   [submitting]="submitting() !== null"
   (submit)="submit($event)"
 />
@@ -163,8 +163,8 @@
               }
             </dl>
             @if (space.openRound && session.role() === 'vendor') {
-              @if (requestedRoundIds().has(space.openRound.id)) {
-                <p class="submitted"><app-status-tag request="Submitted" /></p>
+              @if (requestStatusByRound().get(space.openRound.id); as status) {
+                <p class="submitted"><app-status-tag [request]="status" /></p>
               } @else {
                 <p-button class="submit" fluid [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
                   (onClick)="submit(space)" [disabled]="submitting() !== null" />

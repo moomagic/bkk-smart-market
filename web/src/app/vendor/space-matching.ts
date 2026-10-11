@@ -1,35 +1,41 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
-import { Api, PreferredTime, SpaceMatch, SpaceSummary, problemMessage } from '../core/api';
+import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { InputText } from 'primeng/inputtext';
+import { Select } from 'primeng/select';
+import { StatusTag } from '../shared/status-tag';
+import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, problemMessage } from '../core/api';
 
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
 @Component({
   selector: 'app-space-matching',
+  imports: [FormsModule, Button, Card, InputText, Select, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="match" aria-labelledby="match-heading">
+    <section aria-labelledby="match-heading">
+      <p-card>
       <h1 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h1>
-      <form (submit)="$event.preventDefault(); find()">
+      <!-- ngNoForm: FormsModule is here only for the select; the form keeps its plain submit -->
+      <form ngNoForm (submit)="$event.preventDefault(); find()">
         <label>
           ขายอะไร
-          <input type="text" maxlength="100" placeholder="เช่น ข้าวแกง" [value]="product()"
+          <input pInputText type="text" maxlength="100" placeholder="เช่น ข้าวแกง" [value]="product()"
             (input)="product.set($any($event.target).value)" />
         </label>
         <label>
           ย่านที่สะดวก
-          <input type="text" maxlength="100" placeholder="เช่น จรัญฯ" [value]="area()"
+          <input pInputText type="text" maxlength="100" placeholder="เช่น จรัญฯ" [value]="area()"
             (input)="area.set($any($event.target).value)" />
         </label>
-        <label>
-          ช่วงเวลา
-          <select (change)="time.set($any($event.target).value || null)">
-            <option value="">ไม่ระบุ</option>
-            <option value="Morning">เช้า</option>
-            <option value="Evening">เย็น</option>
-          </select>
-        </label>
-        <button type="submit" [disabled]="busy() || product().trim().length === 0">
-          {{ busy() ? 'กำลังหา…' : 'แนะนำพื้นที่' }}
-        </button>
+        <div class="field">
+          <span id="match-time-label">ช่วงเวลา</span>
+          <!-- "ไม่ระบุ" is no preference (null), as before; the panel goes on body so it stays inside a 390px screen -->
+          <p-select ariaLabelledBy="match-time-label" appendTo="body" fluid placeholder="ไม่ระบุ" [options]="times"
+            optionLabel="label" optionValue="value" [ngModel]="time()" (ngModelChange)="time.set($event)" />
+        </div>
+        <p-button class="find" type="submit" fluid [label]="busy() ? 'กำลังหา…' : 'แนะนำพื้นที่'"
+          [disabled]="busy() || product().trim().length === 0" />
       </form>
 
       @if (error(); as e) {
@@ -51,36 +57,34 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, problemMessage } from '..
                     <li>{{ r }}</li>
                   }
                 </ul>
-                @if (requested()(m.spaceId)) {
-                  <p class="requested">ยื่นคำขอแล้ว</p>
+                @if (requestStatus()(m.spaceId); as status) {
+                  <p class="requested"><app-status-tag [request]="status" /></p>
                 } @else if (canSubmit()(m.spaceId); as space) {
-                  <button type="button" class="secondary" (click)="submit.emit(space)" [disabled]="submitting()">ยื่นคำขอที่นี่</button>
+                  <p-button class="submit-here" variant="outlined" label="ยื่นคำขอที่นี่" (onClick)="submit.emit(space)"
+                    [disabled]="submitting()" />
                 }
               </li>
             }
           </ol>
         }
       }
+      </p-card>
     </section>
   `,
   styles: `
-    .match { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
     h1 { font-size: 1.1rem; margin: 0 0 10px; }
     form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-items: end; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+    label, .field { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); min-width: 0; }
     label:first-child { grid-column: 1 / -1; }
-    input, select { font: inherit; color: var(--ink); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); min-width: 0; }
-    form button { grid-column: 1 / -1; }
-    button { font: inherit; font-weight: 600; padding: 8px 14px; color: var(--surface); background: var(--accent); border: 0; border-radius: 6px; cursor: pointer; }
-    button.secondary { color: var(--accent); background: var(--surface); border: 1px solid var(--accent); margin-top: 6px; }
-    button:disabled { opacity: 0.6; cursor: default; }
+    .find { grid-column: 1 / -1; }
+    .submit-here { display: inline-block; margin-top: 6px; }
     .results { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
     .results > li { border-top: 1px solid var(--line); padding-top: 10px; }
     .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
     h2 { font-size: 1rem; margin: 0; }
     .score { color: var(--accent); font-weight: 600; }
     .reasons { margin: 6px 0 0; padding-left: 18px; font-size: 0.9rem; }
-    .requested { margin: 6px 0 0; font-weight: 600; color: var(--accent); }
+    .requested { margin: 6px 0 0; }
   `,
 })
 export class SpaceMatching {
@@ -88,8 +92,8 @@ export class SpaceMatching {
 
   /** Given a space id, the space the vendor can submit to now — or null (no open round, already requested, not a vendor). */
   readonly canSubmit = input.required<(spaceId: string) => SpaceSummary | null>();
-  /** True when the vendor already has a request in the space's open round. */
-  readonly requested = input.required<(spaceId: string) => boolean>();
+  /** The vendor's request status in the space's open round, or null when they have none there. */
+  readonly requestStatus = input.required<(spaceId: string) => StallRequestStatus | null>();
   /** A submit is in flight (from here or from the list below). */
   readonly submitting = input(false);
   readonly submit = output<SpaceSummary>();
@@ -97,6 +101,11 @@ export class SpaceMatching {
   protected readonly product = signal('');
   protected readonly area = signal('');
   protected readonly time = signal<PreferredTime | null>(null);
+  protected readonly times: { label: string; value: PreferredTime | null }[] = [
+    { label: 'ไม่ระบุ', value: null },
+    { label: 'เช้า', value: 'Morning' },
+    { label: 'เย็น', value: 'Evening' },
+  ];
   protected readonly busy = signal(false);
   protected readonly results = signal<SpaceMatch[] | null>(null);
   protected readonly error = signal<string | null>(null);

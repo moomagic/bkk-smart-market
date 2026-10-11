@@ -8,7 +8,7 @@ import { Message } from 'primeng/message';
 import { Tag } from 'primeng/tag';
 import { Textarea } from 'primeng/textarea';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { Api, SpaceSummary, StallRequest, lockQr, problemMessage } from '../core/api';
+import { Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AssistantChat } from './assistant-chat';
 import { SpaceMatching } from './space-matching';
@@ -67,15 +67,16 @@ export class VendorHome {
     { initialValue: null as Load<StallRequest[]> | null },
   );
 
-  protected readonly requestedRoundIds = computed(() => {
+  /** The vendor's request status in each round they applied to. */
+  protected readonly requestStatusByRound = computed(() => {
     const mine = this.myRequests();
-    return new Set(mine?.state === 'ready' ? mine.data.map((r) => r.roundId) : []);
+    return new Map(mine?.state === 'ready' ? mine.data.map((r) => [r.roundId, r.status]) : []);
   });
 
   /** A matched space the vendor can submit to right now, for the "ยื่นคำขอที่นี่" button. */
   protected readonly submittable = computed(() => {
     const spaces = this.spaceList();
-    const requested = this.requestedRoundIds();
+    const requested = this.requestStatusByRound();
     const isVendor = this.session.role() === 'vendor';
     return (spaceId: string): SpaceSummary | null => {
       const space = spaces.find((s) => s.id === spaceId);
@@ -83,12 +84,13 @@ export class VendorHome {
     };
   });
 
-  protected readonly hasRequested = computed(() => {
+  /** The status of the vendor's request in a space's open round, or null when they have none there. */
+  protected readonly requestStatus = computed(() => {
     const spaces = this.spaceList();
-    const requested = this.requestedRoundIds();
-    return (spaceId: string) => {
+    const requested = this.requestStatusByRound();
+    return (spaceId: string): StallRequestStatus | null => {
       const round = spaces.find((s) => s.id === spaceId)?.openRound;
-      return !!round && requested.has(round.id);
+      return (round && requested.get(round.id)) ?? null;
     };
   });
 
