@@ -56,6 +56,7 @@ public sealed class AuditInterceptor(IClock clock, ICurrentActor actor) : SaveCh
             .Cast<EntityChange>()
             .ToList();
         var smartMarket = context as SmartMarketDbContext;
+        if (smartMarket?.SeedingWithoutAudit == true) return;
         var subject = smartMarket?.PendingAuditSubject;
         if (changes.Count == 0 && subject is null) return;
 

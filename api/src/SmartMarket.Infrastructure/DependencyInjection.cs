@@ -9,6 +9,7 @@ using SmartMarket.Infrastructure.Allocation;
 using SmartMarket.Infrastructure.Assistant;
 using SmartMarket.Infrastructure.Audit;
 using SmartMarket.Infrastructure.Persistence;
+using SmartMarket.Infrastructure.Seed;
 using SmartMarket.Infrastructure.Time;
 
 namespace SmartMarket.Infrastructure;
@@ -43,6 +44,8 @@ public static class DependencyInjection
     public static async Task MigrateDatabaseAsync(this IServiceProvider services, CancellationToken ct = default)
     {
         await using var scope = services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<SmartMarketDbContext>().Database.MigrateAsync(ct);
+        var db = scope.ServiceProvider.GetRequiredService<SmartMarketDbContext>();
+        await db.Database.MigrateAsync(ct);
+        await HistorySeed.ApplyAsync(db, ct);
     }
 }

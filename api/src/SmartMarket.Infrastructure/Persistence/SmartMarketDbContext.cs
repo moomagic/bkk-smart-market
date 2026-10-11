@@ -34,6 +34,22 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     /// <summary>The save in progress is the system's own doing, not the current actor's.</summary>
     internal bool PendingAuditBySystem { get; private set; }
 
+    /// <summary>Seed data is written without audit entries, as HasData seeding is (it is not anyone's command).</summary>
+    internal bool SeedingWithoutAudit { get; private set; }
+
+    internal async Task SaveSeedAsync(CancellationToken ct)
+    {
+        SeedingWithoutAudit = true;
+        try
+        {
+            await SaveChangesAsync(ct);
+        }
+        finally
+        {
+            SeedingWithoutAudit = false;
+        }
+    }
+
     public Task CommitAsync(string action, CancellationToken ct) => Commit(action, null, false, ct);
 
     public Task CommitAsync(string action, AuditSubject subject, CancellationToken ct) => Commit(action, subject, false, ct);

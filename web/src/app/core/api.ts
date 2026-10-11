@@ -178,6 +178,33 @@ export interface SpaceMatch {
   reasons: string[];
 }
 
+export interface Ratio {
+  count: number;
+  of: number;
+  percent: number | null;
+}
+
+export interface DashboardSpaceRow {
+  spaceId: string;
+  name: string;
+  roundId: string | null;
+  startsOn: string | null;
+  endsOn: string | null;
+  referenceNo: string | null;
+  locks: number;
+  winners: number;
+  confirmed: number;
+  quota: { category: Category; base: number; winners: number }[];
+}
+
+export interface DashboardKpis {
+  occupancy: Ratio;
+  leadTime: { medianDays: number | null; runs: number };
+  newVendors: Ratio;
+  fairRotation: Ratio;
+  spaces: DashboardSpaceRow[];
+}
+
 export interface Session {
   user: string;
   role: string;
@@ -237,6 +264,10 @@ export class Api {
 
   matchSpaces(productType: string, preferredArea: string, preferredTime: PreferredTime | null) {
     return this.http.post<SpaceMatch[]>('/api/spaces/match', { productType, preferredArea, preferredTime });
+  }
+
+  dashboard() {
+    return this.http.get<DashboardKpis>('/api/dashboard/kpis');
   }
 
   askAssistant(question: string) {

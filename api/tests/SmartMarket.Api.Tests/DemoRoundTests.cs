@@ -19,6 +19,7 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
     {
         var officer = api.Officer();
         var somsri = api.ClientAs("vendor", SeedData.Somsri.ToString());
+        var before = await DashboardTests.Kpis(officer);
         (await somsri.PostAsJsonAsync("/api/stall-requests", new { roundId = SeedData.CharanCurrentRound }))
             .StatusCode.Should().Be(HttpStatusCode.Created);
         (await officer.PostAsync($"/api/rounds/{SeedData.CharanCurrentRound}/eligibility", null))
@@ -54,6 +55,10 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
         (await somsri.GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
             .Single(r => r.RoundId == SeedData.CharanCurrentRound)
             .Should().Match<MyRequestDto>(r => r.Status == "Confirmed" && r.LockCode == "B2");
+        var after = await DashboardTests.Kpis(officer);
+        after.Occupancy.Count.Should().Be(before.Occupancy.Count + 1, "สมศรี ใ. confirmed B2");
+        after.Occupancy.Of.Should().Be(before.Occupancy.Of, "the locks stay the same");
+        after.LeadTime.Runs.Should().Be(before.LeadTime.Runs + 1);
 
         (await somsri.PostAsJsonAsync("/api/check-ins", new
         {

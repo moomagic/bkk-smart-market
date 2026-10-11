@@ -39,6 +39,7 @@ api.MapAllocationRuns();
 api.MapCheckIns();
 api.MapAudit();
 api.MapAssistant();
+api.MapDashboard();
 if (app.Environment.IsDevelopment())
     api.MapDemo();
 

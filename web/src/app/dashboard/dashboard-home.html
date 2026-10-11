@@ -1,0 +1,119 @@
+<h1>ภาพรวมผู้บริหาร · เขตบางพลัด</h1>
+
+@if (!canRead()) {
+  <p class="muted">สลับบทบาทเป็นผู้บริหารหรือเจ้าหน้าที่เขตที่มุมขวาบนเพื่อดูภาพรวม</p>
+} @else {
+  @switch (kpis().state) {
+    @case ('loading') {
+      <p class="muted">กำลังโหลด…</p>
+    }
+    @case ('error') {
+      <p class="error">โหลดตัวชี้วัดไม่สำเร็จ</p>
+    }
+  }
+
+  @if (data(); as k) {
+    <section class="kpis" aria-label="ตัวชี้วัดหลัก">
+      <article class="tile">
+        <h2>การใช้พื้นที่ (Occupancy)</h2>
+        <p class="value mono">{{ pct(k.occupancy) }}</p>
+        <p class="detail">ล็อคที่ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
+      </article>
+      <article class="tile">
+        <h2>ความเร็ว (LeadTime)</h2>
+        <p class="value mono">{{ k.leadTime.medianDays === null ? '–' : k.leadTime.medianDays + ' วัน' }}</p>
+        <p class="detail">มัธยฐานจากปิดรับคำขอถึงอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
+      </article>
+      <article class="tile">
+        <h2>ผู้ค้าหน้าใหม่ (NewVendors)</h2>
+        <p class="value mono">{{ pct(k.newVendors) }}</p>
+        <p class="detail">ผู้ได้สิทธิ์กลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} จาก {{ k.newVendors.of }} คน</p>
+      </article>
+      <article class="tile">
+        <h2>การหมุนเวียน (FairRotation)</h2>
+        <p class="value mono">{{ pct(k.fairRotation) }}</p>
+        <p class="detail">ผู้ได้สิทธิ์ที่ไม่ได้ถือล็อคที่เดิมรอบก่อน {{ k.fairRotation.count }} จาก {{ k.fairRotation.of }} คน</p>
+      </article>
+    </section>
+
+    <section aria-labelledby="quota-heading">
+      <h2 id="quota-heading">ผู้ได้สิทธิ์จริงเทียบโควตา</h2>
+      <p class="muted small">แท่ง = ผู้ได้สิทธิ์ตอนนี้ · เส้นตั้ง = โควตาของกลุ่ม · เกินโควตาได้จากการโอนโควตาที่ผู้สมัครไม่พอ</p>
+      <ul class="legend" aria-label="คำอธิบายสี">
+        @for (c of categories; track c) {
+          <li><span class="swatch" [attr.data-category]="c"></span>{{ categoryLabel[c] }}</li>
+        }
+      </ul>
+      <div class="chart">
+        @for (row of k.spaces; track row.spaceId) {
+          <div class="space">
+            <div class="space-name">
+              {{ row.name }}
+              @if (row.referenceNo) {
+                <span class="mono muted">{{ row.referenceNo }}</span>
+              } @else {
+                <span class="muted">ยังไม่มีผลจัดสรรที่อนุมัติ</span>
+              }
+            </div>
+            @if (row.referenceNo) {
+              @for (c of categories; track c) {
+                @if (quotaFor(row, c); as q) {
+                  <div class="bar-row" [attr.title]="categoryLabel[c] + ': ได้สิทธิ์ ' + q.winners + ' · โควตา ' + q.base">
+                    <span class="bar-label">{{ categoryLabel[c] }}</span>
+                    <span class="track">
+                      <span class="bar" [attr.data-category]="c" [style.width]="width(q.winners)"></span>
+                      <span class="target" [style.left]="width(q.base)"></span>
+                    </span>
+                    <span class="bar-value mono">{{ q.winners }}/{{ q.base }}</span>
+                  </div>
+                }
+              }
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <section aria-labelledby="spaces-heading">
+      <h2 id="spaces-heading">รายพื้นที่</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">พื้นที่</th>
+              <th scope="col">รอบ</th>
+              <th scope="col">เลขอ้างอิง</th>
+              <th scope="col" class="num">ล็อค</th>
+              <th scope="col" class="num">ได้สิทธิ์</th>
+              <th scope="col" class="num">ยืนยันแล้ว</th>
+              @for (c of categories; track c) {
+                <th scope="col" class="num">{{ categoryLabel[c] }} (จริง/โควตา)</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of k.spaces; track row.spaceId) {
+              <tr>
+                <td>{{ row.name }}</td>
+                <td>{{ row.startsOn ? date(row.startsOn) + ' – ' + date(row.endsOn!) : '–' }}</td>
+                <td class="mono">{{ row.referenceNo ?? '–' }}</td>
+                <td class="num mono">{{ row.locks }}</td>
+                <td class="num mono">{{ row.winners }}</td>
+                <td class="num mono">{{ row.confirmed }}</td>
+                @for (c of categories; track c) {
+                  <td class="num mono">
+                    @if (quotaFor(row, c); as q) {
+                      {{ q.winners }}/{{ q.base }}
+                    } @else {
+                      –
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+}
