@@ -12,6 +12,7 @@ import { Observable, catchError, combineLatest, map, of, startWith, switchMap } 
 import { AllocationRun, Api, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AuditTimeline } from './audit-timeline';
+import { AuditNames } from './audit-view';
 import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
@@ -74,6 +75,15 @@ export class PortalHome {
   protected readonly requestRows = computed(() => {
     const r = this.requests();
     return r?.state === 'ready' ? r.data : [];
+  });
+
+  /** Masked names of the selected round's vendors, so the audit trail names people instead of ids. */
+  protected readonly auditNames = computed<AuditNames>(() => {
+    const rows = this.requestRows();
+    return {
+      requests: new Map(rows.map((r) => [r.requestId, r.vendorName])),
+      vendors: new Map(rows.map((r) => [r.vendorId, r.vendorName])),
+    };
   });
 
   /** Every run of the selected round, newest first (rejected ones stay visible). */

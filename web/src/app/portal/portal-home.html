@@ -324,7 +324,8 @@
           [entityType]="t.type"
           [entityId]="t.id"
           [version]="refreshCount()"
-          (openEntity)="auditTarget.set({ type: $event.type, id: $event.id, label: $event.type + ' …' + $event.id.slice(-8) })"
+          [names]="auditNames()"
+          (openEntity)="auditTarget.set($event)"
         />
       </section>
     }
