@@ -65,6 +65,8 @@ export class RequestDetail {
   protected readonly confirmingForfeit = signal(false);
   protected readonly reviewing = signal(false);
   protected readonly reviewReason = signal('');
+  /** The vendor confirmed on this screen just now: the pass arrives once, instead of on every later visit. */
+  protected readonly justConfirmed = signal(false);
 
   constructor() {
     // The component stays when only :id changes; a prompt or a half-typed reason belongs to the request it was for
@@ -74,6 +76,7 @@ export class RequestDetail {
         this.confirmingForfeit.set(false);
         this.reviewing.set(false);
         this.reviewReason.set('');
+        this.justConfirmed.set(false);
       });
     });
   }
@@ -83,7 +86,8 @@ export class RequestDetail {
   }
 
   protected async confirm(req: StallRequest): Promise<void> {
-    await this.store.confirm(req);
+    // Only a confirm the server accepted earns the arrival
+    if (await this.store.confirm(req)) this.justConfirmed.set(true);
     this.confirmingForfeit.set(false);
   }
 

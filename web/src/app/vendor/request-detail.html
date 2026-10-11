@@ -19,8 +19,10 @@
 
         @if (req.status === 'Confirmed' && req.lockCode) {
           <!-- The vendor's lock, and when it is theirs to trade from: the one thing this screen is for once confirmed -->
-          <div class="pass">
-            <p class="pass-lock">ล็อค <span class="mono">{{ req.lockCode }}</span></p>
+          <!-- Confirmed on this screen just now: the pass settles in and the lock code follows a beat behind —
+               the one success moment in the vendor app, played once -->
+          <div class="pass success" [class.arrive]="justConfirmed()">
+            <p class="pass-lock success" style="--i: 1" [class.arrive]="justConfirmed()">ล็อค <span class="mono">{{ req.lockCode }}</span></p>
             <p class="pass-when">ขายได้ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }}</p>
             @if (space()?.openHours; as hours) {
               <p class="pass-hours">{{ hours }}</p>
