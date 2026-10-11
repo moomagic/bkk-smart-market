@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { Message } from 'primeng/message';
@@ -52,13 +52,14 @@ const TABS = [
     </div>
 
     <!-- The app root keeps the page's one <main>; this is the scrolling screen inside it -->
-    <div class="screen">
+    <div #screen class="screen">
       <router-outlet />
     </div>
 
     <nav class="tabs" aria-label="เมนูหลัก">
       @for (tab of tabs; track tab.path) {
-        <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <!-- A tab is a fresh screen: the last screen's notice stays behind -->
+        <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="store.notice.set(null)">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             @switch (tab.path) {
               @case ('requests') {
@@ -191,6 +192,14 @@ export class VendorShell {
 
   protected readonly tabs = TABS;
   protected readonly demoOpen = signal(false);
+  private readonly screen = viewChild.required<ElementRef<HTMLElement>>('screen');
+
+  constructor() {
+    // The screens share one scroll container, which the router's scroll restoration (window only) never touches
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed())
+      .subscribe(() => this.screen().nativeElement.scrollTo({ top: 0 }));
+  }
 
   /** The screen's name for the app bar, from the active child route. */
   protected readonly heading = toSignal(

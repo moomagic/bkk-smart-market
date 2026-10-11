@@ -86,9 +86,9 @@ export async function switchRole(
   await page.getByRole('option', { name: ROLE_LABEL[role], exact: true }).click();
   if (role === 'vendor') {
     // The vendor app opens with its demo menu folded, so the switcher's API echo is not on screen;
-    // the vendor's own requests loading proves the headers arrived instead.
+    // สมศรี ใ.'s own request from the previous round (seed) loading proves the headers arrived instead.
     await expect(page).toHaveURL(/\/vendor\/requests$/);
-    await expect(page.getByRole('region', { name: 'คำขอของฉัน' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'คำขอของฉัน' })).toContainText('รอบ 1 พ.ค. 2569');
   } else {
     await expect(page.locator('app-role-switcher')).toHaveAttribute('data-confirmed-role', role);
   }

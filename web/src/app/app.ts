@@ -35,7 +35,8 @@ export class App {
       filter((e) => e instanceof NavigationEnd),
       map((e) => isVendorUrl(e.urlAfterRedirects)),
     ),
-    { initialValue: isVendorUrl(location.pathname) },
+    // Before the first navigation: everything but the portal and dashboard redirects into /vendor
+    { initialValue: !/^\/(portal|dashboard)(\/|$)/.test(location.pathname) },
   );
 }
 
