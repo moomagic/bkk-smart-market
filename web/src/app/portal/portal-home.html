@@ -5,7 +5,13 @@
     <span>เวลา demo <span class="mono">{{ dateTime(now) }}</span></span>
     <button type="button" class="secondary" (click)="advanceClock(1)">+1 วัน</button>
     <button type="button" class="secondary" (click)="advanceClock(4)">+4 วัน</button>
+    <button type="button" class="secondary" [class.danger-outline]="confirmReset()" (click)="resetDemo()">
+      {{ confirmReset() ? 'กดอีกครั้งเพื่อล้างข้อมูลทั้งหมด' : 'เริ่ม demo ใหม่' }}
+    </button>
   </div>
+}
+@if (!selected() && notice(); as n) {
+  <p class="notice" [class.error]="n.kind === 'error'" role="status">{{ n.text }}</p>
 }
 
 @if (!isOfficer()) {

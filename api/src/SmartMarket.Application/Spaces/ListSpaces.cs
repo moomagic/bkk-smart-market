@@ -13,14 +13,21 @@ public sealed record SpaceSummary(
 
 public sealed class ListSpacesHandler(IAppDbContext db, IClock clock)
 {
-    public async Task<IReadOnlyList<SpaceSummary>> Handle(Guid? districtId, SpaceType? type, CancellationToken ct)
+    public Task<List<SpaceSummary>> Handle(Guid? districtId, SpaceType? type, CancellationToken ct) =>
+        Query(s => (districtId == null || s.DistrictId == districtId) && (type == null || s.Type == type), ct);
+
+    public async Task<Result<SpaceSummary>> Handle(Guid spaceId, CancellationToken ct) =>
+        (await Query(s => s.Id == spaceId, ct)).SingleOrDefault() is { } space
+            ? space
+            : Error.NotFound("space.not_found", "ไม่พบพื้นที่นี้");
+
+    private async Task<List<SpaceSummary>> Query(System.Linq.Expressions.Expression<Func<Space, bool>> filter, CancellationToken ct)
     {
         var now = clock.Now;
         return await db.Spaces
             .AsNoTracking()
             .Where(s => s.IsActive)
-            .Where(s => districtId == null || s.DistrictId == districtId)
-            .Where(s => type == null || s.Type == type)
+            .Where(filter)
             .OrderBy(s => s.Name)
             .Select(s => new SpaceSummary(
                 s.Id, s.Name, s.Type, s.Locks.Count, s.ProductTypes, s.OpenHours,

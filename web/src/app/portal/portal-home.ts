@@ -238,6 +238,26 @@ export class PortalHome {
     });
   }
 
+  /** Two clicks: the first arms it, the second wipes everything back to the seed. */
+  protected readonly confirmReset = signal(false);
+
+  protected resetDemo(): void {
+    if (!this.confirmReset()) {
+      this.confirmReset.set(true);
+      return;
+    }
+    this.confirmReset.set(false);
+    this.api.resetDemo().subscribe({
+      next: (c) => {
+        this.selectedId.set(null);
+        this.auditTarget.set(null);
+        this.notice.set({ kind: 'ok', text: `เริ่ม demo ใหม่แล้ว · ข้อมูลกลับเป็นค่าเริ่มต้น · เวลา ${formatThaiDateTime(c.now)}` });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => this.notice.set({ kind: 'error', text: problemMessage(err) }),
+    });
+  }
+
   protected advanceClock(days: number): void {
     const now = this.clock();
     if (!now) return;

@@ -30,4 +30,13 @@ public sealed class SpacesTests(ApiFactory api)
 
         spaces!.Select(s => s.Name).Should().Equal("ลานใต้สะพานพระราม 8");
     }
+
+    [Fact]
+    public async Task One_space_by_id_with_its_open_round()
+    {
+        var space = await api.CreateClient().GetFromJsonAsync<SpaceDto>($"/api/spaces/{SeedData.PakSoiCharan79}");
+
+        space!.Name.Should().Be("ปากซอยจรัญฯ 79");
+        (await api.CreateClient().GetAsync($"/api/spaces/{Guid.NewGuid()}")).StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
+    }
 }

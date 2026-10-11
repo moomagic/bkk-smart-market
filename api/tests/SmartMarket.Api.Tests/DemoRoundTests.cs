@@ -9,13 +9,41 @@ using static SmartMarket.Api.Tests.ApproveAllocationTests;
 namespace SmartMarket.Api.Tests;
 
 /// <summary>
-/// The demo script on the seeded ปากซอยจรัญฯ 79 round, end to end, as one test: it draws that round, so it runs
-/// against a database of its own rather than the shared <see cref="ApiCollection"/> one.
+/// The demo script on the seeded ปากซอยจรัญฯ 79 round, end to end, then again after a reset. It draws that round, so it
+/// runs against a database of its own rather than the shared <see cref="ApiCollection"/> one, and the script is one test
+/// so nothing else touches that round in between (the forbidden-reset test changes nothing).
 /// </summary>
 public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task Somsri_submits_as_the_11th_officer_checks_runs_and_approves_and_she_wins_confirms_and_checks_in_at_B2()
+    public async Task The_demo_script_runs_end_to_end_and_again_after_a_reset()
+    {
+        var before = await DashboardTests.Kpis(api.Officer());
+        await RunDemoScript();
+        api.Clock.Set(TestClock.DemoNow.AddDays(5));
+        var mark = await api.AuditMark();
+
+        var reset = await api.Officer().PostAsync("/api/demo/reset", null);
+
+        reset.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await api.AuditSince(mark)).Should().ContainSingle("the reset is the first entry of the new trail")
+            .Which.Action.Should().Be("Demo.Reset");
+        api.Clock.Now.Should().BeCloseTo(TestClock.DemoNow, TimeSpan.FromSeconds(1), "the clock goes back to Demo:Now");
+        (await DashboardTests.Kpis(api.Officer())).Should().BeEquivalentTo(before, "the seed and history are back as they were");
+        (await api.ClientAs("vendor", SeedData.Somsri.ToString()).GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
+            .Should().NotContain(r => r.RoundId == SeedData.CharanCurrentRound, "สมศรี ใ. submits live again");
+        await RunDemoScript();
+    }
+
+    [Fact]
+    public async Task Only_officers_reset_the_demo()
+    {
+        (await api.ClientAs("vendor", SeedData.Somsri.ToString()).PostAsync("/api/demo/reset", null))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    /// <summary>สมศรี ใ. submits as the 11th → eligibility → run (demo seed) → approve → she wins B2, confirms and checks in.</summary>
+    private async Task RunDemoScript()
     {
         var officer = api.Officer();
         var somsri = api.ClientAs("vendor", SeedData.Somsri.ToString());

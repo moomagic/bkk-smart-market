@@ -327,6 +327,11 @@ export class Api {
     return this.http.get<{ now: string }>('/api/demo/clock');
   }
 
+  /** Development only: rebuilds the seed data and puts the clock back to Demo:Now. */
+  resetDemo() {
+    return this.http.post<{ now: string }>('/api/demo/reset', null);
+  }
+
   setDemoClock(now: string) {
     return this.http.post<{ now: string }>('/api/demo/clock', { now });
   }

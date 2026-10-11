@@ -38,6 +38,7 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<DemoClock>();
+        services.AddScoped<DemoReset>();
         services.AddSingleton<IDemoClock>(sp => sp.GetRequiredService<DemoClock>());
         services.AddSingleton<IClock>(sp => sp.GetRequiredService<IDemoClock>());
         services.AddSingleton<ISeedSource>(_ => new DemoSeedSource(new CryptoSeedSource()));
@@ -55,8 +56,6 @@ public static class DependencyInjection
     public static async Task MigrateDatabaseAsync(this IServiceProvider services, CancellationToken ct = default)
     {
         await using var scope = services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<SmartMarketDbContext>();
-        await db.Database.MigrateAsync(ct);
-        await HistorySeed.ApplyAsync(db, ct);
+        await DatabaseSetup.ApplyAsync(scope.ServiceProvider.GetRequiredService<SmartMarketDbContext>(), ct);
     }
 }

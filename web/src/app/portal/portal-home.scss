@@ -228,3 +228,7 @@ button.danger {
   display: flex;
   gap: 16px;
 }
+button.danger-outline {
+  color: var(--warn);
+  border-color: var(--warn);
+}

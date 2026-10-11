@@ -5,6 +5,7 @@ using SmartMarket.Api.Endpoints;
 using SmartMarket.Application;
 using SmartMarket.Application.Common;
 using SmartMarket.Infrastructure;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(DemoPolicies.Officer, p => p.RequireRole("officer", "executive"));
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddOpenApi(o => o.AddDocumentTransformer<DemoHeadersDocument>());
 
 var app = builder.Build();
 
@@ -29,6 +31,12 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// OpenAPI at /openapi/v1.json, browsable with Scalar at /docs (send X-Demo-Role / X-Demo-User from there).
+app.MapOpenApi();
+app.MapScalarApiReference("/docs", o => o
+    .AddApiKeyAuthentication(DemoAuthenticationHandler.RoleHeader, k => k.Value = "officer")
+    .AddApiKeyAuthentication(DemoAuthenticationHandler.UserHeader, k => k.Value = "officer-bangphlat"));
 
 var api = app.MapGroup("/api");
 api.MapSpaces();
