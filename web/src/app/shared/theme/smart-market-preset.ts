@@ -113,11 +113,11 @@ export const SmartMarketPreset = definePreset(Aura, {
       event: { minHeight: '0' },
       eventMarker: { content: { insetShadow: 'none' } },
     },
-    // Cards are bordered panels, not shadowed
+    // Cards are bordered panels, not shadowed. styleClass="fill" makes one fill its slot (cards in a row line up)
     card: {
       root: { borderRadius: '{border.radius.lg}', shadow: 'none' },
       body: { padding: '14px 16px', gap: '0' },
-      css: '.p-card { border: 1px solid var(--p-content-border-color); }',
+      css: '.p-card { border: 1px solid var(--p-content-border-color); } .p-card.fill { height: 100%; }',
     },
     // Notices: info is the accent-soft note; warn and error are --warn text on the surface with a --warn border
     message: {

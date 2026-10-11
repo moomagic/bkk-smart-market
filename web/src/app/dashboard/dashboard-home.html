@@ -14,26 +14,26 @@
 
   @if (data(); as k) {
     <section class="kpis" aria-label="ตัวชี้วัดหลัก">
-      <article class="tile">
+      <article class="tile"><p-card styleClass="fill">
         <h2>การใช้พื้นที่ (Occupancy)</h2>
         <p class="value mono">{{ pct(k.occupancy) }}</p>
         <p class="detail">ล็อคที่ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
-      </article>
-      <article class="tile">
+      </p-card></article>
+      <article class="tile"><p-card styleClass="fill">
         <h2>ความเร็ว (LeadTime)</h2>
         <p class="value mono">{{ k.leadTime.medianDays === null ? '–' : k.leadTime.medianDays + ' วัน' }}</p>
         <p class="detail">มัธยฐานจากปิดรับคำขอถึงอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
-      </article>
-      <article class="tile">
+      </p-card></article>
+      <article class="tile"><p-card styleClass="fill">
         <h2>ผู้ค้าหน้าใหม่ (NewVendors)</h2>
         <p class="value mono">{{ pct(k.newVendors) }}</p>
         <p class="detail">ผู้ได้สิทธิ์กลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} จาก {{ k.newVendors.of }} คน</p>
-      </article>
-      <article class="tile">
+      </p-card></article>
+      <article class="tile"><p-card styleClass="fill">
         <h2>การหมุนเวียน (FairRotation)</h2>
         <p class="value mono">{{ pct(k.fairRotation) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ที่ไม่ได้ถือล็อคที่เดิมรอบก่อน {{ k.fairRotation.count }} จาก {{ k.fairRotation.of }} คน</p>
-      </article>
+      </p-card></article>
     </section>
 
     <section aria-labelledby="quota-heading">
@@ -55,19 +55,10 @@
                 <span class="muted">ยังไม่มีผลจัดสรรที่อนุมัติ</span>
               }
             </div>
-            @if (row.referenceNo) {
-              @for (c of categories; track c) {
-                @if (quotaFor(row, c); as q) {
-                  <div class="bar-row" [attr.title]="categoryLabel[c] + ': ได้สิทธิ์ ' + q.winners + ' · โควตา ' + q.base">
-                    <span class="bar-label">{{ categoryLabel[c] }}</span>
-                    <span class="track">
-                      <span class="bar" [attr.data-category]="c" [style.width]="width(q.winners)"></span>
-                      <span class="target" [style.left]="width(q.base)"></span>
-                    </span>
-                    <span class="bar-value mono">{{ q.winners }}/{{ q.base }}</span>
-                  </div>
-                }
-              }
+            @if (charts().get(row.spaceId); as chart) {
+              <!-- Canvas: the per-space table below carries the same numbers for screen readers -->
+              <p-chart type="bar" [data]="chart.data" [options]="chart.options" height="120px"
+                [ariaLabel]="chart.label" />
             }
           </div>
         }
@@ -76,9 +67,8 @@
 
     <section aria-labelledby="spaces-heading">
       <h2 id="spaces-heading">รายพื้นที่</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
+      <p-table class="frame" [value]="k.spaces" dataKey="spaceId">
+        <ng-template #header>
             <tr>
               <th scope="col">พื้นที่</th>
               <th scope="col">รอบ</th>
@@ -90,9 +80,9 @@
                 <th scope="col" class="num">{{ categoryLabel[c] }} (จริง/โควตา)</th>
               }
             </tr>
-          </thead>
-          <tbody>
-            @for (row of k.spaces; track row.spaceId) {
+        </ng-template>
+        <ng-template #body let-r>
+            @let row = asSpace(r);
               <tr>
                 <td>{{ row.name }}</td>
                 <td>{{ row.startsOn ? date(row.startsOn) + ' – ' + date(row.endsOn!) : '–' }}</td>
@@ -110,10 +100,8 @@
                   </td>
                 }
               </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+        </ng-template>
+      </p-table>
     </section>
   }
 }
