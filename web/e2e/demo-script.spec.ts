@@ -38,7 +38,7 @@ test('demo script 1–6', async ({ page, request }) => {
   await test.step('2 · space matching suggests ปากซอยจรัญฯ 79 and the vendor submits', async () => {
     await vendorTab(page, 'หาพื้นที่');
     const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
-    await match.getByLabel('ขายอะไร').fill('ข้าวแกง');
+    await match.getByLabel('สินค้าที่ขาย').fill('ข้าวแกง');
     await match.getByLabel('ย่านที่สะดวก').fill('จรัญฯ');
     await match.getByRole('button', { name: 'แนะนำพื้นที่' }).click();
 

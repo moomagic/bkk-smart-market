@@ -45,7 +45,7 @@ test('vendor spaces tab with matches at 390px', async ({ page }) => {
   await as(page, 'vendor');
   await page.goto('/vendor/spaces');
   const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
-  await match.getByLabel('ขายอะไร').fill('ข้าวแกง');
+  await match.getByLabel('สินค้าที่ขาย').fill('ข้าวแกง');
   await match.getByLabel('ย่านที่สะดวก').fill('จรัญฯ');
   await match.getByRole('button', { name: 'แนะนำพื้นที่' }).click();
   await expect(match.getByRole('listitem').filter({ hasText: '1. ปากซอยจรัญฯ 79' })).toContainText('90/100');
