@@ -23,7 +23,7 @@ Pilot: **เขตบางพลัด** · ข้อมูลทั้งห�
 |---|---|
 | API | .NET 10 Minimal API · Clean Architecture · MediatR-free (ใช้ handler class ตรงๆ) · FluentValidation |
 | Persistence | EF Core 10 + PostgreSQL 17 · migrations ใน Infrastructure |
-| Web | Angular 21 · standalone components · signals · zoneless · SCSS design tokens (ไม่ใช้ UI library หนัก) |
+| Web | Angular 21 · standalone components · signals · zoneless · PrimeNG 21 styled mode · preset จาก Aura ผูกกับ design tokens เดิม (ADR-0006 · กำลังย้ายตาม `docs/migration/primeng-plan.md`) |
 | AI | Claude Messages API ผ่าน typed `HttpClient` · model จาก env `ANTHROPIC_MODEL` · ไม่มี key = fallback FAQ matching |
 | Test | xUnit + FluentAssertions · Testcontainers (PostgreSQL) สำหรับ integration |
 | Run | Docker Compose · images ต้องรันบน arm64 (Apple Silicon) |
