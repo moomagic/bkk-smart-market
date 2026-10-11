@@ -74,9 +74,10 @@ Vendor          Id, DisplayName, MaskedName, Phone (เก็บเต็ม · 
 StallRequest    Id, RoundId, VendorId, SubmittedAt, Category(Legacy|Vulnerable|New) ← snapshot ตอนยื่น,
                 Status(Submitted|Eligible|Ineligible|Won|Waitlisted|NotSelected|Confirmed|Forfeited),
                 IneligibleReason?, CarryOverWeight (1|2), WaitlistPosition?
-AllocationRun   Id, RoundId, ReferenceNo, Seed, InputHash, RulesSnapshot, RanAt, RanBy, ResultJson,
-                Status(Draft|Approved|Rejected), RejectReason?, RejectCountsTowardLimit
-Assignment      Id, RoundId, VendorId, LockId, ConfirmBy, ConfirmedAt?
+AllocationRun   Id, RoundId, ReferenceNo, Seed, InputHash, RulesSnapshot, RanAt, RanBy,
+                ResultJson (ผลจับฉลาก · ห้ามแก้), CurrentResultJson (หลังสละสิทธิ์/เลื่อนสำรอง · ADR-0004),
+                Status(Draft|Approved|Rejected), DecidedAt?, DecidedBy?, RejectReason?, RejectCountsTowardLimit
+Assignment      Id, RoundId, VendorId, LockId, ConfirmBy, ConfirmedAt?, ForfeitedAt? (แถวที่สละแล้วเก็บเป็นประวัติ)
 Review          Id, StallRequestId, Reason, SubmittedAt, Outcome?(Upheld|Corrected), Response?, RespondedAt?
 CheckIn         Id, AssignmentId, At, Method(QR), WithinGeofence
 AuditEntry      Id, At, Actor, ActorRole, Action, EntityType, EntityId (entity หลักของ command),
