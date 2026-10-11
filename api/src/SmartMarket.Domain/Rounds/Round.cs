@@ -38,5 +38,16 @@ public sealed class Round
     /// <summary>Eligibility can be (re)checked until the draw.</summary>
     public bool CanCheckEligibility => Status is RoundStatus.Open or RoundStatus.Closed;
 
+    /// <summary>A round is drawn at most once; a reject (#16) re-runs it without returning to Open.</summary>
+    public bool CanBeDrawn => Status is RoundStatus.Open or RoundStatus.Closed;
+
+    /// <summary>Drawing closes the round to new requests and freezes eligibility.</summary>
+    public void MarkDrawn()
+    {
+        if (!CanBeDrawn)
+            throw new InvalidOperationException($"A round that is already {Status} cannot be drawn.");
+        Status = RoundStatus.Drawn;
+    }
+
     public bool AcceptsRequestsAt(DateTimeOffset now) => AcceptingRequestsAt(now).Compile()(this);
 }

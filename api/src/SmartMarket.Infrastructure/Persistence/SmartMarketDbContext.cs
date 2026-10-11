@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartMarket.Application.Common;
+using SmartMarket.Domain.Allocation;
 using SmartMarket.Domain.Audit;
 using SmartMarket.Domain.Districts;
 using SmartMarket.Domain.Rounds;
@@ -18,6 +19,7 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<Round> Rounds => Set<Round>();
     public DbSet<StallRequest> StallRequests => Set<StallRequest>();
+    public DbSet<AllocationRun> AllocationRuns => Set<AllocationRun>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     /// <summary>Use-case name for the save in progress; read by <see cref="Audit.AuditInterceptor"/>.</summary>

@@ -76,17 +76,17 @@ public static class AllocationEngine
                     var why = pooled ? $"ได้สิทธิ์จากการจับรวมทุกกลุ่ม ({n} ที่)"
                         : viaRollover ? $"ได้สิทธิ์จากโควตาที่โอนมาจากกลุ่ม{Label(rolloverSources[g][i - baseSeats])}"
                         : $"ได้สิทธิ์ในโควตากลุ่ม{Label(g)} ({baseQuota[g]} ที่)";
-                    outcomes.Add(new Outcome(c.VendorId, g, OutcomeKind.Won, code, null, viaRollover, $"{why} · ล็อค {code}"));
+                    outcomes.Add(new Outcome(c.VendorId, g, c.Weight, OutcomeKind.Won, code, null, viaRollover, $"{why} · ล็อค {code}"));
                 }
                 else if (i - seats < input.Rules.WaitlistPerGroup)
                 {
                     var position = i - seats + 1;
-                    outcomes.Add(new Outcome(c.VendorId, g, OutcomeKind.Waitlisted, null, position, false,
+                    outcomes.Add(new Outcome(c.VendorId, g, c.Weight, OutcomeKind.Waitlisted, null, position, false,
                         WaitlistReason(position, g)));
                 }
                 else
                 {
-                    outcomes.Add(new Outcome(c.VendorId, g, OutcomeKind.NotSelected, null, null, false,
+                    outcomes.Add(new Outcome(c.VendorId, g, c.Weight, OutcomeKind.NotSelected, null, null, false,
                         $"ไม่ได้สิทธิ์ · เกินจำนวนสำรองของกลุ่ม{Label(g)} ({input.Rules.WaitlistPerGroup} คน)"));
                 }
             }

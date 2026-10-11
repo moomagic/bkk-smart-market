@@ -22,6 +22,68 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("SmartMarket.Domain.Allocation.AllocationRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("InputHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("RanAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RanBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ReferenceNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("RejectCountsTowardLimit")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RejectReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ResultJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RulesSnapshot")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("Seed")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReferenceNo")
+                        .IsUnique();
+
+                    b.HasIndex("RoundId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'Draft'");
+
+                    b.ToTable("AllocationRuns");
+                });
+
             modelBuilder.Entity("SmartMarket.Domain.Audit.AuditEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -832,6 +894,15 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                             Phone = "080-000-0011",
                             ProductType = "ไก่ทอด"
                         });
+                });
+
+            modelBuilder.Entity("SmartMarket.Domain.Allocation.AllocationRun", b =>
+                {
+                    b.HasOne("SmartMarket.Domain.Rounds.Round", null)
+                        .WithMany()
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SmartMarket.Domain.Rounds.Round", b =>

@@ -19,10 +19,11 @@ public enum OutcomeKind
     Forfeited,
 }
 
+/// <param name="Weight">Carry-over weight the vendor was drawn with.</param>
 /// <param name="ViaRollover">Won a seat moved here from another group's unfilled quota.</param>
 /// <param name="Reason">Thai explanation shown to the vendor and officer.</param>
 public sealed record Outcome(
-    Guid VendorId, Category Category, OutcomeKind Kind, string? LockCode, int? WaitlistPosition, bool ViaRollover, string Reason);
+    Guid VendorId, Category Category, int Weight, OutcomeKind Kind, string? LockCode, int? WaitlistPosition, bool ViaRollover, string Reason);
 
 /// <param name="Base">Seats the quota rule reserves for the group.</param>
 /// <param name="Allocated">Seats actually filled after rollover.</param>

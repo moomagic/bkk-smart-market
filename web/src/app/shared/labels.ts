@@ -1,4 +1,4 @@
-import { Category, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
+import { AllocationRunStatus, Category, OutcomeKind, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
 
 export const SPACE_TYPE_LABEL: Record<SpaceType, string> = {
   Relaxation: 'จุดผ่อนผัน',
@@ -31,6 +31,19 @@ export const ROUND_STATUS_LABEL: Record<RoundStatus, string> = {
   Approved: 'อนุมัติผลแล้ว',
 };
 
+export const RUN_STATUS_LABEL: Record<AllocationRunStatus, string> = {
+  Draft: 'ร่าง รออนุมัติ',
+  Approved: 'อนุมัติแล้ว',
+  Rejected: 'ปฏิเสธแล้ว',
+};
+
+export const OUTCOME_LABEL: Record<OutcomeKind, string> = {
+  Won: 'ได้สิทธิ์',
+  Waitlisted: 'สำรอง',
+  NotSelected: 'ไม่ได้สิทธิ์',
+  Forfeited: 'สละสิทธิ์',
+};
+
 const thaiDate = new Intl.DateTimeFormat('th-TH', {
   day: 'numeric',
   month: 'short',
@@ -41,4 +54,18 @@ const thaiDate = new Intl.DateTimeFormat('th-TH', {
 /** "2026-10-31" or an ISO instant → "31 ต.ค. 2569" (Buddhist year). */
 export function formatThaiDate(value: string): string {
   return thaiDate.format(new Date(value.length === 10 ? `${value}T00:00:00+07:00` : value));
+}
+
+const thaiDateTime = new Intl.DateTimeFormat('th-TH', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Asia/Bangkok',
+});
+
+/** ISO instant → "25 ต.ค. 2569 09:00". */
+export function formatThaiDateTime(value: string): string {
+  return thaiDateTime.format(new Date(value));
 }

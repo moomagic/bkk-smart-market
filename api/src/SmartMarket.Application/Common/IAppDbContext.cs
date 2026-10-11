@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SmartMarket.Domain.Allocation;
 using SmartMarket.Domain.Audit;
 using SmartMarket.Domain.Districts;
 using SmartMarket.Domain.Rounds;
@@ -16,6 +17,7 @@ public interface IAppDbContext
     DbSet<Vendor> Vendors { get; }
     DbSet<Round> Rounds { get; }
     DbSet<StallRequest> StallRequests { get; }
+    DbSet<AllocationRun> AllocationRuns { get; }
     DbSet<AuditEntry> AuditEntries { get; }
 
     /// <summary>

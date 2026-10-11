@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SmartMarket.Application.Allocation;
 using SmartMarket.Application.Common;
+using SmartMarket.Infrastructure.Allocation;
 using SmartMarket.Infrastructure.Audit;
 using SmartMarket.Infrastructure.Persistence;
 using SmartMarket.Infrastructure.Time;
@@ -19,6 +21,7 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IClock, DemoClock>();
+        services.AddSingleton<ISeedSource, CryptoSeedSource>();
 
         services.AddScoped<AuditInterceptor>();
         services.AddDbContext<SmartMarketDbContext>((sp, options) => options

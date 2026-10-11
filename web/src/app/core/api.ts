@@ -68,6 +68,46 @@ export interface RoundRequestRow {
   carryOverWeight: number;
 }
 
+export type AllocationRunStatus = 'Draft' | 'Approved' | 'Rejected';
+export type OutcomeKind = 'Won' | 'Waitlisted' | 'NotSelected' | 'Forfeited';
+
+export interface QuotaLine {
+  category: Category;
+  /** Seats the quota rule reserves for the group. */
+  base: number;
+  /** Seats filled after rollover. */
+  allocated: number;
+}
+
+export interface RunOutcome {
+  vendorId: string;
+  vendorName: string;
+  category: Category;
+  weight: number;
+  kind: OutcomeKind;
+  lockCode: string | null;
+  waitlistPosition: number | null;
+  viaRollover: boolean;
+  reason: string;
+}
+
+export interface AllocationRun {
+  id: string;
+  roundId: string;
+  spaceName: string;
+  referenceNo: string;
+  seed: number;
+  inputHash: string;
+  status: AllocationRunStatus;
+  ranAt: string;
+  ranBy: string;
+  rules: { legacyMax: number; vulnerableMin: number; newMin: number; waitlistPerGroup: number };
+  pooledDraw: boolean;
+  quota: QuotaLine[];
+  outcomes: RunOutcome[];
+  unassignedLockCodes: string[];
+}
+
 export interface Session {
   user: string;
   role: string;
@@ -103,6 +143,15 @@ export class Api {
 
   checkEligibility(roundId: string) {
     return this.http.post<RoundRequestRow[]>(`/api/rounds/${roundId}/eligibility`, null);
+  }
+
+  allocationRuns(roundId: string) {
+    return this.http.get<AllocationRun[]>(`/api/rounds/${roundId}/allocation-runs`);
+  }
+
+  /** No seed argument: the system picks it (ADR-0002). */
+  runAllocation(roundId: string) {
+    return this.http.post<AllocationRun>(`/api/rounds/${roundId}/allocation-runs`, null);
   }
 }
 

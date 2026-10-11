@@ -1,9 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { Api, RoundRequestRow, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, RoundRequestRow, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
-import { CATEGORY_LABEL, ROUND_STATUS_LABEL, STATUS_LABEL, formatThaiDate } from '../shared/labels';
+import {
+  CATEGORY_LABEL,
+  OUTCOME_LABEL,
+  ROUND_STATUS_LABEL,
+  RUN_STATUS_LABEL,
+  STATUS_LABEL,
+  formatThaiDate,
+  formatThaiDateTime,
+} from '../shared/labels';
 
 type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
@@ -21,6 +29,9 @@ export class PortalHome {
   protected readonly roundStatus = ROUND_STATUS_LABEL;
   protected readonly status = STATUS_LABEL;
   protected readonly category = CATEGORY_LABEL;
+  protected readonly dateTime = formatThaiDateTime;
+  protected readonly runStatus = RUN_STATUS_LABEL;
+  protected readonly outcome = OUTCOME_LABEL;
 
   protected readonly isOfficer = computed(() => this.session.role() !== 'vendor');
   private readonly refresh = signal(0);
@@ -52,6 +63,39 @@ export class PortalHome {
     return r?.state === 'ready' ? r.data : [];
   });
 
+  /** Every run of the selected round, newest first (rejected ones stay visible). */
+  protected readonly runs = toSignal(
+    combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
+      switchMap(([id]) => (id ? load(this.api.allocationRuns(id)) : of(null))),
+    ),
+    { initialValue: null as Load<AllocationRun[]> | null },
+  );
+
+  protected readonly runList = computed(() => {
+    const r = this.runs();
+    return r?.state === 'ready' ? r.data : [];
+  });
+
+  protected readonly latestRun = computed(() => this.runList()[0] ?? null);
+
+  protected readonly uncheckedCount = computed(() => this.requestRows().filter((r) => r.status === 'Submitted').length);
+
+  /** Mirrors the API guards so the button only offers what the server will accept; the server still decides. */
+  protected readonly canRun = computed(() => {
+    const round = this.selected();
+    const runs = this.runs();
+    return (
+      !!round &&
+      (round.status === 'Open' || round.status === 'Closed') &&
+      runs?.state === 'ready' &&
+      !runs.data.some((r) => r.status !== 'Rejected') &&
+      this.requests()?.state === 'ready' &&
+      this.uncheckedCount() === 0 &&
+      this.requestRows().some((r) => r.status === 'Eligible')
+    );
+  });
+
+  protected readonly running = signal(false);
   protected readonly checking = signal(false);
   protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
@@ -72,6 +116,22 @@ export class PortalHome {
       },
       error: (err) => {
         this.checking.set(false);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
+  }
+
+  protected runAllocation(round: RoundSummary): void {
+    this.running.set(true);
+    this.notice.set(null);
+    this.api.runAllocation(round.id).subscribe({
+      next: (run) => {
+        this.running.set(false);
+        this.notice.set({ kind: 'ok', text: `รันจัดสรรแล้ว · ${run.referenceNo} · ร่างรออนุมัติ` });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.running.set(false);
         this.notice.set({ kind: 'error', text: problemMessage(err) });
       },
     });

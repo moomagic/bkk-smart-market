@@ -35,6 +35,7 @@ api.MapSpaces();
 api.MapSession();
 api.MapStallRequests();
 api.MapRounds();
+api.MapAllocationRuns();
 
 app.Run();
 

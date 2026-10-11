@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -26,6 +27,7 @@ public sealed class AuditInterceptor(IClock clock, ICurrentActor actor) : SaveCh
     private static readonly JsonSerializerOptions Json = new()
     {
         Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+        Converters = { new JsonStringEnumConverter() }, // "Drawn", not 2
     };
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)

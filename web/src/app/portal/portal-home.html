@@ -54,14 +54,24 @@
           คำขอ · {{ round.spaceName }}
           <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}</span>
         </h2>
-        <button
-          type="button"
-          (click)="checkEligibility(round)"
-          [disabled]="checking() || round.status === 'Drawn' || round.status === 'Approved'"
-        >
-          {{ checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ' }}
-        </button>
+        <div class="actions">
+          <button
+            type="button"
+            class="secondary"
+            (click)="checkEligibility(round)"
+            [disabled]="checking() || running() || round.status === 'Drawn' || round.status === 'Approved'"
+          >
+            {{ checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ' }}
+          </button>
+          <button type="button" (click)="runAllocation(round)" [disabled]="running() || checking() || !canRun()">
+            {{ running() ? 'กำลังรัน…' : 'รันจัดสรร' }}
+          </button>
+        </div>
       </div>
+
+      @if (uncheckedCount() > 0 && (round.status === 'Open' || round.status === 'Closed')) {
+        <p class="muted small-note">มีคำขอที่ยังไม่ได้ตรวจสิทธิ {{ uncheckedCount() }} คำขอ ต้องตรวจสิทธิก่อนจึงรันจัดสรรได้</p>
+      }
 
       @if (notice(); as n) {
         <p class="notice" [class.error]="n.kind === 'error'" role="status">{{ n.text }}</p>
@@ -100,5 +110,85 @@
         </div>
       }
     </section>
+
+    @if (latestRun(); as run) {
+      <section aria-labelledby="run-heading">
+        <div class="section-head">
+          <h2 id="run-heading">
+            ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
+            <span class="tag" [class.draft]="run.status === 'Draft'">{{ runStatus[run.status] }}</span>
+          </h2>
+        </div>
+
+        <dl class="run-meta">
+          <div><dt>เลขอ้างอิง</dt><dd class="mono">{{ run.referenceNo }}</dd></div>
+          <div><dt>Seed (ระบบสุ่ม)</dt><dd class="mono">{{ run.seed }}</dd></div>
+          <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
+          <div class="wide"><dt>Input hash (SHA-256)</dt><dd class="mono hash">{{ run.inputHash }}</dd></div>
+        </dl>
+
+        <h3>โควตา</h3>
+        <div class="table-wrap quota">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">กลุ่ม</th>
+                <th scope="col" class="num">โควตา</th>
+                <th scope="col" class="num">ได้สิทธิ์จริง</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (q of run.quota; track q.category) {
+                <tr>
+                  <td>{{ category[q.category] }}</td>
+                  <td class="num mono">{{ q.base }}</td>
+                  <td class="num mono" [class.warn]="q.allocated !== q.base">{{ q.allocated }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (run.pooledDraw) {
+          <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
+        }
+
+        <h3>ผลรายคน</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">ผู้ค้า</th>
+                <th scope="col">กลุ่ม</th>
+                <th scope="col" class="num">น้ำหนัก</th>
+                <th scope="col">ผล</th>
+                <th scope="col">ล็อค</th>
+                <th scope="col">เหตุผล</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (o of run.outcomes; track o.vendorId) {
+                <tr>
+                  <td>{{ o.vendorName }}</td>
+                  <td>{{ category[o.category] }}</td>
+                  <td class="num mono">×{{ o.weight }}</td>
+                  <td [class.won]="o.kind === 'Won'">{{ outcome[o.kind] }}</td>
+                  <td class="mono">{{ o.lockCode ?? '' }}</td>
+                  <td>{{ o.reason }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (runList().length > 1) {
+          <h3>รันก่อนหน้าของรอบนี้</h3>
+          <ul class="earlier-runs">
+            @for (r of runList().slice(1); track r.id) {
+              <li><span class="mono">{{ r.referenceNo }}</span> · {{ runStatus[r.status] }} · {{ dateTime(r.ranAt) }}</li>
+            }
+          </ul>
+        }
+      </section>
+    }
   }
 }
