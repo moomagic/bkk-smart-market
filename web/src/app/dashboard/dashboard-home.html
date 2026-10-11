@@ -16,22 +16,26 @@
     <section class="kpis" aria-label="ตัวชี้วัดหลัก">
       <article class="tile"><p-card styleClass="fill">
         <h2>การใช้พื้นที่ (Occupancy)</h2>
-        <p class="value mono">{{ pct(k.occupancy) }}</p>
+        <p class="value">{{ pct(k.occupancy) }}</p>
         <p class="detail">ล็อคที่ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
         <h2>ความเร็ว (LeadTime)</h2>
-        <p class="value mono">{{ k.leadTime.medianDays === null ? '–' : k.leadTime.medianDays + ' วัน' }}</p>
+        <p class="value">@if (k.leadTime.medianDays === null) {
+          –
+        } @else {
+          {{ k.leadTime.medianDays }}<span class="unit">วัน</span>
+        }</p>
         <p class="detail">มัธยฐานจากปิดรับคำขอถึงอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
         <h2>ผู้ค้าหน้าใหม่ (NewVendors)</h2>
-        <p class="value mono">{{ pct(k.newVendors) }}</p>
+        <p class="value">{{ pct(k.newVendors) }}</p>
         <p class="detail">ผู้ได้สิทธิ์กลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} จาก {{ k.newVendors.of }} คน</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
         <h2>การหมุนเวียน (FairRotation)</h2>
-        <p class="value mono">{{ pct(k.fairRotation) }}</p>
+        <p class="value">{{ pct(k.fairRotation) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ที่ไม่ได้ถือล็อคที่เดิมรอบก่อน {{ k.fairRotation.count }} จาก {{ k.fairRotation.of }} คน</p>
       </p-card></article>
     </section>

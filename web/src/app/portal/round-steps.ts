@@ -25,24 +25,24 @@ export interface RoundStep {
     .steps {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px 0;
+      gap: var(--space-1) 0;
       list-style: none;
-      margin: 4px 0 16px;
+      margin: var(--space-1) 0 var(--space-4);
       padding: 0;
-      font-size: 0.85rem;
+      font-size: var(--text-small);
       color: var(--muted);
     }
     .steps li {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: var(--space-2);
     }
     .steps li + li::before {
       content: '';
       order: -2;
       width: 28px;
       height: 1px;
-      margin: 0 8px;
+      margin: 0 var(--space-2);
       background: var(--line);
     }
     .steps li[data-state='done'] {

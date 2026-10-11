@@ -106,25 +106,25 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
     </ng-template>
   `,
   styles: `
-    app-audit-timeline .panel { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 14px 2px; }
-    app-audit-timeline .p-timeline-left .p-timeline-event-opposite { flex: 0 0 150px; padding: 1px 12px 0 0; text-align: left; white-space: nowrap; }
-    app-audit-timeline .what { padding-bottom: 16px; }
-    app-audit-timeline .when { font-size: 0.85rem; color: var(--muted); }
+    app-audit-timeline .panel { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: var(--space-4) var(--space-4) 2px; }
+    app-audit-timeline .p-timeline-left .p-timeline-event-opposite { flex: 0 0 150px; padding: 1px var(--space-3) 0 0; text-align: left; white-space: nowrap; }
+    app-audit-timeline .what { padding-bottom: var(--space-4); }
+    app-audit-timeline .when { font-size: var(--text-small); color: var(--muted); }
     app-audit-timeline .when-inline { display: none; }
-    app-audit-timeline .head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; }
-    app-audit-timeline .actor { font-size: 0.85rem; color: var(--muted); }
-    app-audit-timeline .summary { margin: 4px 0 0; padding: 0; list-style: none; font-size: 0.9rem; }
-    app-audit-timeline .changes { margin: 6px 0 0; padding: 0; list-style: none; font-size: 0.85rem; display: grid; gap: 6px; }
-    app-audit-timeline .subject { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+    app-audit-timeline .head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-2); }
+    app-audit-timeline .actor { font-size: var(--text-small); color: var(--muted); }
+    app-audit-timeline .summary { margin: var(--space-1) 0 0; padding: 0; list-style: none; font-size: var(--text-small); }
+    app-audit-timeline .changes { margin: var(--space-2) 0 0; padding: 0; list-style: none; font-size: var(--text-small); display: grid; gap: var(--space-2); }
+    app-audit-timeline .subject { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-2); }
     app-audit-timeline .state { color: var(--muted); }
-    app-audit-timeline .fields { display: flex; flex-wrap: wrap; column-gap: 14px; row-gap: 2px; overflow-wrap: anywhere; }
-    app-audit-timeline .key { color: var(--muted); margin-right: 4px; }
+    app-audit-timeline .fields { display: flex; flex-wrap: wrap; column-gap: var(--space-4); row-gap: 2px; overflow-wrap: anywhere; }
+    app-audit-timeline .key { color: var(--muted); margin-right: var(--space-1); }
     app-audit-timeline .from { color: var(--muted); }
-    app-audit-timeline .fold { margin-top: 6px; font-size: 0.85rem; }
+    app-audit-timeline .fold { margin-top: var(--space-2); font-size: var(--text-small); }
     app-audit-timeline .fold > summary { cursor: pointer; width: fit-content; color: var(--accent); font-weight: 600; }
     app-audit-timeline .fold > summary::marker { color: var(--muted); }
     app-audit-timeline .technical > summary { color: var(--muted); font-weight: 400; }
-    app-audit-timeline .technical ul { margin: 4px 0 0; padding-left: 16px; color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+    app-audit-timeline .technical ul { margin: var(--space-1) 0 0; padding-left: var(--space-4); color: var(--muted); font-size: var(--text-small); overflow-wrap: anywhere; }
     /* Narrow: one column — the time moves into the entry and the opposite column goes */
     @media (max-width: 640px) {
       app-audit-timeline .p-timeline-left .p-timeline-event-opposite { display: none; }

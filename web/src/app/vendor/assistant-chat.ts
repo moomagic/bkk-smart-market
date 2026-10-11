@@ -59,15 +59,15 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source
     </section>
   `,
   styles: `
-    h2 { font-size: 1.05rem; margin: 0; }
-    .hint { color: var(--muted); font-size: 0.85rem; margin: 0 0 10px; }
-    .messages { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-    .messages li { white-space: pre-line; background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; max-width: 92%; }
+    h2 { font-size: var(--text-h3); margin: 0; }
+    .hint { color: var(--muted); font-size: var(--text-small); margin: 0 0 var(--space-3); }
+    .messages { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+    .messages li { white-space: pre-line; background: var(--accent-soft); border-radius: 8px; padding: var(--space-2) var(--space-3); max-width: 92%; }
     .messages li.me { align-self: flex-end; background: var(--ground); }
     .messages li.not-found { background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
-    .source { display: block; margin-top: 4px; font-size: 0.75rem; color: var(--muted); }
-    .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    form { display: flex; gap: 8px; }
+    .source { display: block; margin-top: var(--space-1); font-size: var(--text-caption); color: var(--muted); }
+    .suggestions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+    form { display: flex; gap: var(--space-2); }
     input { flex: 1; min-width: 0; }
   `,
 })

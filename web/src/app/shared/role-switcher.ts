@@ -31,9 +31,9 @@ import { DEMO_ROLES, DemoRole, DemoSession } from '../core/demo-session';
     }
   `,
   styles: `
-    :host { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-    .label { color: var(--muted); font-size: 0.8rem; }
-    .who { color: var(--muted); font-size: 0.75rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    :host { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
+    .label { color: var(--muted); font-size: var(--text-small); }
+    .who { color: var(--muted); font-size: var(--text-caption); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* Phone: the select alone; its name stays for screen readers, the API identity echo is a desktop detail */
     @media (max-width: 640px) {
       :host { flex-wrap: nowrap; }

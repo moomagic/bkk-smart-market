@@ -53,10 +53,10 @@ import { CATEGORY_LABEL } from '../shared/labels';
     </p-dialog>
   `,
   styles: `
-    p { margin: 0 0 12px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-    th { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+    p { margin: 0 0 var(--space-3); }
+    table { width: 100%; border-collapse: collapse; margin-bottom: var(--space-3); }
+    th, td { text-align: left; padding: var(--space-2) var(--space-2); border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: var(--text-small); font-weight: 600; }
     .num { text-align: right; }
     .off { color: var(--warn); font-weight: 600; }
     .consequence { color: var(--warn); font-weight: 600; margin-bottom: 0; }
