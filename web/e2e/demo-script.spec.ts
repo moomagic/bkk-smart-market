@@ -8,6 +8,7 @@ import {
   expectNoHorizontalScroll,
   openRound,
   switchRole,
+  vendorTab,
 } from './support';
 
 /** README › Demo script, steps 1–6, walked the way the presenter does it. Step 7 is `docker compose up` itself. */
@@ -20,8 +21,10 @@ test('demo script 1–6', async ({ page, request }) => {
   await test.step('1 · vendor asks the assistant which documents are needed', async () => {
     await page.setViewportSize(PHONE);
     await page.goto('/vendor');
+    await expect(page).toHaveURL(/\/vendor\/requests$/);
     await expectMockBadge(page);
 
+    await vendorTab(page, 'ถามระเบียบ');
     const chat = page.getByRole('region', { name: 'ถามผู้ช่วยเรื่องระเบียบ' });
     await chat.getByRole('button', { name: 'ต้องใช้เอกสารอะไร' }).click();
     const answer = chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' });
@@ -33,6 +36,7 @@ test('demo script 1–6', async ({ page, request }) => {
   });
 
   await test.step('2 · space matching suggests ปากซอยจรัญฯ 79 and the vendor submits', async () => {
+    await vendorTab(page, 'หาพื้นที่');
     const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
     await match.getByLabel('ขายอะไร').fill('ข้าวแกง');
     await match.getByLabel('ย่านที่สะดวก').fill('จรัญฯ');
@@ -44,6 +48,7 @@ test('demo script 1–6', async ({ page, request }) => {
 
     await expect(page.getByRole('status')).toContainText('ยื่นคำขอแล้ว · ปากซอยจรัญฯ 79');
     await expect(first).toContainText('ยื่นคำขอแล้ว');
+    await vendorTab(page, 'คำขอ');
     await expect(currentRequest(page)).toContainText('ยื่นคำขอแล้ว');
     await expectNoBookingWording(page);
     await expectNoHorizontalScroll(page);
@@ -96,7 +101,7 @@ test('demo script 1–6', async ({ page, request }) => {
   await test.step('4 · vendor sees lock B2 with the reason, confirms and checks in', async () => {
     await page.setViewportSize(PHONE);
     await switchRole(page, 'vendor');
-    await expect(page).toHaveURL(/\/vendor$/);
+    await expect(page).toHaveURL(/\/vendor\/requests$/);
     const card = currentRequest(page);
     await expect(card).toContainText('ได้ล็อค B2');
     await expect(card).toContainText(`เลขอ้างอิง ${ref}`);

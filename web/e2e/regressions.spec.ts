@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { CHAI, DESKTOP, DemoApi, ROLE_LABEL, openRound, switchRole } from './support';
+import { CHAI, DESKTOP, DemoApi, PHONE, ROLE_LABEL, openRound, switchRole, vendorTab } from './support';
 
 /** Behaviour that a template rewrite can silently lose: enabled/disabled conditions and the role switcher. */
 
@@ -90,7 +90,7 @@ test('an eligibility review can be answered Upheld or Corrected, and the answer 
 
 test('a vendor forfeit asks for a second, deliberate click', async ({ page, request }) => {
   const api = new DemoApi(request);
-  await page.goto('/vendor');
+  await page.goto('/vendor/spaces');
   // สมศรี ใ. submits through the UI, then the officer side is driven through the API.
   await page
     .getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })
@@ -101,7 +101,7 @@ test('a vendor forfeit asks for a second, deliberate click', async ({ page, requ
   await expect(page.getByRole('status')).toContainText('ยื่นคำขอแล้ว');
   await api.checkEligibility();
   await api.approve(await api.runAllocation());
-  await page.reload();
+  await page.goto('/vendor');
 
   const card = page
     .getByRole('region', { name: 'คำขอของฉัน' })
@@ -112,4 +112,30 @@ test('a vendor forfeit asks for a second, deliberate click', async ({ page, requ
   await card.getByRole('button', { name: 'ไม่สละ' }).click();
   await expect(card.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true })).toBeEnabled();
   await expect(card).not.toContainText('สละล็อค B2 ให้ผู้สำรอง?');
+});
+
+test('the vendor app opens on its requests tab, with its own app bar instead of the site header', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/vendor');
+  await expect(page).toHaveURL(/\/vendor\/requests$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'คำขอของฉัน' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'BKK Smart Market' })).toHaveCount(0);
+  const tabs = page.getByRole('navigation', { name: 'เมนูหลัก' });
+  await expect(tabs.getByRole('link', { name: 'คำขอ', exact: true })).toHaveAttribute('aria-current', 'page');
+
+  await vendorTab(page, 'หาพื้นที่');
+  await expect(page).toHaveURL(/\/vendor\/spaces$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'หาพื้นที่ขายของ' })).toBeVisible();
+  await expect(tabs.getByRole('link', { name: 'หาพื้นที่', exact: true })).toHaveAttribute('aria-current', 'page');
+
+  // A direct link to a tab works too
+  await page.goto('/vendor/assistant');
+  await expect(page.getByRole('heading', { level: 1, name: 'ถามระเบียบ' })).toBeVisible();
+});
+
+test('the portal keeps the site header', async ({ page }) => {
+  await page.goto('/vendor');
+  await switchRole(page, 'officer');
+  await expect(page.getByRole('link', { name: 'BKK Smart Market' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toHaveCount(0);
 });

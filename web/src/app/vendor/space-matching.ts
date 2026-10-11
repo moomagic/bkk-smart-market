@@ -1,23 +1,20 @@
-import { ChangeDetectionStrategy, Component, inject, input, model, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
-import { Panel } from 'primeng/panel';
 import { Select } from 'primeng/select';
 import { StatusTag } from '../shared/status-tag';
-import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, problemMessage } from '../core/api';
+import { Api, PreferredTime, SpaceMatch, SpaceSummary, problemMessage } from '../core/api';
+import { VendorStore } from './vendor-store';
 
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
 @Component({
   selector: 'app-space-matching',
-  imports: [FormsModule, Button, InputText, Panel, Select, StatusTag],
+  imports: [FormsModule, Button, InputText, Select, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section aria-labelledby="match-heading">
-      <p-panel toggleable toggler="header" [collapsed]="!open()" (collapsedChange)="open.set(!$event)">
-      <ng-template #header>
-        <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
-      </ng-template>
+      <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
       <!-- ngNoForm: FormsModule is here only for the select; the form keeps its plain submit -->
       <form ngNoForm (submit)="$event.preventDefault(); find()">
         <label>
@@ -68,18 +65,17 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
                 } @else if (canSubmit()(m.spaceId); as space) {
                   <!-- The best match carries the page's one filled button; the others stay outlined -->
                   <p-button class="submit-here" [variant]="i === 0 ? undefined : 'outlined'" label="ยื่นคำขอที่นี่"
-                    (onClick)="submit.emit(space)" [disabled]="submitting()" />
+                    (onClick)="submit(space)" [disabled]="submitting()" />
                 }
               </li>
             }
           </ol>
         }
       }
-      </p-panel>
     </section>
   `,
   styles: `
-    h2 { font-size: var(--text-h3); margin: 0; }
+    h2 { font-size: var(--text-h3); margin: 0 0 var(--space-3); }
     .find-hint { grid-column: 1 / -1; margin: 0; font-size: var(--text-small); color: var(--muted); }
     form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); align-items: end; }
     label, .field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-small); color: var(--muted); min-width: 0; }
@@ -98,15 +94,14 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
 export class SpaceMatching {
   private readonly api = inject(Api);
 
+  private readonly store = inject(VendorStore);
+
   /** Given a space id, the space the vendor can submit to now — or null (no open round, already requested, not a vendor). */
-  readonly canSubmit = input.required<(spaceId: string) => SpaceSummary | null>();
+  protected readonly canSubmit = this.store.submittable;
   /** The vendor's request status in the space's open round, or null when they have none there. */
-  readonly requestStatus = input.required<(spaceId: string) => StallRequestStatus | null>();
+  protected readonly requestStatus = this.store.requestStatus;
   /** A submit is in flight (from here or from the list below). */
-  readonly submitting = input(false);
-  readonly submit = output<SpaceSummary>();
-  /** Two-way: the page sets where it starts (open until an application is in play); the vendor's folding wins. */
-  readonly open = model(true);
+  protected readonly submitting = computed(() => this.store.submitting() !== null);
 
   protected readonly product = signal('');
   protected readonly area = signal('');
@@ -119,6 +114,10 @@ export class SpaceMatching {
   protected readonly busy = signal(false);
   protected readonly results = signal<SpaceMatch[] | null>(null);
   protected readonly error = signal<string | null>(null);
+
+  protected submit(space: SpaceSummary): void {
+    void this.store.submit(space);
+  }
 
   protected find(): void {
     this.busy.set(true);

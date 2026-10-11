@@ -70,14 +70,33 @@ export class DemoApi {
   }
 }
 
-/** Switches role with the top-right switcher, which also navigates to that role's home. */
+/**
+ * Switches role with the role switcher, which also navigates to that role's home. In the vendor app it sits
+ * behind the app bar's demo menu; elsewhere it is in the site header.
+ */
 export async function switchRole(
   page: Page,
   role: 'vendor' | 'officer' | 'executive',
 ): Promise<void> {
+  const demoMenu = page.getByRole('button', { name: 'เมนูเดโม' });
+  if ((await demoMenu.isVisible()) && (await demoMenu.getAttribute('aria-expanded')) !== 'true') {
+    await demoMenu.click();
+  }
   await page.getByRole('combobox', { name: 'บทบาท' }).click();
   await page.getByRole('option', { name: ROLE_LABEL[role], exact: true }).click();
-  await expect(page.locator('app-role-switcher')).toHaveAttribute('data-confirmed-role', role);
+  if (role === 'vendor') {
+    // The vendor app opens with its demo menu folded, so the switcher's API echo is not on screen;
+    // the vendor's own requests loading proves the headers arrived instead.
+    await expect(page).toHaveURL(/\/vendor\/requests$/);
+    await expect(page.getByRole('region', { name: 'คำขอของฉัน' })).toBeVisible();
+  } else {
+    await expect(page.locator('app-role-switcher')).toHaveAttribute('data-confirmed-role', role);
+  }
+}
+
+/** Opens a tab of the vendor app's bottom navigation. */
+export async function vendorTab(page: Page, name: 'คำขอ' | 'หาพื้นที่' | 'ถามระเบียบ'): Promise<void> {
+  await page.getByRole('navigation', { name: 'เมนูหลัก' }).getByRole('link', { name, exact: true }).click();
 }
 
 /** What the switcher shows for each role. */

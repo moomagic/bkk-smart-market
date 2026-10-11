@@ -8,6 +8,7 @@ import {
   expectMockBadge,
   expectNoBookingWording,
   openRound,
+  vendorTab,
 } from './support';
 
 test.beforeEach(async ({ request }) => {
@@ -43,6 +44,17 @@ for (const { path, role, device, loaded } of [
       if (role === 'vendor') await expect(page.getByText('ยื่นคำขอแล้ว').first()).toBeVisible();
       await expectMockBadge(page);
       await expectNoBookingWording(page);
+      if (role !== 'vendor') return;
+      // The vendor app is three tabs; each is a screen of its own
+      for (const [tab, content] of [
+        ['หาพื้นที่', 'ตลาดนัดเขตบางพลัด'],
+        ['ถามระเบียบ', 'ต้องใช้เอกสารอะไร'],
+      ] as const) {
+        await vendorTab(page, tab);
+        await expect(page.getByText(content).first()).toBeVisible();
+        await expectMockBadge(page);
+        await expectNoBookingWording(page);
+      }
     });
   });
 }

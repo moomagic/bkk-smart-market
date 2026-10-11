@@ -1,41 +1,32 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { Checkbox } from 'primeng/checkbox';
-import { Message } from 'primeng/message';
 import { Textarea } from 'primeng/textarea';
-import { AllocationRunStatus, SpaceSummary, StallRequest, StallRequestStatus } from '../core/api';
-import { DemoSession } from '../core/demo-session';
-import { AssistantChat } from './assistant-chat';
-import { SpaceMatching } from './space-matching';
+import { AllocationRunStatus, StallRequest } from '../core/api';
 import { VendorStore } from './vendor-store';
 import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
   REVIEW_OUTCOME_LABEL,
   RUN_STATUS_LABEL,
-  SPACE_TYPE_LABEL,
   formatThaiDate,
   formatThaiDateTime,
 } from '../shared/labels';
 
-const IN_PLAY = new Set<StallRequestStatus>(['Submitted', 'Eligible', 'Ineligible', 'Won', 'Waitlisted']);
-
 @Component({
-  selector: 'app-vendor-home',
+  selector: 'app-vendor-requests',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, NgTemplateOutlet, Button, Card, Checkbox, Message, Textarea, AssistantChat, SpaceMatching, StatusTag],
-  providers: [VendorStore],
-  templateUrl: './vendor-home.html',
-  styleUrl: './vendor-home.scss',
+  imports: [FormsModule, NgTemplateOutlet, Button, Card, Checkbox, Textarea, StatusTag],
+  templateUrl: './vendor-requests.html',
+  styleUrl: './vendor-requests.scss',
 })
-export class VendorHome {
+/** Tab คำขอ: the vendor's requests, what happens next, and the actions on each. */
+export class VendorRequests {
   private readonly store = inject(VendorStore);
-  protected readonly session = inject(DemoSession);
 
-  protected readonly typeLabel = SPACE_TYPE_LABEL;
   protected readonly categoryLabel = CATEGORY_LABEL;
   protected readonly date = formatThaiDate;
   protected readonly dateTime = formatThaiDateTime;
@@ -47,46 +38,11 @@ export class VendorHome {
   /** Request id whose forfeit is waiting for a second, deliberate click. */
   protected readonly confirmingForfeit = signal<string | null>(null);
 
-  protected readonly spaces = this.store.spaces;
-  protected readonly spaceList = this.store.spaceList;
   protected readonly myRequests = this.store.myRequests;
   protected readonly current = this.store.current;
   protected readonly finished = this.store.finished;
-  protected readonly requestStatusByRound = this.store.requestStatusByRound;
-  protected readonly submittable = this.store.submittable;
-  protected readonly requestStatus = this.store.requestStatus;
-  protected readonly closesAt = this.store.closesAt;
-  protected readonly submitting = this.store.submitting;
   protected readonly acting = this.store.acting;
   protected readonly outsideGeofence = this.store.outsideGeofence;
-  protected readonly notice = this.store.notice;
-
-  /**
-   * The assistant starts open until the vendor has an application in play (submitted, being checked, won or
-   * waitlisted, or in a round open now); decided once, on first load, so it never folds away under the vendor's
-   * hand after a submit. A lock already confirmed from an earlier round does not count: that vendor may be
-   * asking about the next one.
-   */
-  protected readonly assistantOpen = signal(true);
-  /** Space Matching folds away on the same rule: once an application is in play it is not the next step. */
-  protected readonly matchOpen = signal(true);
-
-  constructor() {
-    let decided = false;
-    effect(() => {
-      const mine = this.myRequests();
-      if (decided || mine?.state !== 'ready' || this.spaces().state !== 'ready') return;
-      decided = true;
-      const open = new Set(this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.id] : [])));
-      const startOpen = !mine.data.some((r) => IN_PLAY.has(r.status) || open.has(r.roundId));
-      this.assistantOpen.set(startOpen);
-      this.matchOpen.set(startOpen);
-    });
-  }
-
-  protected submit(space: SpaceSummary): void {
-    void this.store.submit(space);
-  }
 
   /** The vendor-facing word for a run: they wait on the district, they do not hold a draft. */
   protected readonly vendorRunStatus: Record<AllocationRunStatus, string> = {

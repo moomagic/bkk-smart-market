@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { MockBadge } from './shared/mock-badge';
 import { RoleSwitcher } from './shared/role-switcher';
 
@@ -15,6 +17,7 @@ import { RoleSwitcher } from './shared/role-switcher';
     app-role-switcher, .role-placeholder { margin-left: auto; }
     .role-placeholder { min-width: 150px; min-height: 32px; font-size: var(--text-small); }
     main { max-width: 1280px; margin: 0 auto; padding: var(--space-4); }
+    main.bare { max-width: none; padding: 0; }
     /* One row: brand, the mock-data badge (Guardrail 5) and the role select, which also switches area */
     @media (max-width: 640px) {
       .bar-inner { flex-wrap: nowrap; gap: var(--space-2); padding: var(--space-2) var(--space-4); }
@@ -23,4 +26,19 @@ import { RoleSwitcher } from './shared/role-switcher';
     }
   `,
 })
-export class App {}
+export class App {
+  private readonly router = inject(Router);
+
+  /** Inside /vendor the phone app shell replaces the site header and page padding. */
+  protected readonly inVendor = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map((e) => isVendorUrl(e.urlAfterRedirects)),
+    ),
+    { initialValue: isVendorUrl(location.pathname) },
+  );
+}
+
+function isVendorUrl(url: string): boolean {
+  return url === '/vendor' || url.startsWith('/vendor/') || url.startsWith('/vendor?');
+}
