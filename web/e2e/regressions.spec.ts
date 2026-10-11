@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { CHAI, DESKTOP, DemoApi, PHONE, ROLE_LABEL, openRound, switchRole, vendorTab } from './support';
+import { CHAI, DESKTOP, DemoApi, PHONE, ROLE_LABEL, SOMSRI, openRound, switchRole, vendorTab } from './support';
 
 /** Behaviour that a template rewrite can silently lose: enabled/disabled conditions and the role switcher. */
 
@@ -186,4 +186,50 @@ test('the portal keeps the site header', async ({ page }) => {
   await switchRole(page, 'officer');
   await expect(page.getByRole('link', { name: 'BKK Smart Market' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toHaveCount(0);
+});
+
+test('the requests tab greets the vendor and leads to the spaces tab while a round is open and unapplied', async ({
+  page,
+}) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/vendor');
+  await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
+  // สมศรี has only her previous round's request: nothing to do there, the open round is the next step
+  await expect(page.getByTestId('todo')).toContainText('รับคำขอรอบใหม่ถึง 31 ต.ค. 2569');
+  await page.getByRole('link', { name: 'หาพื้นที่ขายของ' }).click();
+  await expect(page).toHaveURL(/\/vendor\/spaces$/);
+});
+
+test('a vendor with no request at all gets an empty state that leads to the spaces tab', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.route('**/api/stall-requests/me', (route) => route.fulfill({ json: [] }));
+  await page.goto('/vendor');
+  await expect(page.getByRole('region', { name: 'คำขอของฉัน' })).toContainText('ยังไม่มีคำขอ');
+  await page.getByRole('link', { name: 'หาพื้นที่ขายของ' }).click();
+  await expect(page).toHaveURL(/\/vendor\/spaces$/);
+});
+
+test('the requests tab carries a dot only while a won lock waits to be confirmed', async ({ page, request }) => {
+  const api = new DemoApi(request);
+  await page.setViewportSize(PHONE);
+  const tab = page.getByRole('navigation', { name: 'เมนูหลัก' }).getByRole('link', { name: 'คำขอ', exact: true });
+
+  await api.submit(SOMSRI);
+  await page.goto('/vendor/spaces');
+  await expect(page.getByText('ตลาดนัดเขตบางพลัด').first()).toBeVisible();
+  await expect(tab).toHaveAccessibleDescription('');
+
+  await api.checkEligibility();
+  await api.approve(await api.runAllocation());
+  await page.reload();
+  // Seen from another tab too
+  await expect(tab).toHaveAccessibleDescription('มีคำขอที่รอยืนยันสิทธิ์');
+
+  await vendorTab(page, 'คำขอ');
+  await page.getByRole('listitem').filter({ hasText: 'ได้ล็อค B2' }).getByRole('link').click();
+  await page.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('ยืนยันสิทธิ์แล้ว');
+  await page.getByRole('button', { name: 'ย้อนกลับ' }).click();
+  await expect(tab).toHaveAccessibleDescription('');
+  await expect(page.getByTestId('todo')).not.toContainText('ยืนยันสิทธิ์ล็อค');
 });

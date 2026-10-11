@@ -64,6 +64,20 @@ export class VendorStore {
   readonly current = computed(() => this.requestList().filter((r) => !FINISHED.has(r.status)));
   readonly finished = computed(() => this.requestList().filter((r) => FINISHED.has(r.status)));
 
+  /** Won locks waiting on the vendor's confirmation, the nearest deadline first: the one thing with a clock on it. */
+  readonly awaitingConfirm = computed(() =>
+    this.current()
+      .filter((r) => r.status === 'Won' && r.confirmBy)
+      .sort((a, b) => a.confirmBy!.localeCompare(b.confirmBy!)),
+  );
+
+  /** A round is open and the vendor has no request in any open round: applying is their next step. */
+  readonly canApplyNow = computed(() => {
+    const open = this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.id] : []));
+    const requested = this.requestStatusByRound();
+    return this.session.role() === 'vendor' && open.length > 0 && !open.some((id) => requested.has(id));
+  });
+
   /** The vendor's request status in each round they applied to. */
   readonly requestStatusByRound = computed(
     () => new Map(this.requestList().map((r) => [r.roundId, r.status])),

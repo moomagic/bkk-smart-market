@@ -1,4 +1,25 @@
 <!-- The app bar names the screen; the region keeps the name for assistive tech -->
+@if (name(); as who) {
+  <div class="hello">
+    <p class="greet">สวัสดี {{ who }}</p>
+    <!-- Only with requests on screen: an empty list makes its own offer below -->
+    @if (todo(); as t) {
+      @if (myRequests()?.state === 'ready' && current().length + finished().length > 0) {
+        <div class="todo" data-testid="todo" [class.urgent]="t.urgent">
+          @if (t.requestId) {
+            <a [routerLink]="[t.requestId]">{{ t.text }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></a>
+          } @else {
+            <p>{{ t.text }}</p>
+          }
+          @if (t.apply) {
+            <a pButton routerLink="/vendor/spaces" label="หาพื้นที่ขายของ"></a>
+          }
+        </div>
+      }
+    }
+  </div>
+}
+
 @if (myRequests(); as mine) {
   <section aria-label="คำขอของฉัน">
     @switch (mine.state) {
@@ -10,7 +31,11 @@
       }
       @case ('ready') {
         @if (mine.data.length === 0) {
-          <p class="muted">ยังไม่มีคำขอ</p>
+          <div class="empty">
+            <p>ยังไม่มีคำขอ</p>
+            <p class="muted">หาพื้นที่ที่ กทม. อนุญาตแล้ว แล้วยื่นคำขอเพื่อเข้าจับฉลากในรอบที่เปิดรับ</p>
+            <a pButton routerLink="/vendor/spaces" label="หาพื้นที่ขายของ"></a>
+          </div>
         } @else {
           <ul class="list">
             @for (req of current(); track req.id) {

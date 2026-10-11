@@ -66,7 +66,9 @@ const TABS = [
     @if (!screen().back) {
       <nav class="tabs" aria-label="เมนูหลัก">
         @for (tab of tabs; track tab.path) {
-            <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+          <!-- A won lock waiting to be confirmed marks the requests tab from every screen; the dot is described, not named -->
+          <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page"
+            [attr.aria-describedby]="tab.path === 'requests' && store.awaitingConfirm().length > 0 ? 'tab-todo' : null">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               @switch (tab.path) {
                 @case ('requests') {
@@ -81,8 +83,12 @@ const TABS = [
               }
             </svg>
             <span>{{ tab.label }}</span>
+            @if (tab.path === 'requests' && store.awaitingConfirm().length > 0) {
+              <span class="dot" aria-hidden="true"></span>
+            }
           </a>
         }
+        <span id="tab-todo" class="sr-only">มีคำขอที่รอยืนยันสิทธิ์</span>
       </nav>
     }
   `,
@@ -183,6 +189,7 @@ const TABS = [
       border-top: 1px solid var(--line);
     }
     .tabs a {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -201,6 +208,16 @@ const TABS = [
     .tabs a:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: -4px;
+    }
+    .dot {
+      position: absolute;
+      top: 8px;
+      left: calc(50% + 8px);
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 0 2px var(--surface);
     }
     svg {
       width: 24px;

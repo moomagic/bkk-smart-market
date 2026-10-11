@@ -45,6 +45,9 @@ for (const { path, role, device, loaded } of [
       await expectMockBadge(page);
       await expectNoBookingWording(page);
       if (role !== 'vendor') return;
+      // The greeting uses the short form only
+      await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
+      await expect(page.locator('body')).not.toContainText('สมศรี ใจดี');
       // The vendor app is three tabs; each is a screen of its own
       for (const [tab, content] of [
         ['หาพื้นที่', 'ตลาดนัดเขตบางพลัด'],

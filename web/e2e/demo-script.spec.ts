@@ -108,6 +108,10 @@ test('demo script 1–6', async ({ page, request }) => {
     await page.setViewportSize(PHONE);
     await switchRole(page, 'vendor');
     await expect(page).toHaveURL(/\/vendor\/requests$/);
+    // The requests tab says first what the vendor has to do, and the tab carries a dot while it waits
+    await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
+    await expect(page.getByTestId('todo')).toContainText('ยืนยันสิทธิ์ล็อค B2 ภายใน');
+    await expect(requestsTab(page)).toHaveAccessibleDescription('มีคำขอที่รอยืนยันสิทธิ์');
     const card = currentRequest(page);
     await expect(card).toContainText('ได้ล็อค B2');
     await card.getByRole('link').click();
@@ -172,6 +176,11 @@ function currentRequest(page: Page) {
     .getByRole('listitem')
     .filter({ hasText: 'ปากซอยจรัญฯ 79' })
     .filter({ hasText: 'รอบ 1 พ.ย. 2569' });
+}
+
+/** The requests tab in the vendor app's bottom navigation. */
+function requestsTab(page: Page) {
+  return page.getByRole('navigation', { name: 'เมนูหลัก' }).getByRole('link', { name: 'คำขอ', exact: true });
 }
 
 /** The open request's own screen in the vendor app. */
