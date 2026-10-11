@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -7,36 +6,33 @@ import { Card } from 'primeng/card';
 import { Checkbox } from 'primeng/checkbox';
 import { Message } from 'primeng/message';
 import { Textarea } from 'primeng/textarea';
-import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRunStatus, Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
+import { AllocationRunStatus, SpaceSummary, StallRequest, StallRequestStatus } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AssistantChat } from './assistant-chat';
 import { SpaceMatching } from './space-matching';
+import { VendorStore } from './vendor-store';
 import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
   REVIEW_OUTCOME_LABEL,
   RUN_STATUS_LABEL,
   SPACE_TYPE_LABEL,
-  STATUS_LABEL,
   formatThaiDate,
   formatThaiDateTime,
 } from '../shared/labels';
 
-const FINISHED = new Set<StallRequestStatus>(['NotSelected', 'Forfeited']);
 const IN_PLAY = new Set<StallRequestStatus>(['Submitted', 'Eligible', 'Ineligible', 'Won', 'Waitlisted']);
-
-type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, NgTemplateOutlet, Button, Card, Checkbox, Message, Textarea, AssistantChat, SpaceMatching, StatusTag],
+  providers: [VendorStore],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })
 export class VendorHome {
-  private readonly api = inject(Api);
+  private readonly store = inject(VendorStore);
   protected readonly session = inject(DemoSession);
 
   protected readonly typeLabel = SPACE_TYPE_LABEL;
@@ -48,60 +44,22 @@ export class VendorHome {
   /** Request id whose review form is open, and the reason typed so far. */
   protected readonly reviewing = signal<string | null>(null);
   protected readonly reviewReason = signal('');
+  /** Request id whose forfeit is waiting for a second, deliberate click. */
+  protected readonly confirmingForfeit = signal<string | null>(null);
 
-  /** Bumped after a submit so both lists reload. */
-  private readonly refresh = signal(0);
-  private readonly reload$ = combineLatest([toObservable(this.session.role), toObservable(this.refresh)]);
-
-  protected readonly spaces = toSignal(
-    this.reload$.pipe(switchMap(() => loadState(this.api.spaces()))),
-    { initialValue: { state: 'loading' } as Load<SpaceSummary[]> },
-  );
-
-  protected readonly spaceList = computed(() => {
-    const s = this.spaces();
-    return s.state === 'ready' ? s.data : [];
-  });
-
-  protected readonly myRequests = toSignal(
-    this.reload$.pipe(
-      switchMap(([role]) => (role === 'vendor' ? loadState(this.api.myStallRequests()) : of(null))),
-    ),
-    { initialValue: null as Load<StallRequest[]> | null },
-  );
-
-  /** The vendor's request status in each round they applied to. */
-  protected readonly requestStatusByRound = computed(() => {
-    const mine = this.myRequests();
-    return new Map(mine?.state === 'ready' ? mine.data.map((r) => [r.roundId, r.status]) : []);
-  });
-
-  /** A matched space the vendor can submit to right now, for the "ยื่นคำขอที่นี่" button. */
-  protected readonly submittable = computed(() => {
-    const spaces = this.spaceList();
-    const requested = this.requestStatusByRound();
-    const isVendor = this.session.role() === 'vendor';
-    return (spaceId: string): SpaceSummary | null => {
-      const space = spaces.find((s) => s.id === spaceId);
-      return isVendor && space?.openRound && !requested.has(space.openRound.id) ? space : null;
-    };
-  });
-
-  /** The status of the vendor's request in a space's open round, or null when they have none there. */
-  protected readonly requestStatus = computed(() => {
-    const spaces = this.spaceList();
-    const requested = this.requestStatusByRound();
-    return (spaceId: string): StallRequestStatus | null => {
-      const round = spaces.find((s) => s.id === spaceId)?.openRound;
-      return (round && requested.get(round.id)) ?? null;
-    };
-  });
-
-  /** The one apply-by date of every open round, when they share it; otherwise each space states its own. */
-  protected readonly closesAt = computed(() => {
-    const dates = new Set(this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.applyClosesAt] : [])));
-    return dates.size === 1 ? [...dates][0] : null;
-  });
+  protected readonly spaces = this.store.spaces;
+  protected readonly spaceList = this.store.spaceList;
+  protected readonly myRequests = this.store.myRequests;
+  protected readonly current = this.store.current;
+  protected readonly finished = this.store.finished;
+  protected readonly requestStatusByRound = this.store.requestStatusByRound;
+  protected readonly submittable = this.store.submittable;
+  protected readonly requestStatus = this.store.requestStatus;
+  protected readonly closesAt = this.store.closesAt;
+  protected readonly submitting = this.store.submitting;
+  protected readonly acting = this.store.acting;
+  protected readonly outsideGeofence = this.store.outsideGeofence;
+  protected readonly notice = this.store.notice;
 
   /**
    * The assistant starts open until the vendor has an application in play (submitted, being checked, won or
@@ -126,42 +84,8 @@ export class VendorHome {
     });
   }
 
-  protected readonly submitting = signal<string | null>(null);
-  /** Request id with a confirm/forfeit in flight. */
-  protected readonly acting = signal<string | null>(null);
-  /** Request id whose forfeit is waiting for a second, deliberate click. */
-  protected readonly confirmingForfeit = signal<string | null>(null);
-  /** Demo toggle: pretend the phone is outside the space when scanning. */
-  protected readonly outsideGeofence = signal(false);
-  protected readonly notice = signal<{ kind: 'ok' | 'warn' | 'error'; text: string } | null>(null);
-
   protected submit(space: SpaceSummary): void {
-    if (!space.openRound) return;
-    this.submitting.set(space.id);
-    this.notice.set(null);
-    this.api.submitStallRequest(space.openRound.id).subscribe({
-      next: (req) => {
-        this.submitting.set(null);
-        this.notice.set({
-          kind: 'ok',
-          text: `${STATUS_LABEL[req.status]} · ${req.spaceName} · กลุ่ม${CATEGORY_LABEL[req.category]} — ยังไม่ใช่การได้สิทธิ์ ผลจับฉลากประกาศหลังปิดรับคำขอ`,
-        });
-        this.refresh.update((n) => n + 1);
-      },
-      error: (err) => {
-        this.submitting.set(null);
-        this.notice.set({ kind: 'error', text: problemMessage(err) });
-      },
-    });
-  }
-
-  /** Requests still in play lead; a draw that went elsewhere or a forfeited lock folds under "คำขอที่จบแล้ว". */
-  protected readonly current = computed(() => this.requestList().filter((r) => !FINISHED.has(r.status)));
-  protected readonly finished = computed(() => this.requestList().filter((r) => FINISHED.has(r.status)));
-
-  private requestList(): StallRequest[] {
-    const mine = this.myRequests();
-    return mine?.state === 'ready' ? mine.data : [];
+    void this.store.submit(space);
   }
 
   /** The vendor-facing word for a run: they wait on the district, they do not hold a draft. */
@@ -200,38 +124,22 @@ export class VendorHome {
 
   /** Retry after a failed load. */
   protected reload(): void {
-    this.refresh.update((n) => n + 1);
+    this.store.reload();
   }
 
-  protected confirm(req: StallRequest): void {
-    this.act(req, this.api.confirmStallRequest(req.id), (r) => `ยืนยันสิทธิ์แล้ว · ${r.spaceName} ล็อค ${r.lockCode}`);
+  protected async confirm(req: StallRequest): Promise<void> {
+    await this.store.confirm(req);
+    this.confirmingForfeit.set(null);
   }
 
-  protected forfeit(req: StallRequest): void {
-    this.act(req, this.api.forfeitStallRequest(req.id), (r) => `สละสิทธิ์แล้ว · ${r.spaceName} — ล็อคส่งต่อให้ผู้สำรองตามลำดับ`);
+  protected async forfeit(req: StallRequest): Promise<void> {
+    await this.store.forfeit(req);
+    this.confirmingForfeit.set(null);
   }
 
   /** Simulates scanning the QR posted at the vendor's own lock. */
   protected checkIn(req: StallRequest): void {
-    if (!req.lockCode) return;
-    this.acting.set(req.id);
-    this.notice.set(null);
-    this.api.checkIn(req.id, lockQr(req.spaceId, req.lockCode), !this.outsideGeofence()).subscribe({
-      next: (c) => {
-        this.acting.set(null);
-        this.notice.set({
-          kind: c.withinGeofence ? 'ok' : 'warn',
-          text: c.withinGeofence
-            ? `เช็คอินแล้ว · ${c.spaceName} ล็อค ${c.lockCode} · ${formatThaiDateTime(c.at)}`
-            : `เช็คอินแล้ว แต่ตำแหน่งอยู่นอกพื้นที่ — บันทึกไว้ให้เจ้าหน้าที่ตรวจสอบ`,
-        });
-        this.refresh.update((n) => n + 1);
-      },
-      error: (err) => {
-        this.acting.set(null);
-        this.notice.set({ kind: 'error', text: problemMessage(err) });
-      },
-    });
+    this.store.checkIn(req);
   }
 
   /** Only an Ineligible result can be reviewed (draw outcomes cannot), once per request; the server checks the window. */
@@ -239,50 +147,12 @@ export class VendorHome {
     return req.status === 'Ineligible' && !req.review;
   }
 
-  protected fileReview(req: StallRequest): void {
+  protected async fileReview(req: StallRequest): Promise<void> {
     const reason = this.reviewReason().trim();
     if (!reason) return;
-    this.acting.set(req.id);
-    this.notice.set(null);
-    this.api.fileReview(req.id, reason).subscribe({
-      next: () => {
-        this.acting.set(null);
-        this.reviewing.set(null);
-        this.reviewReason.set('');
-        this.notice.set({ kind: 'ok', text: `ยื่นขอทบทวนผลแล้ว · ${req.spaceName} — รอเขตตอบ` });
-        this.refresh.update((n) => n + 1);
-      },
-      error: (err) => {
-        this.acting.set(null);
-        this.notice.set({ kind: 'error', text: problemMessage(err) });
-      },
-    });
+    if (await this.store.fileReview(req, reason)) {
+      this.reviewing.set(null);
+      this.reviewReason.set('');
+    }
   }
-
-  private act(req: StallRequest, call: Observable<StallRequest>, message: (r: StallRequest) => string): void {
-    this.acting.set(req.id);
-    this.notice.set(null);
-    call.subscribe({
-      next: (r) => {
-        this.acting.set(null);
-        this.confirmingForfeit.set(null);
-        this.notice.set({ kind: 'ok', text: message(r) });
-        this.refresh.update((n) => n + 1);
-      },
-      error: (err) => {
-        this.acting.set(null);
-        this.confirmingForfeit.set(null);
-        this.notice.set({ kind: 'error', text: problemMessage(err) });
-        this.refresh.update((n) => n + 1);
-      },
-    });
-  }
-}
-
-function loadState<T>(source: Observable<T>) {
-  return source.pipe(
-    map((data) => ({ state: 'ready', data }) as Load<T>),
-    catchError(() => of({ state: 'error' } as Load<T>)),
-    startWith({ state: 'loading' } as Load<T>),
-  );
 }
