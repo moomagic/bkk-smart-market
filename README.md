@@ -84,6 +84,8 @@ cd api && dotnet test
 # Web (Angular 21) — dev server ส่ง /api, /docs, /openapi ไปที่ API :5080
 cd web && npx ng build
 cd web && npx ng serve
+# หรือ dev server ที่ส่ง /api ไปยัง stack ของ docker compose (:8080) — ไม่ต้องรัน API เอง
+cd web && npm run start:docker
 
 # API กับ PostgreSQL ของ compose (ต้องเปิด port ของ db เอง หรือใช้ PostgreSQL ในเครื่อง)
 cd api && ConnectionStrings__SmartMarket="Host=localhost;Port=5432;Database=smartmarket;Username=postgres;Password=postgres" \
