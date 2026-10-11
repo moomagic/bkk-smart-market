@@ -87,6 +87,8 @@ public sealed class FaqAssistantTests
     [InlineData("ได้สิทธิไหมคะ")]
     [InlineData("ได้ล็อคหรือเปล่า")]
     [InlineData("ผลจับฉลากของฉันออกยัง")]
+    [InlineData("ใครได้ล็อค B2 ไหม")]
+    [InlineData("บุญมีติดสำรองไหม")]
     public void Never_discusses_individual_outcomes_or_promises_a_lock(string question)
     {
         var answer = FaqAssistant.Answer(question, Library);

@@ -23,6 +23,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__SmartMarket: Host=db;Port=5432;Database=smartmarket;Username=postgres;Password=postgres
+      # Optional: with a key the Vendor Assistant answers through Claude; without one it uses keyword matching.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
     depends_on:
       db:
         condition: service_healthy

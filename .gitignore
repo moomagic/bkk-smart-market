@@ -13,3 +13,6 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# Local secrets (e.g. ANTHROPIC_API_KEY for the Vendor Assistant) — never commit
+.env

@@ -19,18 +19,22 @@ public static class FaqAssistant
 
     // Asking about one person's outcome, or for a guarantee. Thai has no word breaks and many spellings, so this
     // looks for an outcome phrase + a yes/no question, unless the question is about a group ("ผู้สูงอายุได้สิทธิ์ไหม").
-    private static readonly string[] OutcomePhrases = ["ได้ล็อค", "ได้ล็อก", "ได้สิทธิ", "ได้ที่"];
+    private static readonly string[] OutcomePhrases = ["ได้ล็อค", "ได้ล็อก", "ได้สิทธิ", "ได้ที่", "ติดสำรอง", "ชนะ", "ถูกจับ"];
     private static readonly string[] YesNo = ["ไหม", "มั้ย", "หรือเปล่า", "รึเปล่า", "หรือยัง", "ป่าว"];
-    private static readonly string[] GroupTerms = ["ผู้สูงอายุ", "ผู้พิการ", "คนพิการ", "เปราะบาง", "ผู้ค้าเดิม", "ผู้ค้าใหม่", "กลุ่ม", "ใคร"];
+    // Not "ใคร": "ใครได้ล็อค B2 ไหม" asks who won — an individual outcome.
+    private static readonly string[] GroupTerms = ["ผู้สูงอายุ", "ผู้พิการ", "คนพิการ", "เปราะบาง", "ผู้ค้าเดิม", "ผู้ค้าใหม่", "กลุ่ม"];
     private static readonly string[] OwnResultOrGuarantee =
         ["ผลของฉัน", "ผลของผม", "ผลของหนู", "ผลของเรา", "ผลของดิฉัน", "ผลจับฉลากของ", "รับรองได้ไหม", "รับประกัน", "การันตี"];
 
-    private static bool AsksForIndividualOutcome(string q) =>
+    /// <summary>Shared by every path: such a question never reaches a model (Guardrail 1).</summary>
+    public static bool AsksForIndividualOutcome(string q) =>
         OwnResultOrGuarantee.Any(q.Contains)
         || (OutcomePhrases.Any(q.Contains) && YesNo.Any(q.Contains) && !GroupTerms.Any(q.Contains));
 
     /// <summary>Up to 3 lines of the section plus a citation line: at most 4 lines.</summary>
-    private const int MaxBodyLines = 3;
+    public const int MaxBodyLines = 3;
+
+    public static string CitationLine(IEnumerable<Citation> cited) => $"อ้างอิง: {string.Join(" · ", cited.Select(c => $"{c.File} › {c.Heading}"))}";
 
     public static AssistantAnswer Answer(string question, IReadOnlyList<RuleSection> sections)
     {
@@ -49,7 +53,7 @@ public static class FaqAssistant
             return new AssistantAnswer(NotFound, false, []);
 
         var citation = new Citation(best.File, best.Heading);
-        var text = string.Join('\n', best.Lines.Take(MaxBodyLines).Append($"อ้างอิง: {best.File} › {best.Heading}"));
+        var text = string.Join('\n', best.Lines.Take(MaxBodyLines).Append(CitationLine([citation])));
         return new AssistantAnswer(text, true, [citation]);
     }
 }

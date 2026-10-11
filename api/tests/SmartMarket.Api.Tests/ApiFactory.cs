@@ -32,6 +32,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:SmartMarket", _db.GetConnectionString());
+        builder.UseSetting("Assistant:ApiKey", ""); // keyword matching unless a test opts into the (fake) Claude path
         builder.ConfigureServices(s => s.AddLogging(l => l
             .SetMinimumLevel(LogLevel.Trace)
             .AddProvider(new CapturingLoggerProvider(Logs))));

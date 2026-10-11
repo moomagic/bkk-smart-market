@@ -12,6 +12,16 @@ public sealed class AssistantOptions
     /// the Docker image, the repository's own folder when running from source.
     /// </summary>
     public string? RulesPath { get; init; }
+
+    /// <summary>Claude API key. Empty = keyword matching only. Falls back to the ANTHROPIC_API_KEY environment variable.</summary>
+    public string? ApiKey { get; set; }
+
+    /// <summary>Claude model id; the ANTHROPIC_MODEL environment variable overrides it.</summary>
+    public string Model { get; set; } = "claude-opus-5-5";
+
+    public int TimeoutSeconds { get; set; } = 15;
+
+    public string BaseUrl { get; set; } = "https://api.anthropic.com/";
 }
 
 /// <summary>Reads <c>docs/rules/*.md</c> once; the files are the single source the assistant may answer from.</summary>
@@ -23,6 +33,8 @@ public sealed class FileRulesLibrary : IRulesLibrary
         _rules = new(() => Load(options.Value.RulesPath is { Length: > 0 } path ? path : FindRulesFolder()));
 
     public IReadOnlyList<RuleSection> Sections => _rules.Value.Sections;
+
+    public IReadOnlyList<string> Files => [.. _rules.Value.Files.Keys];
 
     public string Raw(string file) => _rules.Value.Files[file];
 

@@ -5,6 +5,9 @@ public interface IRulesLibrary
 {
     IReadOnlyList<RuleSection> Sections { get; }
 
+    /// <summary>File names, in order.</summary>
+    IReadOnlyList<string> Files { get; }
+
     /// <summary>The whole file as published, e.g. for the AI model's context.</summary>
     string Raw(string file);
 }

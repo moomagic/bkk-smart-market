@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Api, problemMessage } from '../core/api';
+import { Api, AssistantSource, problemMessage } from '../core/api';
 
-type Message = { from: 'me' | 'assistant'; text: string; found?: boolean };
+type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source?: AssistantSource };
 
 /** Vendor Assistant: answers from the published rules only, with the file and section it used. */
 @Component({
@@ -15,7 +15,12 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean };
       @if (messages().length > 0) {
         <ol class="messages" aria-live="polite">
           @for (m of messages(); track $index) {
-            <li [class.me]="m.from === 'me'" [class.not-found]="m.found === false">{{ m.text }}</li>
+            <li [class.me]="m.from === 'me'" [class.not-found]="m.found === false">
+              {{ m.text }}
+              @if (m.source) {
+                <span class="source">{{ m.source === 'claude' ? 'ตอบโดย AI จากระเบียบที่ประกาศ' : 'ค้นจากหัวข้อระเบียบ' }}</span>
+              }
+            </li>
           }
         </ol>
       }
@@ -48,6 +53,7 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean };
     .messages li { white-space: pre-line; background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; max-width: 92%; }
     .messages li.me { align-self: flex-end; background: var(--ground); }
     .messages li.not-found { background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+    .source { display: block; margin-top: 4px; font-size: 0.75rem; color: var(--muted); }
     .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .chip { font: inherit; font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
     form { display: flex; gap: 8px; }
@@ -74,7 +80,7 @@ export class AssistantChat {
     this.api.askAssistant(q).subscribe({
       next: (a) => {
         this.busy.set(false);
-        this.messages.update((m) => [...m, { from: 'assistant', text: a.text, found: a.found }]);
+        this.messages.update((m) => [...m, { from: 'assistant', text: a.text, found: a.found, source: a.source }]);
       },
       error: (err) => {
         this.busy.set(false);

@@ -19,7 +19,18 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
         services.AddOptions<DemoOptions>().Bind(config.GetSection(DemoOptions.Section));
-        services.AddOptions<AssistantOptions>().Bind(config.GetSection(AssistantOptions.Section));
+        services.AddOptions<AssistantOptions>()
+            .Bind(config.GetSection(AssistantOptions.Section))
+            .PostConfigure(o =>
+            {
+                // The environment variables apply only where config says nothing; an explicit Assistant:ApiKey = ""
+                // switches the model off even on a machine that has ANTHROPIC_API_KEY set (tests rely on this).
+                if (config[$"{AssistantOptions.Section}:ApiKey"] is null) o.ApiKey = config["ANTHROPIC_API_KEY"];
+                if (config[$"{AssistantOptions.Section}:Model"] is null && config["ANTHROPIC_MODEL"] is { Length: > 0 } model)
+                    o.Model = model;
+            });
+        services.AddHttpClient<ClaudeAssistantModel>();
+        services.AddTransient<IAssistantModel>(sp => sp.GetRequiredService<ClaudeAssistantModel>());
         services.AddSingleton<IRulesLibrary, FileRulesLibrary>();
         services.AddOptions<RulesOptions>()
             .Bind(config.GetSection(RulesOptions.Section))

@@ -198,8 +198,11 @@ export interface AssistantAnswer {
   text: string;
   found: boolean;
   citations: { file: string; heading: string }[];
-  source: string;
+  /** 'claude' when the AI model answered, 'faq' when keyword matching did. */
+  source: AssistantSource;
 }
+
+export type AssistantSource = 'claude' | 'faq';
 
 export type PreferredTime = 'Morning' | 'Evening';
 
