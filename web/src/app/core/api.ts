@@ -241,6 +241,18 @@ export interface DashboardKpis {
   spaces: DashboardSpaceRow[];
 }
 
+export type InsightKind = 'OutsideGeofence' | 'Absent' | 'LowCheckIn' | 'SharedSurname' | 'SharedPhone';
+export type InsightSeverity = 'Info' | 'Warning' | 'Critical';
+
+/** Read-only flag for an officer to look into; it never changes anything by itself. */
+export interface InsightFlag {
+  kind: InsightKind;
+  severity: InsightSeverity;
+  vendorName: string;
+  lockCode: string;
+  message: string;
+}
+
 export interface Session {
   user: string;
   role: string;
@@ -292,6 +304,10 @@ export class Api {
 
   fileReview(stallRequestId: string, reason: string) {
     return this.http.post<Review>(`/api/stall-requests/${stallRequestId}/reviews`, { reason });
+  }
+
+  roundInsights(roundId: string) {
+    return this.http.get<InsightFlag[]>(`/api/rounds/${roundId}/insights`);
   }
 
   roundReviews(roundId: string) {

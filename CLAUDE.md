@@ -146,6 +146,7 @@ POST   /stall-requests/{id}/confirm
 POST   /stall-requests/{id}/forfeit
 POST   /stall-requests/{id}/reviews       ขอทบทวนผล
 GET    /rounds/{id}/reviews               คำขอทบทวนของรอบ (portal)
+GET    /rounds/{id}/insights              Allocation Insight — ธงอ่านอย่างเดียวของรอบ (portal)
 POST   /reviews/{id}/respond              ตอบคำขอทบทวน Upheld | Corrected
 POST   /rounds/{id}/eligibility           ตรวจสิทธิทั้งรอบ (portal)
 POST   /rounds/{id}/allocation-runs       รันจัดสรร → Draft

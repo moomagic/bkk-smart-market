@@ -34,13 +34,13 @@ public static class HistorySeed
     private sealed record Applicants(Category Category, int Count, int Weight = 1);
 
     /// <param name="Spaces">Space index used in the fixed ids of this space's rows.</param>
-    /// <param name="SellingDays">Days of the week the space trades — check-ins happen only then.</param>
     private sealed record History(
         int Spaces, Guid RoundId, Guid SpaceId, DateOnly StartsOn, DateOnly EndsOn, DateTime ApplyOpens, DateTime ApplyCloses,
-        DateTime RanAt, DateTime DecidedAt, string ReferenceNo, int Seed, int FirstVendor, Applicants[] Applying,
-        DayOfWeek[] SellingDays);
-
-    private static readonly DayOfWeek[] EveryDay = Enum.GetValues<DayOfWeek>();
+        DateTime RanAt, DateTime DecidedAt, string ReferenceNo, int Seed, int FirstVendor, Applicants[] Applying)
+    {
+        /// <summary>Days of the week the space trades, from its opening hours — check-ins happen only then.</summary>
+        public DayOfWeek[] SellingDays => Application.Reporting.SellingDays.Parse(SeedData.Spaces.Single(s => s.Id == SpaceId).OpenHours);
+    }
 
     /// <summary>
     /// LeadTime (close → approval): MRT 2 days, market 4, พระราม 8 3 — median 3.
@@ -52,18 +52,15 @@ public static class HistorySeed
         new(2, MrtPreviousRound, SeedData.MrtBangPhlatExit1, new(2026, 5, 1), new(2026, 10, 31),
             new(2026, 4, 1, 8, 0, 0), new(2026, 4, 20, 17, 0, 0), new(2026, 4, 22, 10, 0, 0), new(2026, 4, 22, 17, 0, 0),
             "BPL-2569-0422-01", 25690501, 101,
-            [new(Category.Legacy, 2), new(Category.Vulnerable, 2), new(Category.New, 3), new(Category.New, 2, Weight: 2)],
-            EveryDay),
+            [new(Category.Legacy, 2), new(Category.Vulnerable, 2), new(Category.New, 3), new(Category.New, 2, Weight: 2)]),
         new(3, MarketPreviousRound, SeedData.BangPhlatMarket, new(2026, 5, 1), new(2026, 10, 31),
             new(2026, 4, 1, 8, 0, 0), new(2026, 4, 20, 17, 0, 0), new(2026, 4, 22, 11, 0, 0), new(2026, 4, 24, 17, 0, 0),
             "BPL-2569-0422-02", 25690502, 111,
-            [new(Category.Legacy, 8), new(Category.Vulnerable, 7), new(Category.New, 9), new(Category.New, 2, Weight: 2)],
-            [DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday]),
+            [new(Category.Legacy, 8), new(Category.Vulnerable, 7), new(Category.New, 9), new(Category.New, 2, Weight: 2)]),
         new(4, Rama8PreviousRound, SeedData.Rama8BridgeYard, new(2026, 10, 1), new(2026, 10, 31),
             new(2026, 9, 1, 8, 0, 0), new(2026, 9, 20, 17, 0, 0), new(2026, 9, 22, 10, 0, 0), new(2026, 9, 23, 17, 0, 0),
             "BPL-2569-0922-01", 25691001, 141,
-            [new(Category.Vulnerable, 2), new(Category.New, 6)],
-            [DayOfWeek.Saturday, DayOfWeek.Sunday]),
+            [new(Category.Vulnerable, 2), new(Category.New, 6)]),
     ];
 
     private static readonly string[] FirstNames =
@@ -74,10 +71,26 @@ public static class HistorySeed
         "สุวรรณ", "เยาวลักษณ์", "ชนิดา", "วีระ", "อัมพร", "สมบัติ", "ปราณี", "ไพโรจน์", "ลัดดา", "สมจิตร",
     ];
 
-    private static readonly string[] LastNames =
-    [
-        "แสงทอง", "ใจงาม", "มีสุข", "ศรีสวัสดิ์", "บุญมา", "พึ่งตน", "ทองคำ", "รุ่งเรือง", "สุขสม", "เจริญผล", "วงศ์ไทย", "นาคดี",
-    ];
+    // Surnames are unique per vendor (prefix × suffix), so a shared surname only appears where it is planted on purpose.
+    private static readonly string[] SurnamePrefixes = ["แสง", "ใจ", "มี", "ศรี", "บุญ", "ทอง", "รุ่ง", "สุข"];
+    private static readonly string[] SurnameSuffixes = ["ประเสริฐ", "วงศ์", "ศักดิ์", "พันธ์", "กุล", "ชัย"];
+
+    private static string Surname(int n) =>
+        SurnamePrefixes[(n - 101) / SurnameSuffixes.Length % SurnamePrefixes.Length] + SurnameSuffixes[(n - 101) % SurnameSuffixes.Length];
+
+    /// <summary>
+    /// Planted for Allocation Insight (#25), applied after the draw (names and check-ins don't touch it), per space:
+    /// two winners of the market share a surname and a phone; one MRT winner stops coming after 5 Oct (past the
+    /// 14-day revoke line by 25 Oct) and one market winner after 9 Oct (past the 7-day warning); assignment 2 in each
+    /// space comes about half the time (under 80%); assignment 1's second check-in is outside the space.
+    /// </summary>
+    private static readonly Dictionary<(int Space, int Assignment), DateOnly> StopsComingAfter = new()
+    {
+        [(2, 3)] = new(2026, 10, 5),
+        [(3, 4)] = new(2026, 10, 9),
+    };
+
+    private const int MarketSpace = 3;
 
     public static async Task ApplyAsync(SmartMarketDbContext db, CancellationToken ct)
     {
@@ -97,13 +110,15 @@ public static class HistorySeed
 
         var applicants = h.Applying.SelectMany(a => Enumerable.Repeat(a, a.Count)).ToList();
         var requests = new Dictionary<Guid, StallRequest>();
+        var vendors = new Dictionary<Guid, Vendor>();
         for (var i = 0; i < applicants.Count; i++)
         {
             var n = h.FirstVendor + i;
-            var vendor = new Vendor(SeedData.VendorId(n), $"{FirstNames[n % FirstNames.Length]} {LastNames[n % LastNames.Length]}",
+            var vendor = new Vendor(SeedData.VendorId(n), $"{FirstNames[n % FirstNames.Length]} {Surname(n)}",
                 $"081-100-{n:0000}", applicants[i].Category == Category.Vulnerable ? "ผู้สูงอายุ" : null, "ทั่วไป",
                 foodHygieneTrained: true, bannedUntil: null, At(h.ApplyOpens));
             db.Vendors.Add(vendor);
+            vendors[vendor.Id] = vendor;
             var request = new StallRequest(Id(7, h.Spaces, n), h.RoundId, vendor.Id, At(h.ApplyOpens.AddDays(1 + i % 10)),
                 applicants[i].Category);
             request.MarkEligible(applicants[i].Weight, At(h.RanAt.AddHours(-1)));
@@ -121,6 +136,14 @@ public static class HistorySeed
         run.Approve(At(h.DecidedAt), Officer);
         round.MarkApproved();
         db.AllocationRuns.Add(run);
+
+        if (h.Spaces == MarketSpace)
+        {
+            var (first, second) = (result.Outcomes.First(o => o.Kind == OutcomeKind.Won), result.Outcomes.Where(o => o.Kind == OutcomeKind.Won).Skip(1).First());
+            var shared = vendors[first.VendorId];
+            var partner = vendors[second.VendorId];
+            partner.UpdateContact($"{partner.DisplayName.Split(' ')[0]} {Vendor.SurnameOf(shared.DisplayName)}", shared.Phone);
+        }
 
         var confirmBy = At(h.DecidedAt).AddDays(3);
         var attendance = new Random(h.Seed);
@@ -143,19 +166,25 @@ public static class HistorySeed
 
     /// <summary>
     /// Selling days from 1 Aug (or the round's start — พระราม 8 is a one-month TrialArea round, so October only) to 24 Oct;
-    /// most winners come ~9 days in 10, one in each space far less (material for the usage flags in #25).
+    /// most winners come nearly every selling day, so the usage flags in #25 point at the planted cases.
     /// </summary>
     private static void AddCheckIns(SmartMarketDbContext db, History h, Assignment assignment, int assignmentNo, Random rng)
     {
-        var rate = assignmentNo == 2 ? 0.55 : 0.9;
+        var rate = assignmentNo == 2 ? 0.55 : 0.97;
+        var until = StopsComingAfter.TryGetValue((h.Spaces, assignmentNo), out var stop) ? stop : CheckInsUntil;
         var day = h.StartsOn > CheckInsFrom ? h.StartsOn : CheckInsFrom;
         var n = 0;
+        var sellingDays = h.SellingDays;
         for (; day <= CheckInsUntil && day <= h.EndsOn; day = day.AddDays(1))
         {
-            if (!h.SellingDays.Contains(day.DayOfWeek) || rng.NextDouble() >= rate) continue;
-            var at = new DateTimeOffset(day.ToDateTime(new TimeOnly(16, 0)), Bangkok).AddMinutes(rng.Next(0, 90)).ToUniversalTime();
+            if (!sellingDays.Contains(day.DayOfWeek)) continue;
+            // Both draws happen on every selling day, so a planted absence doesn't shift anyone else's pattern.
+            var comes = rng.NextDouble() < rate;
+            var minutes = rng.Next(0, 90);
+            if (!comes || day > until) continue;
+            var at = new DateTimeOffset(day.ToDateTime(new TimeOnly(16, 0)), Bangkok).AddMinutes(minutes).ToUniversalTime();
             db.CheckIns.Add(new CheckIn(new Guid($"71000000-0000-{h.Spaces:0000}-{assignmentNo:0000}-{++n:000000000000}"),
-                assignment.Id, at, CheckInMethod.QR, withinGeofence: rng.NextDouble() >= 0.03));
+                assignment.Id, at, CheckInMethod.QR, withinGeofence: !(assignmentNo == 1 && n == 2)));
         }
     }
 

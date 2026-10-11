@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AuditTimeline } from './audit-timeline';
 import {
@@ -81,6 +81,27 @@ export class PortalHome {
     const r = this.runs();
     return r?.state === 'ready' ? r.data : [];
   });
+
+  /** Allocation Insight flags of the selected round (read-only). */
+  protected readonly insights = toSignal(
+    combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
+      switchMap(([id]) => (id ? load(this.api.roundInsights(id)) : of(null))),
+    ),
+    { initialValue: null as Load<InsightFlag[]> | null },
+  );
+
+  protected readonly insightList = computed(() => {
+    const r = this.insights();
+    return r?.state === 'ready' ? r.data : [];
+  });
+
+  protected readonly insightKind: Record<InsightFlag['kind'], string> = {
+    OutsideGeofence: 'เช็คอินนอกพื้นที่',
+    Absent: 'ขาดเช็คอิน',
+    LowCheckIn: 'เช็คอินต่ำกว่าเกณฑ์',
+    SharedSurname: 'นามสกุลซ้ำ',
+    SharedPhone: 'เบอร์โทรซ้ำ',
+  };
 
   protected readonly reviews = toSignal(
     combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(

@@ -128,6 +128,21 @@
       }
     </section>
 
+    @if (insightList().length > 0) {
+      <section aria-labelledby="insight-heading">
+        <h2 id="insight-heading">Allocation Insight <span class="muted small">{{ insightList().length }} รายการ · ข้อสังเกตให้ตรวจสอบ ไม่มีผลกับสิทธิ์โดยอัตโนมัติ</span></h2>
+        <ul class="insights">
+          @for (f of insightList(); track $index) {
+            <li [attr.data-severity]="f.severity">
+              <span class="tag" [class.draft]="f.severity !== 'Info'">{{ insightKind[f.kind] }}</span>
+              <strong>{{ f.vendorName }}</strong> <span class="mono muted">{{ f.lockCode }}</span>
+              <div>{{ f.message }}</div>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
     @if (reviewList().length > 0) {
       <section aria-labelledby="reviews-heading">
         <h2 id="reviews-heading">คำขอทบทวน</h2>

@@ -48,6 +48,10 @@ public sealed class Vendor
         Phone = phone;
     }
 
+    /// <summary>"สมศรี ใจดี" → "ใจดี"; empty when there is none. Personal data — compare it, never show it.</summary>
+    public static string SurnameOf(string displayName) =>
+        displayName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) is [_, var last] ? last : "";
+
     /// <summary>"สมศรี ใจดี" → "สมศรี ใ."</summary>
     public static string Mask(string displayName)
     {
