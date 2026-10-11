@@ -114,9 +114,24 @@ const TABS = [
         box-shadow: 0 12px 40px rgb(23 32 29 / 0.14);
       }
     }
+    /* Thai stacks tone marks above and vowels below the line: a little more leading than the portal's tables */
+    :host {
+      line-height: 1.6;
+    }
+    :host ::ng-deep :is(h1, h2, h3) {
+      line-height: 1.35;
+    }
     /* Finger-sized buttons on every vendor screen; link-styled and small ones (suggestion chips) keep their size */
     :host ::ng-deep .p-button:not(.p-button-link):not(.p-button-sm) {
       min-height: 44px;
+    }
+    /* Text fields and selects share one 44px height, so a field beside a select lines up top and bottom */
+    :host ::ng-deep input.p-inputtext {
+      height: 44px;
+    }
+    :host ::ng-deep .p-select {
+      height: 44px;
+      align-items: center;
     }
     .appbar {
       display: flex;
@@ -203,7 +218,9 @@ const TABS = [
       min-height: 56px;
       color: var(--muted);
       text-decoration: none;
-      font-size: var(--text-caption);
+      /* 13px, as the status pills: 12px Thai under an icon is hard to read at arm's length */
+      font-size: 0.8125rem;
+      line-height: 1.3;
       -webkit-tap-highlight-color: transparent;
     }
     .tabs a.active {

@@ -64,13 +64,21 @@ h2 {
   border-top: 1px dashed var(--line);
 }
 .review p {
-  margin: 2px 0;
+  margin: var(--space-1) 0;
 }
 .review-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-4);
+}
+.review-form label {
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+.review-form .meta {
+  margin: 0 0 var(--space-2);
 }
 .review-link {
   display: block;
@@ -108,7 +116,10 @@ p-button[fluid] {
 }
 /* Forfeit is the quiet way out, centred under the confirm button rather than a second full-width option */
 .forfeit {
-  align-self: center;
+  align-self: stretch;
+}
+.forfeit ::ng-deep .p-button {
+  width: 100%;
 }
 .toggle {
   display: flex;

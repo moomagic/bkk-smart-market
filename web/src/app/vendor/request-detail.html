@@ -99,7 +99,8 @@
           } @else {
             <p-button fluid [label]="acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์'" (onClick)="confirm(req)"
               [disabled]="acting() !== null" />
-            <p-button text class="forfeit" label="สละสิทธิ์" (onClick)="confirmingForfeit.set(true)"
+            <!-- Quiet but not green: the way out never reads as a second confirm -->
+            <p-button text severity="danger" class="forfeit" label="สละสิทธิ์" (onClick)="confirmingForfeit.set(true)"
               [disabled]="acting() !== null" />
           }
         </div>
