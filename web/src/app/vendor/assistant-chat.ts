@@ -69,12 +69,14 @@ import { VendorStore } from './vendor-store';
     /* Empty, the live region stays in the page (and the accessibility tree) but takes no room */
     .messages:empty { flex: 0; }
     .messages { flex: 1; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-    .messages li { white-space: pre-line; background: var(--accent-soft); border-radius: 12px 12px 12px 4px; padding: var(--space-2) var(--space-3); max-width: 88%; }
-    .messages li.me { align-self: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 12px 12px 4px 12px; }
+    .messages li { white-space: pre-line; background: var(--accent-soft); border-radius: 8px 8px 8px 2px; padding: var(--space-2) var(--space-3); max-width: 88%; }
+    .messages li.me { align-self: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 8px 8px 2px 8px; }
     .messages li.not-found { background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
     .messages li.typing { color: var(--muted); font-size: var(--text-small); background: transparent; padding-left: 0; }
-    .source { display: block; margin-top: var(--space-1); font-size: var(--text-caption); color: var(--muted); }
+    .source { display: block; margin-top: var(--space-1); font-size: var(--text-small); color: var(--muted); }
     .suggestions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    /* Small type, but each suggestion is a whole question to tap: a finger-sized target */
+    .suggestions ::ng-deep .p-button { min-height: 44px; }
     /* The composer sticks to the bottom of the scrolling screen, edge to edge over its padding, just above the tabs */
     form {
       position: sticky;

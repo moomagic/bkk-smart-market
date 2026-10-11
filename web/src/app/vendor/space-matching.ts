@@ -79,19 +79,24 @@ import { VendorStore } from './vendor-store';
   styles: `
     h2 { font-size: var(--text-h3); margin: 0 0 var(--space-3); }
     .find-hint { grid-column: 1 / -1; margin: 0; font-size: var(--text-small); color: var(--muted); }
-    form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); align-items: end; }
-    label, .field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-small); color: var(--muted); min-width: 0; }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); align-items: end; }
+    label, .field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-small); font-weight: 600; color: var(--muted); min-width: 0; }
     label:first-child { grid-column: 1 / -1; }
     .find { grid-column: 1 / -1; }
-    .submit-here { display: inline-block; margin-top: var(--space-2); }
-    .results { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
-    .results > li { border-top: 1px solid var(--line); padding-top: var(--space-3); }
+    .submit-here { display: inline-block; margin-top: var(--space-3); }
+    /* The matches read as the spaces list they stand in for: one bordered panel, rows divided */
+    .results { list-style: none; margin: var(--space-4) 0 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+    .results > li { padding: var(--space-4); }
+    .results > li + li { border-top: 1px solid var(--line); }
     .head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
-    h3 { font-size: var(--text-body); margin: 0; }
-    .score { color: var(--accent); font-weight: 600; }
+    h3 { font-size: var(--text-h3); margin: 0; }
+    .score { flex-shrink: 0; color: var(--accent); font-weight: 600; }
     .reasons { margin: var(--space-2) 0 0; padding-left: var(--space-4); font-size: var(--text-small); }
-    .requested { margin: var(--space-2) 0 0; }
-    .show-all { display: block; margin-top: var(--space-3); }
+    .reasons li + li { margin-top: 2px; }
+    .requested { margin: var(--space-3) 0 0; }
+    /* A link on its own line, still a finger-sized target */
+    .show-all { display: block; margin-top: var(--space-2); }
+    .show-all ::ng-deep .p-button { min-height: 44px; }
   `,
 })
 export class SpaceMatching {
