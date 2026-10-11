@@ -161,6 +161,13 @@ export interface AuditEntry {
   changes: AuditChange[];
 }
 
+export interface AssistantAnswer {
+  text: string;
+  found: boolean;
+  citations: { file: string; heading: string }[];
+  source: string;
+}
+
 export interface Session {
   user: string;
   role: string;
@@ -216,6 +223,10 @@ export class Api {
 
   auditTrail(entityType: string, entityId: string) {
     return this.http.get<AuditEntry[]>('/api/audit', { params: { entityType, entityId } });
+  }
+
+  askAssistant(question: string) {
+    return this.http.post<AssistantAnswer>('/api/assistant/ask', { question });
   }
 
   /** Development only: 404 elsewhere. */

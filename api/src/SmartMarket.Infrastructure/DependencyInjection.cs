@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.Allocation;
+using SmartMarket.Application.Assistant;
 using SmartMarket.Application.Audit;
 using SmartMarket.Application.Common;
 using SmartMarket.Infrastructure.Allocation;
+using SmartMarket.Infrastructure.Assistant;
 using SmartMarket.Infrastructure.Audit;
 using SmartMarket.Infrastructure.Persistence;
 using SmartMarket.Infrastructure.Time;
@@ -16,6 +18,8 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
         services.AddOptions<DemoOptions>().Bind(config.GetSection(DemoOptions.Section));
+        services.AddOptions<AssistantOptions>().Bind(config.GetSection(AssistantOptions.Section));
+        services.AddSingleton<IRulesLibrary, FileRulesLibrary>();
         services.AddOptions<RulesOptions>()
             .Bind(config.GetSection(RulesOptions.Section))
             .Validate(r => r.IsComplete(), $"appsettings section '{RulesOptions.Section}' is missing or incomplete")

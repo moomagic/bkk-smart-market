@@ -15,7 +15,11 @@ services:
       retries: 30
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      # The Vendor Assistant answers from docs/rules, which lives outside the api build context.
+      additional_contexts:
+        rules: ./docs/rules
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__SmartMarket: Host=db;Port=5432;Database=smartmarket;Username=postgres;Password=postgres

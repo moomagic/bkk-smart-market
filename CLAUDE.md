@@ -175,7 +175,7 @@ Auth: mock — header `X-Demo-Role: vendor|officer|executive` + `X-Demo-User` ·
 - Context = ไฟล์ทั้งหมดใน `docs/rules/` ใส่ใน system prompt (context stuffing — ไม่ต้องมี vector DB สำหรับ prototype)
 - ตอบภาษาไทย สั้น ≤ 4 บรรทัด · อ้างชื่อไฟล์/หัวข้อที่ใช้ตอบ · ไม่พบในเอกสาร → "ไม่พบในระเบียบที่ประกาศ กรุณาติดต่อสำนักงานเขตบางพลัด"
 - ห้ามตอบเรื่องผลการจัดสรรของบุคคล · ห้ามรับปากเรื่องสิทธิ
-- ไม่มี `ANTHROPIC_API_KEY` → fallback: keyword match กับหัวข้อใน `docs/rules/`
+- ไม่มี `ANTHROPIC_API_KEY` → fallback: keyword match กับหัวข้อใน `docs/rules/` (ทุก `##` ต้องมีบรรทัด `<!-- keywords: ... -->` ใต้หัวข้อ · เนื้อหาไม่เกิน 3 บรรทัดเพื่อให้คำตอบ ≤ 4 บรรทัดรวมอ้างอิง)
 
 **Space Matching** — rule-based score: ประเภทสินค้าตรง (40) · มีล็อคว่าง (30) · ระยะทาง/ย่านที่เลือก (20) · ช่วงเวลาตรง (10) · คืน top 3 พร้อมเหตุผลเป็นข้อความ
 

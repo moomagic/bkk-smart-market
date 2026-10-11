@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.Allocation;
+using SmartMarket.Application.Assistant;
 using SmartMarket.Application.Audit;
 using SmartMarket.Application.CheckIns;
 using SmartMarket.Application.Rounds;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ForfeitStallRequestHandler>();
         services.AddScoped<CheckInAtLockHandler>();
         services.AddScoped<GetAuditTrailHandler>();
+        services.AddScoped<AskAssistantHandler>();
         services.AddScoped<ListRoundAllocationRunsHandler>();
         return services;
     }

@@ -3,6 +3,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { Api, SpaceSummary, StallRequest, lockQr, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
+import { AssistantChat } from './assistant-chat';
 import {
   CATEGORY_LABEL,
   RUN_STATUS_LABEL,
@@ -17,6 +18,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [AssistantChat],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })

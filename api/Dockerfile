@@ -13,6 +13,8 @@ RUN dotnet publish src/SmartMarket.Api/SmartMarket.Api.csproj -c Release -o /app
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app .
+# "rules" is docs/rules, passed by docker compose (additional_contexts, Compose ≥ 2.17); a bare `docker build ./api` lacks it.
+COPY --from=rules . docs/rules/
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "SmartMarket.Api.dll"]
