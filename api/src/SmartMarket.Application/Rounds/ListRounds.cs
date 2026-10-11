@@ -1,14 +1,19 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SmartMarket.Application.Allocation;
 using SmartMarket.Application.Common;
+using SmartMarket.Domain.Allocation;
 using SmartMarket.Domain.StallRequests;
 
 namespace SmartMarket.Application.Rounds;
 
-public sealed class ListRoundsHandler(IAppDbContext db)
+public sealed class ListRoundsHandler(IAppDbContext db, IOptions<RulesOptions> rules)
 {
-    public async Task<IReadOnlyList<RoundSummary>> Handle(CancellationToken ct) =>
-        await (
+    /// <summary>RejectsLeft = officer rejects still allowed before only an executive may reject (never below 0).</summary>
+    public async Task<IReadOnlyList<RoundSummary>> Handle(CancellationToken ct)
+    {
+        var max = rules.Value.Reject.MaxPerRoundWithoutExecutive;
+        return await (
             from r in db.Rounds.AsNoTracking()
             join s in db.Spaces on r.SpaceId equals s.Id
             orderby r.StartsOn descending, s.Name
@@ -16,8 +21,10 @@ public sealed class ListRoundsHandler(IAppDbContext db)
                 r.Id, s.Id, s.Name, r.StartsOn, r.EndsOn, r.ApplyClosesAt, r.Status,
                 db.StallRequests.Count(q => q.RoundId == r.Id),
                 db.StallRequests.Count(q => q.RoundId == r.Id && q.Status == StallRequestStatus.Eligible),
-                db.StallRequests.Count(q => q.RoundId == r.Id && q.Status == StallRequestStatus.Ineligible)))
+                db.StallRequests.Count(q => q.RoundId == r.Id && q.Status == StallRequestStatus.Ineligible),
+                Math.Max(0, max - db.AllocationRuns.Where(AllocationRun.CountedReject).Count(a => a.RoundId == r.Id))))
             .ToListAsync(ct);
+    }
 }
 
 public sealed class ListRoundRequestsHandler(IAppDbContext db, AssignmentExpiry expiry)

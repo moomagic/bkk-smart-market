@@ -36,6 +36,8 @@ export class PortalHome {
   protected readonly outcome = OUTCOME_LABEL;
 
   protected readonly isOfficer = computed(() => this.session.role() !== 'vendor');
+  /** Past the round's reject limit only an executive may reject (ADR-0002). */
+  protected readonly isExecutive = computed(() => this.session.role() === 'executive');
   private readonly refresh = signal(0);
   protected readonly selectedId = signal<string | null>(null);
 
@@ -112,7 +114,10 @@ export class PortalHome {
   protected readonly refreshCount = this.refresh.asReadonly();
 
   protected readonly running = signal(false);
-  protected readonly approving = signal(false);
+  protected readonly deciding = signal(false);
+  /** Run id whose reject form is open, and the reason typed so far. */
+  protected readonly rejecting = signal<string | null>(null);
+  protected readonly rejectReason = signal('');
   protected readonly checking = signal(false);
   protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
@@ -155,17 +160,37 @@ export class PortalHome {
     });
   }
 
+  protected reject(run: AllocationRun): void {
+    const reason = this.rejectReason().trim();
+    if (!reason) return;
+    this.deciding.set(true);
+    this.notice.set(null);
+    this.api.rejectAllocationRun(run.id, reason).subscribe({
+      next: (r) => {
+        this.deciding.set(false);
+        this.rejecting.set(null);
+        this.rejectReason.set('');
+        this.notice.set({ kind: 'ok', text: `ปฏิเสธผล ${r.referenceNo} แล้ว · ตรวจสิทธิใหม่ได้แล้วรันจัดสรรอีกครั้ง (seed ใหม่)` });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.deciding.set(false);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
+  }
+
   protected approve(run: AllocationRun): void {
-    this.approving.set(true);
+    this.deciding.set(true);
     this.notice.set(null);
     this.api.approveAllocationRun(run.id).subscribe({
       next: (approved) => {
-        this.approving.set(false);
+        this.deciding.set(false);
         this.notice.set({ kind: 'ok', text: `อนุมัติผลจัดสรร ${approved.referenceNo} แล้ว · ผู้ค้าเห็นผลและต้องยืนยันสิทธิ์ภายในกำหนด` });
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {
-        this.approving.set(false);
+        this.deciding.set(false);
         this.notice.set({ kind: 'error', text: problemMessage(err) });
       },
     });

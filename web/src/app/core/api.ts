@@ -86,6 +86,8 @@ export interface RoundSummary {
   requestCount: number;
   eligibleCount: number;
   ineligibleCount: number;
+  /** Officer rejects still allowed in this round; at 0 only an executive may reject. */
+  rejectsLeft: number;
 }
 
 export interface RoundRequestRow {
@@ -133,6 +135,8 @@ export interface AllocationRun {
   ranBy: string;
   decidedAt: string | null;
   decidedBy: string | null;
+  rejectReason: string | null;
+  rejectCountsTowardLimit: boolean;
   rules: { legacyMax: number; vulnerableMin: number; newMin: number; waitlistPerGroup: number };
   pooledDraw: boolean;
   quota: QuotaLine[];
@@ -281,6 +285,10 @@ export class Api {
 
   setDemoClock(now: string) {
     return this.http.post<{ now: string }>('/api/demo/clock', { now });
+  }
+
+  rejectAllocationRun(runId: string, reason: string) {
+    return this.http.post<AllocationRun>(`/api/allocation-runs/${runId}/reject`, { reason });
   }
 
   approveAllocationRun(runId: string) {

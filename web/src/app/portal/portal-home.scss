@@ -179,3 +179,22 @@ h3 {
 .demo-clock button {
   padding: 4px 10px;
 }
+button.danger {
+  background: var(--warn);
+}
+.reject-form {
+  background: var(--surface);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reject-form textarea {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}

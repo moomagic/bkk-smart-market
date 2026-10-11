@@ -63,12 +63,30 @@ public sealed class AllocationRun
         DecidedBy = by;
     }
 
+    /// <param name="countsTowardLimit">False only for a reject caused by a Corrected review (an eligibility mistake, ADR-0002).</param>
+    public void Reject(DateTimeOffset at, string by, string reason, bool countsTowardLimit)
+    {
+        if (Status != AllocationRunStatus.Draft)
+            throw new InvalidOperationException($"Only a draft can be rejected; this run is {Status}.");
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("A reject needs a reason.", nameof(reason));
+        Status = AllocationRunStatus.Rejected;
+        DecidedAt = at;
+        DecidedBy = by;
+        RejectReason = reason;
+        RejectCountsTowardLimit = countsTowardLimit;
+    }
+
     public void UpdateCurrentResult(string resultJson)
     {
         if (Status != AllocationRunStatus.Approved)
             throw new InvalidOperationException("Only an approved run's result moves on after the draw.");
         CurrentResultJson = resultJson;
     }
+
+    /// <summary>Rejects that count toward a round's limit (a Corrected-review reject does not, ADR-0002).</summary>
+    public static readonly System.Linq.Expressions.Expression<Func<AllocationRun, bool>> CountedReject =
+        r => r.Status == AllocationRunStatus.Rejected && r.RejectCountsTowardLimit;
 
     /// <summary>Statuses that stop a round from being run again: a run awaiting a decision, or one already in force.</summary>
     public static readonly AllocationRunStatus[] Standing = [AllocationRunStatus.Draft, AllocationRunStatus.Approved];

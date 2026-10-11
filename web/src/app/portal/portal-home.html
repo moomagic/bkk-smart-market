@@ -128,13 +128,45 @@
           <h2 id="run-heading">
             ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
             <span class="tag" [class.draft]="run.status === 'Draft'">{{ runStatus[run.status] }}</span>
+            @if (run.status === 'Draft') {
+              <span class="muted small">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
+            }
           </h2>
           @if (run.status === 'Draft') {
-            <button type="button" (click)="approve(run)" [disabled]="approving()">
-              {{ approving() ? 'กำลังอนุมัติ…' : 'อนุมัติผล' }}
-            </button>
+            <div class="actions">
+              <button type="button" class="secondary" (click)="rejecting.set(run.id)" [disabled]="deciding() || rejecting() === run.id">
+                ปฏิเสธผล
+              </button>
+              <button type="button" (click)="approve(run)" [disabled]="deciding()">
+                {{ deciding() ? 'กำลังบันทึก…' : 'อนุมัติผล' }}
+              </button>
+            </div>
           }
         </div>
+
+        @if (run.status === 'Draft' && rejecting() === run.id) {
+          <form class="reject-form" (submit)="$event.preventDefault(); reject(run)">
+            <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
+            <textarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
+              (input)="rejectReason.set($any($event.target).value)"></textarea>
+            <p class="muted small-note">
+              @if (round.rejectsLeft > 0) {
+                ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
+              } @else if (isExecutive()) {
+                ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว · ผู้บริหารปฏิเสธเพิ่มได้ และนับรวมในรอบนี้
+              } @else {
+                ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
+              }
+            </p>
+            <div class="actions">
+              <button type="submit" class="danger"
+                [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())">
+                ยืนยันการปฏิเสธ
+              </button>
+              <button type="button" class="link" (click)="rejecting.set(null)">ยกเลิก</button>
+            </div>
+          </form>
+        }
 
         <dl class="run-meta">
           <div><dt>เลขอ้างอิง</dt><dd class="mono">{{ run.referenceNo }}</dd></div>
@@ -203,7 +235,12 @@
           <h3>รันก่อนหน้าของรอบนี้</h3>
           <ul class="earlier-runs">
             @for (r of runList().slice(1); track r.id) {
-              <li><span class="mono">{{ r.referenceNo }}</span> · {{ runStatus[r.status] }} · {{ dateTime(r.ranAt) }}</li>
+              <li>
+                <span class="mono">{{ r.referenceNo }}</span> · {{ runStatus[r.status] }} · {{ dateTime(r.ranAt) }}
+                @if (r.rejectReason) {
+                  · เหตุผล: {{ r.rejectReason }}{{ r.rejectCountsTowardLimit ? '' : ' (ไม่นับลิมิต)' }}
+                }
+              </li>
             }
           </ul>
         }

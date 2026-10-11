@@ -49,6 +49,14 @@ public sealed class Round
         Status = RoundStatus.Drawn;
     }
 
+    /// <summary>The draft was rejected: eligibility may be re-checked and the round drawn again — never reopened to new requests.</summary>
+    public void ReopenForRedraw()
+    {
+        if (Status != RoundStatus.Drawn)
+            throw new InvalidOperationException($"Only a drawn round can be reopened for a new draw; this one is {Status}.");
+        Status = RoundStatus.Closed;
+    }
+
     public void MarkApproved()
     {
         if (Status != RoundStatus.Drawn)
