@@ -60,8 +60,8 @@ dd {
   color: var(--muted);
   font-size: 0.9rem;
 }
+/* p-message is display: grid (its enter/leave animation collapses the rows), so only spacing here */
 .notice {
-  display: block;
   margin: 0 0 16px;
 }
 .small {

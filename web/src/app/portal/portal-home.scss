@@ -45,8 +45,20 @@ th {
 tbody tr:last-child td {
   border-bottom: 0;
 }
-tr.selected {
+tr.selected > td {
   background: var(--accent-soft);
+}
+/* PrimeNG tables: the same bordered panel as .table-wrap */
+.frame {
+  display: block;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+.frame tr:last-child > td {
+  border-bottom: 0;
 }
 .num {
   text-align: right;
@@ -75,10 +87,8 @@ button.link {
   color: var(--accent);
   font-weight: 600;
 }
+/* p-message is display: grid (its enter/leave animation collapses the rows), so only spacing here */
 .notice {
-  background: var(--accent-soft);
-  border-radius: 6px;
-  padding: 10px 12px;
   margin: 0 0 12px;
 }
 .small {
@@ -162,9 +172,6 @@ h3 {
   font-size: 0.9rem;
   color: var(--muted);
 }
-.demo-clock button {
-  padding: 4px 10px;
-}
 button.danger {
   background: var(--warn);
 }
@@ -213,10 +220,6 @@ button.danger {
   margin: 0;
   display: flex;
   gap: 16px;
-}
-button.danger-outline {
-  color: var(--warn);
-  border-color: var(--warn);
 }
 .insights {
   list-style: none;

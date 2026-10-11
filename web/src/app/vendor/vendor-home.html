@@ -2,7 +2,7 @@
      animating out never makes a second status (or alert) -->
 <div role="status">
   @if (notice(); as n) {
-    <p-message class="notice" role="presentation" [severity]="n.kind === 'ok' ? 'info' : n.kind">{{ n.text }}</p-message>
+    <p-message class="notice" role="presentation" aria-live="off" [severity]="n.kind === 'ok' ? 'info' : n.kind">{{ n.text }}</p-message>
   }
 </div>
 

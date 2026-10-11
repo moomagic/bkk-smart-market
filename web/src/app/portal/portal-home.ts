@@ -1,14 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { Button } from 'primeng/button';
+import { Message } from 'primeng/message';
+import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { AllocationRun, Api, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AuditTimeline } from './audit-timeline';
+import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
   OUTCOME_LABEL,
   REVIEW_OUTCOME_LABEL,
-  ROUND_STATUS_LABEL,
   RUN_STATUS_LABEL,
   STATUS_LABEL,
   formatThaiDate,
@@ -20,7 +23,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-portal-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AuditTimeline],
+  imports: [Button, Message, TableModule, AuditTimeline, StatusTag],
   templateUrl: './portal-home.html',
   styleUrl: './portal-home.scss',
 })
@@ -29,7 +32,6 @@ export class PortalHome {
   protected readonly session = inject(DemoSession);
 
   protected readonly date = formatThaiDate;
-  protected readonly roundStatus = ROUND_STATUS_LABEL;
   protected readonly status = STATUS_LABEL;
   protected readonly category = CATEGORY_LABEL;
   protected readonly dateTime = formatThaiDateTime;
@@ -157,6 +159,15 @@ export class PortalHome {
   protected readonly rejecting = signal<string | null>(null);
   protected readonly rejectReason = signal('');
   protected readonly checking = signal(false);
+  /** p-table hands rows to its templates untyped; these restore the type for the template checker. */
+  protected asRound(row: RoundSummary): RoundSummary {
+    return row;
+  }
+
+  protected asRequestRow(row: RoundRequestRow): RoundRequestRow {
+    return row;
+  }
+
   protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   protected select(round: RoundSummary): void {

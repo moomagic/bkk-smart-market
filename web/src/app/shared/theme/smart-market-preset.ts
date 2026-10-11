@@ -101,6 +101,12 @@ export const SmartMarketPreset = definePreset(Aura, {
         },
       },
     },
+    // Tables as before: compact 8px × 12px cells, muted semibold headers, line-coloured rules
+    datatable: {
+      headerCell: { padding: '8px 12px', color: '{text.muted.color}' },
+      columnTitle: { fontWeight: '600' },
+      bodyCell: { padding: '8px 12px' },
+    },
     // Cards are bordered panels, not shadowed
     card: {
       root: { borderRadius: '{border.radius.lg}', shadow: 'none' },
