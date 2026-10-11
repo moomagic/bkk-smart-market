@@ -1,0 +1,79 @@
+<!-- The app bar names the screen; the region keeps the name for assistive tech -->
+@if (name(); as who) {
+  <div class="hello">
+    <p class="greet">สวัสดี {{ who }}</p>
+    <!-- Only with requests on screen: an empty list makes its own offer below -->
+    @if (todo(); as t) {
+      @if (hasRequests()) {
+        <div class="todo" data-testid="todo" [class.urgent]="t.urgent">
+          @if (t.requestId) {
+            <a [routerLink]="[t.requestId]">{{ t.text }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></a>
+          } @else {
+            <p>{{ t.text }}</p>
+          }
+          @if (t.apply) {
+            <a pButton routerLink="/vendor/spaces" label="หาพื้นที่ขายของ"></a>
+          }
+        </div>
+      }
+    }
+  </div>
+}
+
+@if (myRequests(); as mine) {
+  <section aria-label="คำขอของฉัน">
+    @switch (mine.state) {
+      @case ('loading') {
+        <p class="muted">กำลังโหลด…</p>
+      }
+      @case ('error') {
+        <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+      }
+      @case ('ready') {
+        @if (mine.data.length === 0) {
+          <div class="empty">
+            <p>ยังไม่มีคำขอ</p>
+            <p class="muted">หาพื้นที่ที่ กทม. อนุญาตแล้ว แล้วยื่นคำขอเพื่อเข้าจับฉลากในรอบที่เปิดรับ</p>
+            <a pButton routerLink="/vendor/spaces" label="หาพื้นที่ขายของ"></a>
+          </div>
+        } @else {
+          <ul class="list">
+            @for (req of current(); track req.id) {
+              <li><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></li>
+            }
+          </ul>
+          @if (finished().length > 0) {
+            <details class="disclosure finished">
+              <summary>คำขอที่จบแล้ว ({{ finished().length }})</summary>
+              <ul class="list">
+                @for (req of finished(); track req.id) {
+                  <li><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></li>
+                }
+              </ul>
+            </details>
+          }
+        }
+      }
+    }
+  </section>
+} @else {
+  <p class="muted">คำขอของฉันแสดงเมื่อใช้งานในบทบาทผู้ค้า</p>
+}
+
+<!-- A card only says where the request stands and leads to it; every action is on the request's own screen -->
+<ng-template #requestCard let-r>
+  @let req = asRequest(r);
+  <a class="card" [routerLink]="[req.id]">
+    <div class="body">
+      <div class="head">
+        <h3>{{ req.spaceName }}</h3>
+        <app-status-tag [request]="req.status" />
+      </div>
+      <span class="meta">รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}</span>
+      @if (line(req); as text) {
+        <span class="line" [class.urgent]="req.status === 'Won'">{{ text }}</span>
+      }
+    </div>
+    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+  </a>
+</ng-template>

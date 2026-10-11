@@ -6,11 +6,13 @@ interface RoleInfo {
   label: string;
   user: string;
   home: string;
+  /** How the app greets this user: the short form only (Guardrail 5). */
+  name?: string;
 }
 
 /** Mock identities. The vendor is สมศรี ใ. (fixed VendorId from seed data). */
 export const DEMO_ROLES: Record<DemoRole, RoleInfo> = {
-  vendor: { label: 'ผู้ค้า', user: '40000000-0000-0000-0000-000000000001', home: '/vendor' },
+  vendor: { label: 'ผู้ค้า', user: '40000000-0000-0000-0000-000000000001', home: '/vendor', name: 'สมศรี ใ.' },
   officer: { label: 'เจ้าหน้าที่เขต', user: 'officer-bangphlat', home: '/portal' },
   executive: { label: 'ผู้บริหาร', user: 'executive-bkk', home: '/dashboard' },
 };

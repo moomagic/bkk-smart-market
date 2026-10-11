@@ -8,6 +8,7 @@ import {
   expectNoHorizontalScroll,
   openRound,
   switchRole,
+  vendorTab,
 } from './support';
 
 /** README › Demo script, steps 1–6, walked the way the presenter does it. Step 7 is `docker compose up` itself. */
@@ -20,8 +21,10 @@ test('demo script 1–6', async ({ page, request }) => {
   await test.step('1 · vendor asks the assistant which documents are needed', async () => {
     await page.setViewportSize(PHONE);
     await page.goto('/vendor');
+    await expect(page).toHaveURL(/\/vendor\/requests$/);
     await expectMockBadge(page);
 
+    await vendorTab(page, 'ถามระเบียบ');
     const chat = page.getByRole('region', { name: 'ถามผู้ช่วยเรื่องระเบียบ' });
     await chat.getByRole('button', { name: 'ต้องใช้เอกสารอะไร' }).click();
     const answer = chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' });
@@ -33,6 +36,7 @@ test('demo script 1–6', async ({ page, request }) => {
   });
 
   await test.step('2 · space matching suggests ปากซอยจรัญฯ 79 and the vendor submits', async () => {
+    await vendorTab(page, 'หาพื้นที่');
     const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
     await match.getByLabel('ขายอะไร').fill('ข้าวแกง');
     await match.getByLabel('ย่านที่สะดวก').fill('จรัญฯ');
@@ -43,7 +47,14 @@ test('demo script 1–6', async ({ page, request }) => {
     await first.getByRole('button', { name: 'ยื่นคำขอที่นี่' }).click();
 
     await expect(page.getByRole('status')).toContainText('ยื่นคำขอแล้ว · ปากซอยจรัญฯ 79');
-    await expect(first).toContainText('ยื่นคำขอแล้ว');
+    // The vendor lands on the request just filed: what it is now and what happens next
+    await expect(page).toHaveURL(/\/vendor\/requests\/[0-9a-f-]+$/);
+    const detail = requestDetail(page);
+    await expect(detail).toContainText('ยื่นคำขอแล้ว');
+    await expect(detail).toContainText('รอเขตตรวจสิทธิ');
+    // The request's screen has ← in place of the tabs
+    await page.getByRole('button', { name: 'ย้อนกลับ' }).click();
+    await vendorTab(page, 'คำขอ');
     await expect(currentRequest(page)).toContainText('ยื่นคำขอแล้ว');
     await expectNoBookingWording(page);
     await expectNoHorizontalScroll(page);
@@ -96,21 +107,29 @@ test('demo script 1–6', async ({ page, request }) => {
   await test.step('4 · vendor sees lock B2 with the reason, confirms and checks in', async () => {
     await page.setViewportSize(PHONE);
     await switchRole(page, 'vendor');
-    await expect(page).toHaveURL(/\/vendor$/);
+    await expect(page).toHaveURL(/\/vendor\/requests$/);
+    // The requests tab says first what the vendor has to do, and the tab carries a dot while it waits
+    await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
+    await expect(page.getByTestId('todo')).toContainText('ยืนยันสิทธิ์ล็อค B2 ภายใน');
+    await expect(requestsTab(page)).toHaveAccessibleDescription('มีคำขอที่รอยืนยันสิทธิ์');
     const card = currentRequest(page);
     await expect(card).toContainText('ได้ล็อค B2');
-    await expect(card).toContainText(`เลขอ้างอิง ${ref}`);
-    await expect(card).toContainText('ยืนยันสิทธิ์ภายใน');
+    await card.getByRole('link').click();
 
-    await card.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();
+    const detail = requestDetail(page);
+    await expect(detail).toContainText('ได้ล็อค B2');
+    await expect(detail).toContainText(`เลขอ้างอิง ${ref}`);
+    await expect(detail).toContainText('ยืนยันสิทธิ์ภายใน');
+
+    await page.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();
     await expect(page.getByRole('status')).toContainText(
       'ยืนยันสิทธิ์แล้ว · ปากซอยจรัญฯ 79 ล็อค B2',
     );
-    await expect(card).toContainText('ยืนยันสิทธิ์แล้ว');
+    await expect(detail).toContainText('ยืนยันสิทธิ์แล้ว');
 
-    await card.getByRole('button', { name: 'สแกน QR เช็คอินที่ล็อค B2' }).click();
+    await page.getByRole('button', { name: 'สแกน QR เช็คอินที่ล็อค B2' }).click();
     await expect(page.getByRole('status')).toContainText('เช็คอินแล้ว · ปากซอยจรัญฯ 79 ล็อค B2');
-    await expect(card).toContainText('เช็คอินล่าสุด');
+    await expect(detail).toContainText('เช็คอินล่าสุด');
     await expectNoHorizontalScroll(page);
   });
 
@@ -157,6 +176,16 @@ function currentRequest(page: Page) {
     .getByRole('listitem')
     .filter({ hasText: 'ปากซอยจรัญฯ 79' })
     .filter({ hasText: 'รอบ 1 พ.ย. 2569' });
+}
+
+/** The requests tab in the vendor app's bottom navigation. */
+function requestsTab(page: Page) {
+  return page.getByRole('navigation', { name: 'เมนูหลัก' }).getByRole('link', { name: 'คำขอ', exact: true });
+}
+
+/** The open request's own screen in the vendor app. */
+function requestDetail(page: Page) {
+  return page.getByRole('region', { name: 'รายละเอียดคำขอ' });
 }
 
 /** The vendor's status cell, matched exactly ("ผ่าน…" is a substring of "ไม่ผ่าน…"). */

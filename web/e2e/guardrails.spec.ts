@@ -8,6 +8,7 @@ import {
   expectMockBadge,
   expectNoBookingWording,
   openRound,
+  vendorTab,
 } from './support';
 
 test.beforeEach(async ({ request }) => {
@@ -41,6 +42,31 @@ for (const { path, role, device, loaded } of [
       // Wait for API data, not just the static heading — a negative text check passes on a loading screen.
       await expect(page.getByText(loaded).first()).toBeVisible();
       if (role === 'vendor') await expect(page.getByText('ยื่นคำขอแล้ว').first()).toBeVisible();
+      await expectMockBadge(page);
+      await expectNoBookingWording(page);
+      if (role !== 'vendor') return;
+      // The greeting uses the short form only
+      await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
+      await expect(page.locator('body')).not.toContainText('สมศรี ใจดี');
+      // The vendor app is three tabs; each is a screen of its own
+      for (const [tab, content] of [
+        ['หาพื้นที่', 'ตลาดนัดเขตบางพลัด'],
+        ['ถามระเบียบ', 'ต้องใช้เอกสารอะไร'],
+      ] as const) {
+        await vendorTab(page, tab);
+        await expect(page.getByText(content).first()).toBeVisible();
+        await expectMockBadge(page);
+        await expectNoBookingWording(page);
+      }
+      // …and the request's own screen
+      await vendorTab(page, 'คำขอ');
+      await page
+        .getByRole('region', { name: 'คำขอของฉัน' })
+        .getByRole('listitem')
+        .filter({ hasText: 'ยื่นคำขอแล้ว' })
+        .getByRole('link')
+        .click();
+      await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toContainText('ยื่นคำขอแล้ว');
       await expectMockBadge(page);
       await expectNoBookingWording(page);
     });

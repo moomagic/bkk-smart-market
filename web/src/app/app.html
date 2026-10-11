@@ -1,18 +1,21 @@
-<header class="bar">
-  <div class="bar-inner">
-    <a class="brand" routerLink="/">BKK Smart Market</a>
-    <app-mock-badge />
-    <!-- Deferred: PrimeNG Select would otherwise put ~190 kB into the initial bundle of every page.
-         Loaded right after first render; the placeholder holds the switcher's size so the header doesn't jump. -->
-    @defer (on immediate) {
-      <app-role-switcher />
-    } @placeholder {
-      <span class="role-placeholder" aria-hidden="true"></span>
-    } @error {
-      <span class="role-placeholder muted">โหลดตัวเลือกบทบาทไม่สำเร็จ ลองรีเฟรช</span>
-    }
-  </div>
-</header>
-<main>
+<!-- The vendor app brings its own app bar (mock badge and a demo menu with the role switcher) -->
+@if (!inVendor()) {
+  <header class="bar">
+    <div class="bar-inner">
+      <a class="brand" routerLink="/">BKK Smart Market</a>
+      <app-mock-badge />
+      <!-- Deferred: PrimeNG Select would otherwise put ~190 kB into the initial bundle of every page.
+           Loaded right after first render; the placeholder holds the switcher's size so the header doesn't jump. -->
+      @defer (on immediate) {
+        <app-role-switcher />
+      } @placeholder {
+        <span class="role-placeholder" aria-hidden="true"></span>
+      } @error {
+        <span class="role-placeholder muted">โหลดตัวเลือกบทบาทไม่สำเร็จ ลองรีเฟรช</span>
+      }
+    </div>
+  </header>
+}
+<main [class.bare]="inVendor()">
   <router-outlet />
 </main>

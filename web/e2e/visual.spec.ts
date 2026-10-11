@@ -2,7 +2,8 @@ import { Page, expect, test } from '@playwright/test';
 import { DESKTOP, DemoApi, PHONE, SOMSRI, openRound } from './support';
 
 /**
- * Locks the look after the PrimeNG migration (ADR-0006): vendor at 390px, portal and dashboard at 1280px.
+ * Locks the look after the PrimeNG migration (ADR-0006): the vendor app at 390px (and its phone frame at 1280px),
+ * portal and dashboard at 1280px.
  * States come from the demo seed (the first allocation run uses it), so they are the same every run; only
  * clock-derived times are masked, as the demo clock keeps ticking from Demo:Now.
  * Run with `npm run e2e:visual`; after an intended visual change add `-- --update-snapshots`.
@@ -28,18 +29,31 @@ test.beforeEach(async ({ request }) => {
   await new DemoApi(request).reset();
 });
 
-test('vendor at 390px', async ({ page }) => {
+test('vendor requests tab at 390px', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await as(page, 'vendor');
   await page.goto('/vendor');
-  await expect(page.getByText('ตลาดนัดเขตบางพลัด').first()).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'คำขอของฉัน' })).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'บทบาท' })).toBeVisible();
+  await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
+  await expect(page.getByTestId('todo')).toContainText('รับคำขอรอบใหม่ถึง');
+  await expect(page.getByRole('region', { name: 'คำขอของฉัน' })).toContainText('ปากซอยจรัญฯ 79');
   await settle(page);
-  await expect(page).toHaveScreenshot('vendor-start.png', shot);
+  await expect(page).toHaveScreenshot('vendor-requests.png', shot);
 });
 
-test('vendor with lock B2 at 390px', async ({ page, request }) => {
+test('vendor spaces tab with matches at 390px', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await as(page, 'vendor');
+  await page.goto('/vendor/spaces');
+  const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
+  await match.getByLabel('ขายอะไร').fill('ข้าวแกง');
+  await match.getByLabel('ย่านที่สะดวก').fill('จรัญฯ');
+  await match.getByRole('button', { name: 'แนะนำพื้นที่' }).click();
+  await expect(match.getByRole('listitem').filter({ hasText: '1. ปากซอยจรัญฯ 79' })).toContainText('90/100');
+  await settle(page);
+  await expect(page).toHaveScreenshot('vendor-spaces-matches.png', shot);
+});
+
+test('vendor request with lock B2, asked before forfeit, at 390px', async ({ page, request }) => {
   const api = new DemoApi(request);
   await api.submit(SOMSRI);
   await api.checkEligibility();
@@ -47,16 +61,24 @@ test('vendor with lock B2 at 390px', async ({ page, request }) => {
   await page.setViewportSize(PHONE);
   await as(page, 'vendor');
   await page.goto('/vendor');
-  const card = page.getByRole('listitem').filter({ hasText: 'ได้ล็อค B2' });
-  await card.getByRole('button', { name: 'สละสิทธิ์', exact: true }).click();
-  await expect(card).toContainText('สละล็อค B2 ให้ผู้สำรอง?');
-  await expect(page.getByRole('combobox', { name: 'บทบาท' })).toBeVisible();
+  await page.getByRole('listitem').filter({ hasText: 'ได้ล็อค B2' }).getByRole('link').click();
+  await page.getByRole('button', { name: 'สละสิทธิ์', exact: true }).click();
+  await expect(page.getByText('สละล็อค B2 ให้ผู้สำรอง?')).toBeVisible();
   await settle(page);
   // The confirm-by deadline is approval time + 3 days on the ticking demo clock
   await expect(page).toHaveScreenshot('vendor-won-forfeit.png', {
     ...shot,
-    mask: [card.locator('.deadline')],
+    mask: [page.locator('.deadline')],
   });
+});
+
+test('vendor app in its phone frame at 1280px', async ({ page }) => {
+  await page.setViewportSize(DESKTOP);
+  await as(page, 'vendor');
+  await page.goto('/vendor');
+  await expect(page.getByTestId('todo')).toContainText('รับคำขอรอบใหม่ถึง');
+  await settle(page);
+  await expect(page).toHaveScreenshot('vendor-frame.png', shot);
 });
 
 test('portal draft run at 1280px', async ({ page, request }) => {

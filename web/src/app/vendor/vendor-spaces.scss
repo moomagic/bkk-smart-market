@@ -1,0 +1,65 @@
+section + section {
+  margin-top: var(--space-5);
+}
+section > h2 {
+  font-size: var(--text-h2);
+  margin: var(--space-2) 0;
+}
+.lead {
+  color: var(--muted);
+  margin-top: 0;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.head > .type,
+.head > app-status-tag {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+h3 {
+  font-size: var(--text-h3);
+  margin: 0;
+}
+/* The kind of space is a fact about it, not a status: plain muted text */
+.type {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.submitted {
+  margin: var(--space-3) 0 0;
+}
+.submit {
+  display: block;
+  margin-top: var(--space-3);
+}
+/* Spaces: one bordered list, rows divided */
+.spaces {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.spaces > li {
+  padding: var(--space-4) var(--space-4);
+}
+.spaces > li + li {
+  border-top: 1px solid var(--line);
+}
+.facts {
+  margin: var(--space-1) 0 0;
+}
+.meta {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+app-space-matching {
+  display: block;
+  margin-bottom: var(--space-5);
+}

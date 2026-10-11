@@ -1,23 +1,20 @@
-import { ChangeDetectionStrategy, Component, inject, input, model, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
-import { Panel } from 'primeng/panel';
 import { Select } from 'primeng/select';
 import { StatusTag } from '../shared/status-tag';
-import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, problemMessage } from '../core/api';
+import { PreferredTime, SpaceSummary } from '../core/api';
+import { VendorStore } from './vendor-store';
 
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
 @Component({
   selector: 'app-space-matching',
-  imports: [FormsModule, Button, InputText, Panel, Select, StatusTag],
+  imports: [FormsModule, Button, InputText, Select, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section aria-labelledby="match-heading">
-      <p-panel toggleable toggler="header" [collapsed]="!open()" (collapsedChange)="open.set(!$event)">
-      <ng-template #header>
-        <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
-      </ng-template>
+      <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
       <!-- ngNoForm: FormsModule is here only for the select; the form keeps its plain submit -->
       <form ngNoForm (submit)="$event.preventDefault(); find()">
         <label>
@@ -68,18 +65,19 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
                 } @else if (canSubmit()(m.spaceId); as space) {
                   <!-- The best match carries the page's one filled button; the others stay outlined -->
                   <p-button class="submit-here" [variant]="i === 0 ? undefined : 'outlined'" label="ยื่นคำขอที่นี่"
-                    (onClick)="submit.emit(space)" [disabled]="submitting()" />
+                    (onClick)="submit(space)" [disabled]="submitting()" />
                 }
               </li>
             }
           </ol>
         }
+        <!-- The matches stand in for the full list on a phone; this brings the list back -->
+        <p-button class="show-all" link label="ดูพื้นที่ทั้งหมด" (onClick)="showAll()" />
       }
-      </p-panel>
     </section>
   `,
   styles: `
-    h2 { font-size: var(--text-h3); margin: 0; }
+    h2 { font-size: var(--text-h3); margin: 0 0 var(--space-3); }
     .find-hint { grid-column: 1 / -1; margin: 0; font-size: var(--text-small); color: var(--muted); }
     form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); align-items: end; }
     label, .field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-small); color: var(--muted); min-width: 0; }
@@ -93,45 +91,42 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
     .score { color: var(--accent); font-weight: 600; }
     .reasons { margin: var(--space-2) 0 0; padding-left: var(--space-4); font-size: var(--text-small); }
     .requested { margin: var(--space-2) 0 0; }
+    .show-all { display: block; margin-top: var(--space-3); }
   `,
 })
 export class SpaceMatching {
-  private readonly api = inject(Api);
-
+  private readonly store = inject(VendorStore);
   /** Given a space id, the space the vendor can submit to now — or null (no open round, already requested, not a vendor). */
-  readonly canSubmit = input.required<(spaceId: string) => SpaceSummary | null>();
+  protected readonly canSubmit = this.store.submittable;
   /** The vendor's request status in the space's open round, or null when they have none there. */
-  readonly requestStatus = input.required<(spaceId: string) => StallRequestStatus | null>();
+  protected readonly requestStatus = this.store.requestStatus;
   /** A submit is in flight (from here or from the list below). */
-  readonly submitting = input(false);
-  readonly submit = output<SpaceSummary>();
-  /** Two-way: the page sets where it starts (open until an application is in play); the vendor's folding wins. */
-  readonly open = model(true);
+  protected readonly submitting = computed(() => this.store.submitting() !== null);
 
-  protected readonly product = signal('');
-  protected readonly area = signal('');
-  protected readonly time = signal<PreferredTime | null>(null);
+  protected readonly product = this.store.match.product;
+  protected readonly area = this.store.match.area;
+  protected readonly time = this.store.match.time;
   protected readonly times: { label: string; value: PreferredTime | null }[] = [
     { label: 'ไม่ระบุ', value: null },
     { label: 'เช้า', value: 'Morning' },
     { label: 'เย็น', value: 'Evening' },
   ];
-  protected readonly busy = signal(false);
-  protected readonly results = signal<SpaceMatch[] | null>(null);
-  protected readonly error = signal<string | null>(null);
+  protected readonly busy = this.store.match.busy;
+  protected readonly results = this.store.match.results;
+  protected readonly error = this.store.match.error;
+  private readonly injector = inject(Injector);
+
+  protected submit(space: SpaceSummary): void {
+    this.store.submit(space);
+  }
 
   protected find(): void {
-    this.busy.set(true);
-    this.error.set(null);
-    this.api.matchSpaces(this.product().trim(), this.area().trim(), this.time()).subscribe({
-      next: (r) => {
-        this.busy.set(false);
-        this.results.set(r);
-      },
-      error: (err) => {
-        this.busy.set(false);
-        this.error.set(problemMessage(err));
-      },
-    });
+    this.store.findMatches();
+  }
+
+  /** Back to the full list, and focus to its heading: the button pressed is gone with the matches. */
+  protected showAll(): void {
+    this.store.clearMatches();
+    afterNextRender(() => document.getElementById('spaces-heading')?.focus(), { injector: this.injector });
   }
 }
