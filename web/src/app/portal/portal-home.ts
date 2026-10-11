@@ -96,6 +96,7 @@ export class PortalHome {
   });
 
   protected readonly running = signal(false);
+  protected readonly approving = signal(false);
   protected readonly checking = signal(false);
   protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
@@ -132,6 +133,22 @@ export class PortalHome {
       },
       error: (err) => {
         this.running.set(false);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
+  }
+
+  protected approve(run: AllocationRun): void {
+    this.approving.set(true);
+    this.notice.set(null);
+    this.api.approveAllocationRun(run.id).subscribe({
+      next: (approved) => {
+        this.approving.set(false);
+        this.notice.set({ kind: 'ok', text: `อนุมัติผลจัดสรร ${approved.referenceNo} แล้ว · ผู้ค้าเห็นผลและต้องยืนยันสิทธิ์ภายในกำหนด` });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.approving.set(false);
         this.notice.set({ kind: 'error', text: problemMessage(err) });
       },
     });

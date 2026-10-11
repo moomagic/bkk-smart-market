@@ -18,6 +18,7 @@ public interface IAppDbContext
     DbSet<Round> Rounds { get; }
     DbSet<StallRequest> StallRequests { get; }
     DbSet<AllocationRun> AllocationRuns { get; }
+    DbSet<Assignment> Assignments { get; }
     DbSet<AuditEntry> AuditEntries { get; }
 
     /// <summary>

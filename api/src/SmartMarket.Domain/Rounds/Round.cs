@@ -49,5 +49,12 @@ public sealed class Round
         Status = RoundStatus.Drawn;
     }
 
+    public void MarkApproved()
+    {
+        if (Status != RoundStatus.Drawn)
+            throw new InvalidOperationException($"Only a drawn round can be approved; this one is {Status}.");
+        Status = RoundStatus.Approved;
+    }
+
     public bool AcceptsRequestsAt(DateTimeOffset now) => AcceptingRequestsAt(now).Compile()(this);
 }

@@ -118,12 +118,20 @@
             ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
             <span class="tag" [class.draft]="run.status === 'Draft'">{{ runStatus[run.status] }}</span>
           </h2>
+          @if (run.status === 'Draft') {
+            <button type="button" (click)="approve(run)" [disabled]="approving()">
+              {{ approving() ? 'กำลังอนุมัติ…' : 'อนุมัติผล' }}
+            </button>
+          }
         </div>
 
         <dl class="run-meta">
           <div><dt>เลขอ้างอิง</dt><dd class="mono">{{ run.referenceNo }}</dd></div>
           <div><dt>Seed (ระบบสุ่ม)</dt><dd class="mono">{{ run.seed }}</dd></div>
           <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
+          @if (run.decidedAt) {
+            <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
+          }
           <div class="wide"><dt>Input hash (SHA-256)</dt><dd class="mono hash">{{ run.inputHash }}</dd></div>
         </dl>
 

@@ -29,6 +29,32 @@
                 @if (req.ineligibleReason) {
                   <p class="error">{{ req.ineligibleReason }}</p>
                 }
+                @if (req.status === 'Won' && req.lockCode) {
+                  <p class="won">ได้ล็อค <span class="mono">{{ req.lockCode }}</span></p>
+                }
+                @if (req.resultReason) {
+                  <p class="reason">{{ req.resultReason }}</p>
+                }
+                @if (req.confirmBy && req.status === 'Won') {
+                  <p class="deadline">ยืนยันสิทธิ์ภายใน {{ dateTime(req.confirmBy) }}</p>
+                }
+                @if (req.referenceNo) {
+                  <p class="meta">เลขอ้างอิง <span class="mono">{{ req.referenceNo }}</span></p>
+                }
+                @if (req.runs.length > 0) {
+                  <details class="runs">
+                    <summary>ผลจัดสรรทุกครั้งของรอบนี้ ({{ req.runs.length }})</summary>
+                    <ul>
+                      @for (run of req.runs; track run.referenceNo) {
+                        <li><span class="mono">{{ run.referenceNo }}</span> · {{ runStatus[run.status] }} · {{ dateTime(run.ranAt) }}
+                          @if (run.rejectReason) {
+                            · เหตุผล: {{ run.rejectReason }}
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </details>
+                }
               </li>
             }
           </ul>

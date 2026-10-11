@@ -3,7 +3,14 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { Api, SpaceSummary, StallRequest, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
-import { CATEGORY_LABEL, SPACE_TYPE_LABEL, STATUS_LABEL, formatThaiDate } from '../shared/labels';
+import {
+  CATEGORY_LABEL,
+  RUN_STATUS_LABEL,
+  SPACE_TYPE_LABEL,
+  STATUS_LABEL,
+  formatThaiDate,
+  formatThaiDateTime,
+} from '../shared/labels';
 
 type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
@@ -21,6 +28,8 @@ export class VendorHome {
   protected readonly categoryLabel = CATEGORY_LABEL;
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly date = formatThaiDate;
+  protected readonly dateTime = formatThaiDateTime;
+  protected readonly runStatus = RUN_STATUS_LABEL;
 
   /** Bumped after a submit so both lists reload. */
   private readonly refresh = signal(0);

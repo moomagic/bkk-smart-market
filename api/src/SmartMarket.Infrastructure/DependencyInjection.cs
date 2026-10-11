@@ -21,7 +21,7 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IClock, DemoClock>();
-        services.AddSingleton<ISeedSource, CryptoSeedSource>();
+        services.AddSingleton<ISeedSource>(_ => new DemoSeedSource(new CryptoSeedSource()));
 
         services.AddScoped<AuditInterceptor>();
         services.AddDbContext<SmartMarketDbContext>((sp, options) => options

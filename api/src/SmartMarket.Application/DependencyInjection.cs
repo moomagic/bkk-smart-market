@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<CheckRoundEligibilityHandler>();
         services.AddScoped<RunAllocationHandler>();
         services.AddScoped<GetAllocationRunHandler>();
+        services.AddScoped<ApproveAllocationRunHandler>();
         services.AddScoped<ListRoundAllocationRunsHandler>();
         return services;
     }

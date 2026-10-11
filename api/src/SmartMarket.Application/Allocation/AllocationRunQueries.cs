@@ -50,7 +50,7 @@ internal static class AllocationRunQueries
             var vendors = byRound[x.Run.RoundId].ToDictionary(v => v.VendorId);
             return new AllocationRunDto(
                 x.Run.Id, x.Run.RoundId, x.SpaceName, x.Run.ReferenceNo, x.Run.Seed, x.Run.InputHash, x.Run.Status,
-                x.Run.RanAt, x.Run.RanBy, AllocationJson.Deserialize<RulesSnapshot>(x.Run.RulesSnapshot), result.PooledDraw,
+                x.Run.RanAt, x.Run.RanBy, x.Run.DecidedAt, x.Run.DecidedBy, AllocationJson.Deserialize<RulesSnapshot>(x.Run.RulesSnapshot), result.PooledDraw,
                 result.Quota,
                 [.. result.Outcomes.Select(o => new RunOutcomeRow(
                     o.VendorId, vendors[o.VendorId].MaskedName, o.Category, o.Weight, o.Kind,

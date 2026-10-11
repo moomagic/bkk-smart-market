@@ -25,6 +25,12 @@ public sealed class AllocationRun
     public string ResultJson { get; private set; }
 
     public AllocationRunStatus Status { get; private set; }
+
+    /// <summary>When and by whom the run was approved or rejected (LeadTime KPI reads DecidedAt).</summary>
+    public DateTimeOffset? DecidedAt { get; private set; }
+
+    public string? DecidedBy { get; private set; }
+
     public string? RejectReason { get; private set; }
     public bool RejectCountsTowardLimit { get; private set; }
 
@@ -42,6 +48,15 @@ public sealed class AllocationRun
         RanBy = ranBy;
         ResultJson = resultJson;
         Status = AllocationRunStatus.Draft;
+    }
+
+    public void Approve(DateTimeOffset at, string by)
+    {
+        if (Status != AllocationRunStatus.Draft)
+            throw new InvalidOperationException($"Only a draft can be approved; this run is {Status}.");
+        Status = AllocationRunStatus.Approved;
+        DecidedAt = at;
+        DecidedBy = by;
     }
 
     /// <summary>Statuses that stop a round from being run again: a run awaiting a decision, or one already in force.</summary>

@@ -41,6 +41,21 @@ export interface StallRequest {
   category: Category;
   status: StallRequestStatus;
   ineligibleReason: string | null;
+  waitlistPosition: number | null;
+  /** Outcome fields come from the approved run only. */
+  lockCode: string | null;
+  resultReason: string | null;
+  referenceNo: string | null;
+  confirmBy: string | null;
+  /** Every run of the round, newest first. */
+  runs: RunReference[];
+}
+
+export interface RunReference {
+  referenceNo: string;
+  status: AllocationRunStatus;
+  ranAt: string;
+  rejectReason: string | null;
 }
 
 export type RoundStatus = 'Open' | 'Closed' | 'Drawn' | 'Approved';
@@ -101,6 +116,8 @@ export interface AllocationRun {
   status: AllocationRunStatus;
   ranAt: string;
   ranBy: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
   rules: { legacyMax: number; vulnerableMin: number; newMin: number; waitlistPerGroup: number };
   pooledDraw: boolean;
   quota: QuotaLine[];
@@ -147,6 +164,10 @@ export class Api {
 
   allocationRuns(roundId: string) {
     return this.http.get<AllocationRun[]>(`/api/rounds/${roundId}/allocation-runs`);
+  }
+
+  approveAllocationRun(runId: string) {
+    return this.http.post<AllocationRun>(`/api/allocation-runs/${runId}/approve`, null);
   }
 
   /** No seed argument: the system picks it (ADR-0002). */

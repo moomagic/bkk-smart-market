@@ -59,6 +59,7 @@ public sealed class SubmitStallRequestHandler(IAppDbContext db, IClock clock, IC
 
         return new StallRequestDto(
             request.Id, target.Round.Id, target.Space.Id, target.Space.Name, target.Round.StartsOn, target.Round.EndsOn,
-            request.SubmittedAt, request.Category, request.Status, request.IneligibleReason);
+            request.SubmittedAt, request.Category, request.Status, request.IneligibleReason,
+            WaitlistPosition: null, LockCode: null, ResultReason: null, ReferenceNo: null, ConfirmBy: null, Runs: []);
     }
 }

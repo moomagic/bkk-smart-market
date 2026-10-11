@@ -16,21 +16,18 @@ using SmartMarket.Infrastructure.Seed;
 
 namespace SmartMarket.Api.Tests;
 
-/// <summary>
-/// Running an allocation flips its round to Drawn, so every test here draws a round of its own
-/// (a fresh space with fresh vendors) and leaves the seeded rounds to the other test classes.
-/// </summary>
+/// <summary>Every test draws a round of its own — see <see cref="AllocationArrange"/>.</summary>
 [Collection(ApiCollection.Name)]
 public sealed class AllocationRunTests(ApiFactory api)
 {
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
 
-    private HttpClient Officer => api.ClientAs("officer", "officer-bangphlat");
+    private HttpClient Officer => api.Officer();
 
     [Fact]
     public async Task Officer_runs_a_draft_with_quota_ref_seed_and_a_reason_per_vendor()
     {
-        var roundId = await CheckedRound(legacy: 2, vulnerable: 3, @new: 5);
+        var roundId = await api.CheckedRound(legacy: 2, vulnerable: 3, @new: 5);
 
         var response = await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null);
 
@@ -57,7 +54,7 @@ public sealed class AllocationRunTests(ApiFactory api)
     [Fact]
     public async Task A_draft_draws_the_round_but_does_not_decide_any_request()
     {
-        var roundId = await CheckedRound(legacy: 1, vulnerable: 1, @new: 2);
+        var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 2);
 
         (await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null)).StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -71,7 +68,7 @@ public sealed class AllocationRunTests(ApiFactory api)
     [Fact]
     public async Task Re_running_from_the_stored_seed_and_rules_gives_the_same_result()
     {
-        var roundId = await CheckedRound(legacy: 2, vulnerable: 2, @new: 4);
+        var roundId = await api.CheckedRound(legacy: 2, vulnerable: 2, @new: 4);
         var run = (await (await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null))
             .Content.ReadFromJsonAsync<RunDto>(Json))!;
 
@@ -93,12 +90,12 @@ public sealed class AllocationRunTests(ApiFactory api)
     [Fact]
     public async Task One_audit_entry_per_run_filed_under_the_round()
     {
-        var roundId = await CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
-        var since = await LatestAuditAt();
+        var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
+        var since = await api.LatestAuditAt();
 
         (await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null)).StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var entry = (await AuditSince(since)).Should().ContainSingle().Subject;
+        var entry = (await api.AuditSince(since)).Should().ContainSingle().Subject;
         entry.Action.Should().Be("Round.RunAllocation");
         entry.EntityType.Should().Be("Round");
         entry.EntityId.Should().Be(roundId.ToString());
@@ -112,7 +109,7 @@ public sealed class AllocationRunTests(ApiFactory api)
         var seeds = new List<int>();
         foreach (var _ in Enumerable.Range(0, 2))
         {
-            var roundId = await CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
+            var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
             var response = await Officer.PostAsJsonAsync($"/api/rounds/{roundId}/allocation-runs", new { seed = 42 });
             seeds.Add((await response.Content.ReadFromJsonAsync<RunDto>(Json))!.Seed);
         }
@@ -123,8 +120,8 @@ public sealed class AllocationRunTests(ApiFactory api)
     [Fact]
     public async Task Requests_not_yet_checked_block_the_run()
     {
-        var roundId = await CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
-        await AddRequest(roundId, Category.New, StallRequestStatus.Submitted);
+        var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
+        await api.AddRequest(roundId, Category.New, StallRequestStatus.Submitted);
 
         var response = await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null);
 
@@ -138,7 +135,7 @@ public sealed class AllocationRunTests(ApiFactory api)
     [Fact]
     public async Task A_round_with_a_draft_cannot_be_run_again()
     {
-        var roundId = await CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
+        var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
         (await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null)).StatusCode.Should().Be(HttpStatusCode.Created);
 
         var again = await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null);
@@ -150,7 +147,7 @@ public sealed class AllocationRunTests(ApiFactory api)
     [Fact]
     public async Task A_round_without_eligible_requests_cannot_be_run()
     {
-        var roundId = await CheckedRound(legacy: 0, vulnerable: 0, @new: 0);
+        var roundId = await api.CheckedRound(legacy: 0, vulnerable: 0, @new: 0);
 
         var response = await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null);
 
@@ -164,7 +161,7 @@ public sealed class AllocationRunTests(ApiFactory api)
         var refs = new List<string>();
         foreach (var _ in Enumerable.Range(0, 2))
         {
-            var roundId = await CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
+            var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
             refs.Add((await (await Officer.PostAsync($"/api/rounds/{roundId}/allocation-runs", null))
                 .Content.ReadFromJsonAsync<RunDto>(Json))!.ReferenceNo);
         }
@@ -177,7 +174,7 @@ public sealed class AllocationRunTests(ApiFactory api)
     [InlineData("executive", HttpStatusCode.Created)]
     public async Task Only_officers_and_executives_run_allocations(string role, HttpStatusCode expected)
     {
-        var roundId = await CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
+        var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
 
         (await api.ClientAs(role, "someone").PostAsync($"/api/rounds/{roundId}/allocation-runs", null))
             .StatusCode.Should().Be(expected);
@@ -197,55 +194,6 @@ public sealed class AllocationRunTests(ApiFactory api)
         DateTimeOffset RanAt, string RanBy, RulesSnapshot Rules, bool PooledDraw, QuotaDto[] Quota, OutcomeDto[] Outcomes,
         string[] UnassignedLockCodes);
 
-    /// <summary>A fresh non-food space with 4 locks and an open round holding the given requests, eligibility already checked.</summary>
-    private async Task<Guid> CheckedRound(int legacy, int vulnerable, int @new)
-    {
-        var roundId = Guid.NewGuid();
-        await using (var scope = api.Services.CreateAsyncScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-            var space = new Space(Guid.NewGuid(), SeedData.BangPhlat, $"ทดสอบจัดสรร {roundId:N}"[..20], SpaceType.Relaxation,
-                ["ทั่วไป"], "ทุกวัน", "docs/rules");
-            db.Spaces.Add(space);
-            db.Locks.AddRange(Enumerable.Range(1, 4).Select(i => new Lock(Guid.NewGuid(), space.Id, $"B{i}")));
-            var starts = new DateOnly(2026, 11, 1);
-            db.Rounds.Add(new Round(roundId, space.Id, starts, starts.AddMonths(6).AddDays(-1),
-                SeedData.CurrentApplyOpensAt, SeedData.CurrentApplyClosesAt, RoundStatus.Open));
-            await db.CommitAsync("Test.Arrange", CancellationToken.None);
-        }
-        foreach (var (category, count) in new[] { (Category.Legacy, legacy), (Category.Vulnerable, vulnerable), (Category.New, @new) })
-            for (var i = 0; i < count; i++)
-                await AddRequest(roundId, category, StallRequestStatus.Submitted);
-
-        (await Officer.PostAsync($"/api/rounds/{roundId}/eligibility", null)).StatusCode.Should().Be(HttpStatusCode.OK);
-        return roundId;
-    }
-
-    private async Task AddRequest(Guid roundId, Category category, StallRequestStatus status)
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        var vendor = new Vendor(Guid.NewGuid(), "ผู้ค้า ทดสอบจัดสรร", "089-000-1000",
-            category == Category.Vulnerable ? "ผู้สูงอายุ" : null, "ทั่วไป", true, null, TestClock.DemoNow);
-        db.Vendors.Add(vendor);
-        db.StallRequests.Add(new StallRequest(Guid.NewGuid(), roundId, vendor.Id, TestClock.DemoNow, category, status));
-        await db.CommitAsync("Test.Arrange", CancellationToken.None);
-    }
-
     private static async Task<string> Detail(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString()!;
-
-    private async Task<DateTimeOffset> LatestAuditAt()
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.MaxAsync(a => (DateTimeOffset?)a.At) ?? DateTimeOffset.MinValue;
-    }
-
-    private async Task<List<Domain.Audit.AuditEntry>> AuditSince(DateTimeOffset since)
-    {
-        await using var scope = api.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        return await db.AuditEntries.Where(a => a.At > since).ToListAsync();
-    }
 }

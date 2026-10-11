@@ -19,6 +19,9 @@ public sealed class StallRequest
     public string? IneligibleReason { get; private set; }
     public int CarryOverWeight { get; private set; }
 
+    /// <summary>Position in the waitlist of the request's own category (1..3) while Waitlisted.</summary>
+    public int? WaitlistPosition { get; private set; }
+
     public StallRequest(
         Guid id, Guid roundId, Guid vendorId, DateTimeOffset submittedAt, Category category,
         StallRequestStatus status = StallRequestStatus.Submitted, int carryOverWeight = 1)
@@ -50,6 +53,22 @@ public sealed class StallRequest
         Status = StallRequestStatus.Ineligible;
         IneligibleReason = reason;
         CarryOverWeight = 1;
+    }
+
+    // Outcomes of an approved run. Only an Eligible request was drawn, so only it can receive one.
+
+    public void MarkWon() => Decide(StallRequestStatus.Won, null);
+
+    public void MarkWaitlisted(int position) => Decide(StallRequestStatus.Waitlisted, position);
+
+    public void MarkNotSelected() => Decide(StallRequestStatus.NotSelected, null);
+
+    private void Decide(StallRequestStatus outcome, int? waitlistPosition)
+    {
+        if (Status != StallRequestStatus.Eligible)
+            throw new InvalidOperationException($"Only an eligible request receives a draw outcome; this one is {Status}.");
+        Status = outcome;
+        WaitlistPosition = waitlistPosition;
     }
 
     private void EnsureAwaitingDraw()

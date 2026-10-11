@@ -3,21 +3,22 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using SmartMarket.Infrastructure.Seed;
 using static SmartMarket.Api.Tests.AllocationRunTests;
+using static SmartMarket.Api.Tests.ApproveAllocationTests;
 
 namespace SmartMarket.Api.Tests;
 
 /// <summary>
-/// The demo script on the seeded ปากซอยจรัญฯ 79 round, end to end. It draws that round, so it runs
+/// The demo script on the seeded ปากซอยจรัญฯ 79 round, end to end, as one test: it draws that round, so it runs
 /// against a database of its own rather than the shared <see cref="ApiCollection"/> one.
 /// </summary>
 public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task Charan_79_with_somsri_as_the_11th_request_draws_two_one_one()
+    public async Task Somsri_submits_as_the_11th_officer_checks_runs_and_approves_and_she_wins_B2()
     {
-        var officer = api.ClientAs("officer", "officer-bangphlat");
-        (await api.ClientAs("vendor", SeedData.Somsri.ToString())
-            .PostAsJsonAsync("/api/stall-requests", new { roundId = SeedData.CharanCurrentRound }))
+        var officer = api.Officer();
+        var somsri = api.ClientAs("vendor", SeedData.Somsri.ToString());
+        (await somsri.PostAsJsonAsync("/api/stall-requests", new { roundId = SeedData.CharanCurrentRound }))
             .StatusCode.Should().Be(HttpStatusCode.Created);
         (await officer.PostAsync($"/api/rounds/{SeedData.CharanCurrentRound}/eligibility", null))
             .StatusCode.Should().Be(HttpStatusCode.OK);
@@ -27,6 +28,7 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var run = (await response.Content.ReadFromJsonAsync<RunDto>(Json))!;
         run.SpaceName.Should().Be("ปากซอยจรัญฯ 79");
+        run.Seed.Should().Be(SeedData.CharanDemoSeed);
         run.ReferenceNo.Should().Be("BPL-2569-1025-01");
         run.InputHash.Should().HaveLength(64);
         run.Quota.Select(q => (q.Category, q.Base, q.Allocated))
@@ -35,6 +37,16 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
         run.Outcomes.Should().NotContain(o => o.VendorId == SeedData.VendorId(11));
         run.Outcomes.Single(o => o.VendorId == SeedData.VendorId(7)).Weight.Should().Be(2);
         run.Outcomes.Single(o => o.VendorId == SeedData.Somsri)
-            .Should().Match<OutcomeDto>(o => o.VendorName == "สมศรี ใ." && o.Kind == "Won");
+            .Should().Match<OutcomeDto>(o => o.VendorName == "สมศรี ใ." && o.Kind == "Won" && o.LockCode == "B2");
+
+        (await officer.PostAsync($"/api/allocation-runs/{run.Id}/approve", null)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var mine = (await somsri.GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
+            .Single(r => r.RoundId == SeedData.CharanCurrentRound);
+        mine.Status.Should().Be("Won");
+        mine.LockCode.Should().Be("B2");
+        mine.ReferenceNo.Should().Be("BPL-2569-1025-01");
+        mine.ResultReason.Should().Contain("ได้สิทธิ์ในโควตากลุ่มผู้ค้าเดิม");
+        mine.ConfirmBy.Should().NotBeNull();
     }
 }

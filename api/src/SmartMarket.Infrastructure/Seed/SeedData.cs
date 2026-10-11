@@ -78,6 +78,14 @@ public static class SeedData
     /// </summary>
     public static readonly Guid CharanPreviousRound = new("50000000-0000-0000-0001-000000000001");
 
+    /// <summary>
+    /// Demo seed for the first run of <see cref="CharanCurrentRound"/> (ADR-0002's only exception to the crypto seed).
+    /// With สมศรี ใ. submitting live as the 11th request, it gives her lock B2 — and ปิยะ น. (×2) wins too.
+    /// Found by brute force through AllocationEngine; DemoSeedTests pins it, so any change to the engine's RNG
+    /// order or to the seeded requests means searching again.
+    /// </summary>
+    public const int CharanDemoSeed = 1_847_260_006;
+
     private static readonly TimeSpan Bangkok = TimeSpan.FromHours(7);
     public static readonly DateTimeOffset CurrentApplyOpensAt = new DateTimeOffset(2026, 10, 1, 0, 0, 0, Bangkok).ToUniversalTime();
     public static readonly DateTimeOffset CurrentApplyClosesAt = new DateTimeOffset(2026, 10, 31, 23, 59, 59, Bangkok).ToUniversalTime();

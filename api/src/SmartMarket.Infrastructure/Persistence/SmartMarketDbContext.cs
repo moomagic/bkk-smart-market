@@ -20,6 +20,7 @@ public sealed class SmartMarketDbContext(DbContextOptions<SmartMarketDbContext> 
     public DbSet<Round> Rounds => Set<Round>();
     public DbSet<StallRequest> StallRequests => Set<StallRequest>();
     public DbSet<AllocationRun> AllocationRuns => Set<AllocationRun>();
+    public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     /// <summary>Use-case name for the save in progress; read by <see cref="Audit.AuditInterceptor"/>.</summary>

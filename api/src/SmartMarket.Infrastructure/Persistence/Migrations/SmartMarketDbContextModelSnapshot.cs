@@ -28,6 +28,13 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("InputHash")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -82,6 +89,42 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                         .HasFilter("\"Status\" = 'Draft'");
 
                     b.ToTable("AllocationRuns");
+                });
+
+            modelBuilder.Entity("SmartMarket.Domain.Allocation.Assignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ConfirmBy")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LockId");
+
+                    b.HasIndex("VendorId");
+
+                    b.HasIndex("RoundId", "LockId")
+                        .IsUnique();
+
+                    b.HasIndex("RoundId", "VendorId")
+                        .IsUnique();
+
+                    b.ToTable("Assignments");
                 });
 
             modelBuilder.Entity("SmartMarket.Domain.Audit.AuditEntry", b =>
@@ -595,6 +638,9 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("VendorId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("WaitlistPosition")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("VendorId");
@@ -901,6 +947,27 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.HasOne("SmartMarket.Domain.Rounds.Round", null)
                         .WithMany()
                         .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartMarket.Domain.Allocation.Assignment", b =>
+                {
+                    b.HasOne("SmartMarket.Domain.Spaces.Lock", null)
+                        .WithMany()
+                        .HasForeignKey("LockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartMarket.Domain.Rounds.Round", null)
+                        .WithMany()
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartMarket.Domain.Vendors.Vendor", null)
+                        .WithMany()
+                        .HasForeignKey("VendorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

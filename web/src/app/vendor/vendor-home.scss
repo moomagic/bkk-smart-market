@@ -101,3 +101,30 @@ button:disabled {
   font-size: 0.85rem;
   margin: 10px 0 0;
 }
+.won {
+  margin: 10px 0 2px;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.reason {
+  margin: 4px 0;
+}
+.deadline {
+  margin: 4px 0;
+  color: var(--warn);
+  font-weight: 600;
+}
+.runs {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.runs summary {
+  cursor: pointer;
+}
+.runs ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}

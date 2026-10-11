@@ -12,6 +12,9 @@ public static class AllocationRunsEndpoints
         group.MapGet("/{id:guid}", async (Guid id, GetAllocationRunHandler handler, CancellationToken ct) =>
             ResultHttp.Ok(await handler.Handle(id, ct)));
 
+        group.MapPost("/{id:guid}/approve", async (Guid id, ApproveAllocationRunHandler handler, CancellationToken ct) =>
+            ResultHttp.Ok(await handler.Handle(id, ct)));
+
         return api;
     }
 }
