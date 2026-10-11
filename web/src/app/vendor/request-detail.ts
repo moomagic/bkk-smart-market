@@ -6,8 +6,8 @@ import { Checkbox } from 'primeng/checkbox';
 import { Textarea } from 'primeng/textarea';
 import { StallRequest } from '../core/api';
 import { StatusTag } from '../shared/status-tag';
-import { CATEGORY_LABEL, REVIEW_OUTCOME_LABEL, formatThaiDate, formatThaiDateTime } from '../shared/labels';
-import { VENDOR_RUN_STATUS, canReview, nextStep } from './request-text';
+import { CATEGORY_LABEL, REVIEW_OUTCOME_LABEL, SPACE_TYPE_LABEL, formatThaiDate, formatThaiDateTime } from '../shared/labels';
+import { VENDOR_RUN_STATUS, canReview, nextStep, pendingSteps } from './request-text';
 import { VendorStore } from './vendor-store';
 
 /** One request on its own screen: the result and its reasons, and every action on it, the main one kept at the bottom. */
@@ -25,6 +25,8 @@ export class RequestDetail {
   readonly id = input.required<string>();
 
   protected readonly categoryLabel = CATEGORY_LABEL;
+  protected readonly spaceType = SPACE_TYPE_LABEL;
+  protected readonly stepState = { done: 'เสร็จแล้ว', current: 'ขั้นตอนปัจจุบัน', upcoming: 'ขั้นต่อไป' } as const;
   protected readonly reviewOutcome = REVIEW_OUTCOME_LABEL;
   protected readonly runStatus = VENDOR_RUN_STATUS;
   protected readonly date = formatThaiDate;
@@ -39,6 +41,24 @@ export class RequestDetail {
   protected readonly request = computed(() => {
     const mine = this.mine();
     return mine?.state === 'ready' ? (mine.data.find((r) => r.id === this.id()) ?? null) : null;
+  });
+
+  /** The listed space the request is for: its type, locks and hours. Null until the list loads. */
+  protected readonly space = computed(() => {
+    const req = this.request();
+    return (req && this.store.spaceList().find((s) => s.id === req.spaceId)) ?? null;
+  });
+
+  /** The apply-by date, while the request's round is the one still open at its space. */
+  protected readonly closesAt = computed(() => {
+    const round = this.space()?.openRound;
+    return round && round.id === this.request()?.roundId ? round.applyClosesAt : null;
+  });
+
+  /** The steps of a request still waiting on the district (submitted or eligible); null in every other state. */
+  protected readonly steps = computed(() => {
+    const req = this.request();
+    return req ? pendingSteps(req) : null;
   });
 
   /** The forfeit waits for a second, deliberate click. */

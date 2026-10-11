@@ -1,5 +1,5 @@
 import { AllocationRunStatus, StallRequest } from '../core/api';
-import { formatThaiDateTime } from '../shared/labels';
+import { CATEGORY_LABEL, formatThaiDateTime } from '../shared/labels';
 
 /** The vendor-facing word for a run: they wait on the district, they do not hold a draft. */
 export const VENDOR_RUN_STATUS: Record<AllocationRunStatus, string> = {
@@ -45,4 +45,42 @@ export function cardLine(req: StallRequest): string | null {
   if (req.status === 'Confirmed' && req.lockCode) return `ล็อค ${req.lockCode}`;
   if (req.status === 'Ineligible' && req.ineligibleReason) return req.ineligibleReason;
   return nextStep(req);
+}
+
+export interface PendingStep {
+  label: string;
+  detail: string | null;
+  state: 'done' | 'current' | 'upcoming';
+}
+
+/**
+ * The district's steps for a request still waiting on it — submitted, checked, drawn, announced — and where this one
+ * stands. Only for Submitted and Eligible: every later state has its own result to show instead. The last step
+ * names every possible result, so a pending request never reads as a lock on its way.
+ */
+export function pendingSteps(req: StallRequest): PendingStep[] | null {
+  if (req.status !== 'Submitted' && req.status !== 'Eligible') return null;
+  const checked = req.status === 'Eligible';
+  const draft = req.runs.some((r) => r.status === 'Draft');
+  const redraw = !draft && req.runs.some((r) => r.status === 'Rejected');
+  return [
+    { label: 'ยื่นคำขอ', detail: formatThaiDateTime(req.submittedAt), state: 'done' },
+    {
+      label: 'ตรวจสิทธิ',
+      detail: checked ? 'ผ่านการตรวจสิทธิแล้ว' : 'รอเขตตรวจสิทธิ',
+      state: checked ? 'done' : 'current',
+    },
+    {
+      label: 'จับฉลาก',
+      detail: !checked
+        ? `จับฉลากตามโควตา${CATEGORY_LABEL[req.category]}`
+        : draft
+          ? 'เขตจับฉลากแล้ว รออนุมัติผล'
+          : redraw
+            ? 'เขตไม่อนุมัติผลครั้งก่อน รอจับฉลากใหม่'
+            : 'รอเขตจับฉลาก',
+      state: checked ? 'current' : 'upcoming',
+    },
+    { label: 'ประกาศผล', detail: 'ได้สิทธิ์ สำรอง หรือไม่ได้สิทธิ์ ตามผลจับฉลาก', state: 'upcoming' },
+  ];
 }

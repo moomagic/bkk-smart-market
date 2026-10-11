@@ -44,6 +44,135 @@ h2 {
   color: var(--warn);
   font-weight: 600;
 }
+/* Confirmed: the lock as a pass — accent on its soft tint, flat, no border of its own */
+.pass {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--accent-soft);
+  border-radius: 8px;
+}
+.pass p {
+  margin: 0;
+}
+.pass-lock {
+  font-family: var(--font-heading);
+  font-size: var(--text-h1);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--accent);
+}
+.pass .pass-when {
+  margin-top: var(--space-1);
+}
+.pass + .reason {
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+/* Pending: the district's steps, a hairline joining the markers. Done is a filled check, the current step a ring
+   with its label in the accent, the rest quiet — each also named for assistive tech, so no state rests on colour */
+.steps {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+}
+.steps li {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+.steps li:last-child {
+  padding-bottom: 0;
+}
+.steps li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  bottom: 2px;
+  left: 9.5px;
+  width: 1px;
+  background: var(--line);
+}
+.steps li.done:not(:last-child)::before {
+  background: var(--accent);
+}
+.marker {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.done .marker {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.current .marker {
+  border: 2px solid var(--accent);
+}
+.current .marker::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.marker svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--surface);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.step-text {
+  display: flex;
+  flex-direction: column;
+}
+.step-label {
+  font-weight: 600;
+}
+.current .step-label {
+  color: var(--accent);
+}
+.upcoming .step-label {
+  color: var(--muted);
+}
+.step-detail {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.current .step-detail {
+  color: var(--ink);
+}
+/* The request's facts: one bordered panel, label and value on a row, no rules between rows */
+.facts {
+  margin: var(--space-5) 0 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: var(--text-small);
+}
+.facts > div {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: var(--space-3);
+  padding-block: var(--space-1);
+}
+.facts dt {
+  color: var(--muted);
+}
+.facts dd {
+  margin: 0;
+  min-width: 0;
+}
 .runs {
   margin-top: var(--space-4);
   font-size: var(--text-small);
