@@ -66,6 +66,8 @@ test('demo script 1–6', async ({ page, request }) => {
     const run = page.getByRole('region', { name: new RegExp(`ผลจัดสรร · ${ref}`) });
     await expect(run).toContainText('ร่าง รออนุมัติ');
     await expect(run.getByText('Seed (ระบบสุ่ม)')).toBeVisible();
+    // The input hash sits in the folded evidence, one click away
+    await run.getByText('หลักฐานการสุ่ม').click();
     await expect(run.getByText('Input hash (SHA-256)')).toBeVisible();
     for (const [group, quota] of [
       ['ผู้ค้าเดิม', '2'],
@@ -121,6 +123,8 @@ test('demo script 1–6', async ({ page, request }) => {
       await expect(audit.getByText(action, { exact: true }).first()).toBeVisible();
     }
     await expect(audit).toContainText('***');
+    await page.getByRole('button', { name: 'ปิด audit trail' }).click();
+    await expect(audit).toHaveCount(0);
   });
 
   await test.step('6 · the executive dashboard shows occupancy up by one lock', async () => {

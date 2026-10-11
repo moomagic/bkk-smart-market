@@ -104,15 +104,13 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
   expect(overflow, 'page scrolls horizontally').toBeLessThanOrEqual(0);
 }
 
-/** Opens a round's requests in the portal (selection is not kept across navigation). Default: the current round. */
+/** Opens a round in the portal (selection is not kept across navigation). Default: the current round. */
 export async function openRound(
   page: Page,
   spaceName: string,
   startsOn = '1 พ.ย. 2569',
 ): Promise<void> {
   const row = page.getByRole('row').filter({ hasText: spaceName }).filter({ hasText: startsOn });
-  await row.getByRole('button', { name: 'ดูคำขอ' }).click();
-  await expect(
-    page.getByRole('heading', { name: new RegExp(`คำขอ · ${spaceName}`) }),
-  ).toBeVisible();
+  await row.getByRole('button', { name: `เปิดรอบ ${spaceName} ${startsOn}` }).click();
+  await expect(page.getByRole('heading', { level: 2, name: new RegExp(spaceName) })).toBeVisible();
 }

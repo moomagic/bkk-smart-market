@@ -108,6 +108,12 @@ export const SmartMarketPreset = definePreset(Aura, {
       columnTitle: { fontWeight: '600' },
       bodyCell: { padding: '8px 12px' },
     },
+    // Tabs sit on the page ground, not on a panel of their own: the content inside brings its own surface
+    tabs: {
+      tablist: { background: 'transparent' },
+      tab: { padding: '10px 16px' },
+      tabpanel: { background: 'transparent', padding: '16px 0 0 0' },
+    },
     // Audit timeline: entries as tall as their content, flat markers
     timeline: {
       event: { minHeight: '0' },

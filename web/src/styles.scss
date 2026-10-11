@@ -62,6 +62,19 @@ h1 {
   color: var(--warn);
 }
 
+/* A fold the reader opens on purpose ("หลักฐานการสุ่ม"): accent label, quiet marker */
+.disclosure > summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.disclosure > summary::marker {
+  color: var(--muted);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

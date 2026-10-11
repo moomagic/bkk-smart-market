@@ -1,15 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Badge } from 'primeng/badge';
+import { Drawer } from 'primeng/drawer';
+import { Popover } from 'primeng/popover';
+import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { Button } from 'primeng/button';
-import { Card } from 'primeng/card';
 import { RadioButton } from 'primeng/radiobutton';
 import { Tag } from 'primeng/tag';
 import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, Category, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AuditTimeline } from './audit-timeline';
 import { AuditNames } from './audit-view';
@@ -24,12 +28,35 @@ import {
   formatThaiDateTime,
 } from '../shared/labels';
 
+type RoundTab = 'requests' | 'run' | 'reviews' | 'insight';
+
+const CATEGORY_ORDER: Category[] = ['Legacy', 'Vulnerable', 'New'];
+
 type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
 @Component({
   selector: 'app-portal-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Card, Message, RadioButton, TableModule, Tag, Textarea, AuditTimeline, StatusTag],
+  imports: [
+    FormsModule,
+    NgTemplateOutlet,
+    Badge,
+    Button,
+    Drawer,
+    Message,
+    Popover,
+    RadioButton,
+    Tab,
+    TabList,
+    TabPanel,
+    TabPanels,
+    Tabs,
+    TableModule,
+    Tag,
+    Textarea,
+    AuditTimeline,
+    StatusTag,
+  ],
   templateUrl: './portal-home.html',
   styleUrl: './portal-home.scss',
 })
@@ -64,6 +91,30 @@ export class PortalHome {
   });
 
   protected readonly selected = computed(() => this.roundList().find((r) => r.id === this.selectedId()) ?? null);
+
+  /** Rounds still waiting on the district lead; approved ones (nothing left to decide) follow, newest first. */
+  protected readonly currentRounds = computed(() => this.roundList().filter((r) => r.status !== 'Approved'));
+  protected readonly pastRounds = computed(() =>
+    this.roundList()
+      .filter((r) => r.status === 'Approved')
+      .sort((a, b) => b.startsOn.localeCompare(a.startsOn)),
+  );
+
+  /** Where the selected round stands, from its status and the eligibility checks done so far. */
+  protected readonly steps = computed(() => {
+    const round = this.selected();
+    if (!round) return [];
+    const current =
+      round.status === 'Approved' ? 4
+        : round.status === 'Drawn' ? 3
+          : this.requestRows().length === 0 ? 0
+            : this.uncheckedCount() > 0 ? 1
+              : 2;
+    return ['ยื่นคำขอ', 'ตรวจสิทธิ', 'จับฉลาก', 'อนุมัติผล'].map((label, i) => ({
+      label,
+      state: i < current || current === 4 ? 'done' : i === current ? 'current' : 'todo',
+    }));
+  });
 
   protected readonly requests = toSignal(
     combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
@@ -137,6 +188,43 @@ export class PortalHome {
 
   protected readonly latestRun = computed(() => this.runList()[0] ?? null);
 
+  protected readonly pendingReviews = computed(() => this.reviewList().filter((r) => !r.outcome).length);
+
+  /** The latest run's outcomes in quota-group order (the table groups rows by category). */
+  protected readonly outcomeRows = computed(() => {
+    const run = this.latestRun();
+    if (!run) return [];
+    return [...run.outcomes].sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category));
+  });
+
+  /** The tab the officer picked for this round; null follows what the round needs next. */
+  private readonly tabChoice = signal<RoundTab | null>(null);
+
+  protected readonly tab = computed<RoundTab>(() => {
+    const choice = this.tabChoice();
+    const available = (t: RoundTab) =>
+      t === 'requests' || (t === 'run' && !!this.latestRun()) || (t === 'reviews' && this.reviewList().length > 0) ||
+      (t === 'insight' && this.insightList().length > 0);
+    if (choice && available(choice)) return choice;
+    // Unanswered reviews have a deadline; a drawn round waits for a decision; otherwise the requests
+    if (this.pendingReviews() > 0) return 'reviews';
+    const status = this.selected()?.status;
+    if ((status === 'Drawn' || status === 'Approved') && this.latestRun()) return 'run';
+    return 'requests';
+  });
+
+  protected pickTab(value: string | number | undefined): void {
+    this.tabChoice.set(value as RoundTab);
+  }
+
+  protected quotaOf(run: AllocationRun, category: Category): number {
+    return run.quota.find((q) => q.category === category)?.base ?? 0;
+  }
+
+  protected pct(share: number): string {
+    return `${Math.round(share * 100)}%`;
+  }
+
   protected readonly uncheckedCount = computed(() => this.requestRows().filter((r) => r.status === 'Submitted').length);
 
   /** Mirrors the API guards so the button only offers what the server will accept; the server still decides. */
@@ -200,7 +288,7 @@ export class PortalHome {
 
   protected select(round: RoundSummary): void {
     this.notice.set(null);
-    this.auditTarget.set(null);
+    this.tabChoice.set(null);
     this.selectedId.set(round.id);
   }
 
@@ -212,6 +300,7 @@ export class PortalHome {
         this.checking.set(false);
         const failed = rows.filter((r) => r.status === 'Ineligible').length;
         this.notice.set({ kind: 'ok', text: `ตรวจสิทธิแล้ว ${rows.length} คำขอ · ไม่ผ่าน ${failed}` });
+        this.tabChoice.set('requests');
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {
@@ -228,6 +317,7 @@ export class PortalHome {
       next: (run) => {
         this.running.set(false);
         this.notice.set({ kind: 'ok', text: `รันจัดสรรแล้ว · ${run.referenceNo} · ร่างรออนุมัติ` });
+        this.tabChoice.set('run');
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {

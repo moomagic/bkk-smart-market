@@ -1,5 +1,19 @@
 section {
-  margin-top: 20px;
+  margin-top: 24px;
+}
+/* Sections nested in a tab panel sit flush under the tab list */
+p-tabpanel section {
+  margin-top: 0;
+}
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-bottom: 8px;
+}
+.demo-trigger {
+  margin-left: auto;
 }
 h2 {
   font-size: 1.1rem;
@@ -31,9 +45,6 @@ th {
   color: var(--muted);
   font-weight: 600;
   font-size: 0.8rem;
-}
-tr.selected > td {
-  background: var(--accent-soft);
 }
 /* PrimeNG tables in a bordered panel */
 .frame {
@@ -70,43 +81,150 @@ tr.selected > td {
   flex-wrap: wrap;
 }
 h3 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+h4 {
   font-size: 0.95rem;
-  margin: 16px 0 8px;
+  margin: 20px 0 8px;
 }
 .small-note {
   font-size: 0.85rem;
   margin: 0 0 10px;
 }
-h2 app-status-tag {
+h2 app-status-tag,
+h3 app-status-tag {
   margin-left: 8px;
   vertical-align: middle;
 }
-.run-meta {
+/* Run summary: provenance on the left, quota beside it, the hash folded underneath — one panel */
+.run-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px 20px;
-  margin: 0;
-  padding: 12px 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+  gap: 12px 32px;
+  padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
 }
-.run-meta .wide {
-  grid-column: 1 / -1;
+@media (max-width: 760px) {
+  .run-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
-.run-meta dt {
+.run-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  align-content: start;
+  gap: 12px 24px;
+  margin: 0;
+}
+.run-summary dt {
   color: var(--muted);
   font-size: 0.8rem;
 }
-.run-meta dd {
+.run-summary dd {
   margin: 2px 0 0;
+}
+.quota-block h4 {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.evidence {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  font-size: 0.9rem;
+}
+.evidence dl {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
 }
 .hash {
   overflow-wrap: anywhere;
   font-size: 0.85rem;
 }
-.quota {
-  max-width: 420px;
+.group-title {
+  margin: 16px 0 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.group-title:first-of-type {
+  margin-top: 0;
+}
+/* Rounds: the whole row opens a round */
+tr.pick {
+  cursor: pointer;
+}
+tr.pick:hover > td {
+  background: var(--ground);
+}
+tr.selected > td {
+  background: var(--accent-soft);
+}
+tr.group > th {
+  background: var(--ground);
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+/* Where the round stands: done steps in the accent, the current one marked, the rest muted */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  list-style: none;
+  margin: 4px 0 16px;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.steps li + li::before {
+  content: '';
+  order: -2;
+  width: 28px;
+  height: 1px;
+  margin: 0 8px;
+  background: var(--line);
+}
+.steps li[data-state='done'] {
+  color: var(--accent);
+}
+.steps li[data-state='done'] + li::before {
+  background: var(--accent);
+}
+.steps li[data-state='current'] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.steps li[data-state='current']::after {
+  content: '';
+  order: -1;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+}
+.demo-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.demo-now {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.audit-heading {
+  font-size: 1.05rem;
+  margin: 0;
 }
 .won {
   color: var(--accent);
@@ -115,14 +233,6 @@ h2 app-status-tag {
 .earlier-runs {
   margin: 0;
   padding-left: 18px;
-  color: var(--muted);
-}
-.demo-clock {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
   color: var(--muted);
 }
 .reject-form {
@@ -139,9 +249,15 @@ h2 app-status-tag {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.reviews > li {
+  padding: 12px 16px;
+}
+.reviews > li + li {
+  border-top: 1px solid var(--line);
 }
 .answer-form {
   display: flex;
@@ -183,15 +299,12 @@ h2 app-status-tag {
   border-bottom: 1px solid var(--line);
   border-left: 3px solid transparent;
 }
+.insights p-tag {
+  margin-right: 8px;
+}
 .insights > li:last-child {
   border-bottom: 0;
 }
 .insights > li[data-severity='Critical'] {
   border-left-color: var(--warn);
-}
-.insights p-tag {
-  margin-right: 8px;
-}
-.insights .mono {
-  margin-left: 6px;
 }
