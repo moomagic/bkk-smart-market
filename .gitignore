@@ -16,3 +16,7 @@ dist/
 
 # Local secrets (e.g. ANTHROPIC_API_KEY for the Vendor Assistant) — never commit
 .env
+
+# Local design-tool and agent files (impeccable critique snapshots and live-server cache, Codex hooks)
+.impeccable/
+.codex/
