@@ -52,7 +52,7 @@ Keep = คงไว้ (เปลี่ยนแค่ token) · Replace = แ�
 | `button` (primary · `.secondary` · `.danger` · `.link-button`) | `p-button` (default · `outlined` · `severity="danger"` · `link`) · `fluid` บนการ์ด | คง label ข้อความเดิมรวม "กำลัง…" — e2e อ้างข้อความ | ต่ำ |
 | `.notice` (info/error/warn) | `p-message` | คง `role="status"` · neutral → primary/accent-soft · error/warn → warn palette | ต่ำ |
 | `.card` (คำขอ, พื้นที่) | `p-card` ภายใน `<li>` | คง `ul/li` semantics | ต่ำ |
-| `.status`, `.type` pill | `StatusTag` (shared ใหม่) → `p-tag` | ใช้ `STATUS_LABEL` เดิม — ห้ามมีข้อความ "จองสำเร็จ" | ต่ำ |
+| `.status`, `.type` pill | `StatusTag` (shared ใหม่) → `p-tag` | ใช้ `STATUS_LABEL` เดิมเท่านั้น (Guardrail 4) | ต่ำ |
 | checkbox "จำลอง: อยู่นอกพื้นที่" | `p-checkbox` binary | | ต่ำ |
 | textarea ขอทบทวน | `pTextarea` | คง `maxlength`, label `for` | ต่ำ |
 | `<details>` ผลจัดสรรทุกครั้ง | Keep (native) | | – |
@@ -143,7 +143,7 @@ Branch `feat/primeng-migration` จาก tag `pre-primeng` (commit ที่เ
 - เขียนก่อน migrate (M0) เพื่อเป็นตัววัดว่า behavior ไม่เปลี่ยน
 - รัน **โดยไม่ตั้ง `ANTHROPIC_API_KEY`** ให้ Assistant ใช้ keyword fallback — คำตอบ deterministic
 - docker compose รัน API เป็น `Development` อยู่แล้ว → `POST /demo/reset` และ `/demo/clock` ใช้ได้ ไม่ต้องมี profile เพิ่ม
-- Guardrail assertions: ป้าย "ข้อมูลจำลอง" ทุก route · ไม่มี "จองสำเร็จ" · ชื่อแบบย่อ "สมศรี ใ." · audit แสดง `***`
+- Guardrail assertions: ป้าย "ข้อมูลจำลอง" ทุก route · ไม่มีคำที่สื่อว่าได้สิทธิ์แล้ว (Guardrail 4) · ชื่อแบบย่อ "สมศรี ใ." · audit แสดง `***`
 - Backend: `dotnet test` เดิม (ไม่ควรมีอะไรเปลี่ยน)
 
 ## 6. Rollback
