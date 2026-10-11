@@ -14,6 +14,13 @@ export const VENDOR_ROUTES: Routes = [
         data: { heading: 'คำขอของฉัน' },
       },
       {
+        // A screen of its own: ← in the app bar instead of the tabs
+        path: 'requests/:id',
+        loadComponent: () => import('./request-detail').then((m) => m.RequestDetail),
+        title: 'รายละเอียดคำขอ · BKK Smart Market',
+        data: { heading: 'รายละเอียดคำขอ', back: true },
+      },
+      {
         path: 'spaces',
         loadComponent: () => import('./vendor-spaces').then((m) => m.VendorSpaces),
         title: 'หาพื้นที่ · BKK Smart Market',

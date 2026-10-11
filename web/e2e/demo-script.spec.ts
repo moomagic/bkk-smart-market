@@ -47,7 +47,13 @@ test('demo script 1–6', async ({ page, request }) => {
     await first.getByRole('button', { name: 'ยื่นคำขอที่นี่' }).click();
 
     await expect(page.getByRole('status')).toContainText('ยื่นคำขอแล้ว · ปากซอยจรัญฯ 79');
-    await expect(first).toContainText('ยื่นคำขอแล้ว');
+    // The vendor lands on the request just filed: what it is now and what happens next
+    await expect(page).toHaveURL(/\/vendor\/requests\/[0-9a-f-]+$/);
+    const detail = requestDetail(page);
+    await expect(detail).toContainText('ยื่นคำขอแล้ว');
+    await expect(detail).toContainText('รอเขตตรวจสิทธิ');
+    // The request's screen has ← in place of the tabs
+    await page.getByRole('button', { name: 'ย้อนกลับ' }).click();
     await vendorTab(page, 'คำขอ');
     await expect(currentRequest(page)).toContainText('ยื่นคำขอแล้ว');
     await expectNoBookingWording(page);
@@ -104,18 +110,22 @@ test('demo script 1–6', async ({ page, request }) => {
     await expect(page).toHaveURL(/\/vendor\/requests$/);
     const card = currentRequest(page);
     await expect(card).toContainText('ได้ล็อค B2');
-    await expect(card).toContainText(`เลขอ้างอิง ${ref}`);
-    await expect(card).toContainText('ยืนยันสิทธิ์ภายใน');
+    await card.getByRole('link').click();
 
-    await card.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();
+    const detail = requestDetail(page);
+    await expect(detail).toContainText('ได้ล็อค B2');
+    await expect(detail).toContainText(`เลขอ้างอิง ${ref}`);
+    await expect(detail).toContainText('ยืนยันสิทธิ์ภายใน');
+
+    await page.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();
     await expect(page.getByRole('status')).toContainText(
       'ยืนยันสิทธิ์แล้ว · ปากซอยจรัญฯ 79 ล็อค B2',
     );
-    await expect(card).toContainText('ยืนยันสิทธิ์แล้ว');
+    await expect(detail).toContainText('ยืนยันสิทธิ์แล้ว');
 
-    await card.getByRole('button', { name: 'สแกน QR เช็คอินที่ล็อค B2' }).click();
+    await page.getByRole('button', { name: 'สแกน QR เช็คอินที่ล็อค B2' }).click();
     await expect(page.getByRole('status')).toContainText('เช็คอินแล้ว · ปากซอยจรัญฯ 79 ล็อค B2');
-    await expect(card).toContainText('เช็คอินล่าสุด');
+    await expect(detail).toContainText('เช็คอินล่าสุด');
     await expectNoHorizontalScroll(page);
   });
 
@@ -162,6 +172,11 @@ function currentRequest(page: Page) {
     .getByRole('listitem')
     .filter({ hasText: 'ปากซอยจรัญฯ 79' })
     .filter({ hasText: 'รอบ 1 พ.ย. 2569' });
+}
+
+/** The open request's own screen in the vendor app. */
+function requestDetail(page: Page) {
+  return page.getByRole('region', { name: 'รายละเอียดคำขอ' });
 }
 
 /** The vendor's status cell, matched exactly ("ผ่าน…" is a substring of "ไม่ผ่าน…"). */

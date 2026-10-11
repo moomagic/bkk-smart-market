@@ -103,16 +103,61 @@ test('a vendor forfeit asks for a second, deliberate click', async ({ page, requ
   await api.approve(await api.runAllocation());
   await page.goto('/vendor');
 
+  // The card in the list only leads to the request; every action is on the request's own screen
   const card = page
     .getByRole('region', { name: 'คำขอของฉัน' })
     .getByRole('listitem')
     .filter({ hasText: 'ได้ล็อค B2' });
-  await card.getByRole('button', { name: 'สละสิทธิ์' }).click();
-  await expect(card).toContainText('สละล็อค B2 ให้ผู้สำรอง?');
-  await card.getByRole('button', { name: 'ไม่สละ' }).click();
-  await expect(card.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true })).toBeEnabled();
-  await expect(card).not.toContainText('สละล็อค B2 ให้ผู้สำรอง?');
+  await expect(card.getByRole('button')).toHaveCount(0);
+  await card.getByRole('link').click();
+
+  const detail = page.getByRole('region', { name: 'รายละเอียดคำขอ' });
+  await page.getByRole('button', { name: 'สละสิทธิ์' }).click();
+  await expect(page.getByText('สละล็อค B2 ให้ผู้สำรอง?')).toBeVisible();
+  await page.getByRole('button', { name: 'ไม่สละ' }).click();
+  await expect(page.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true })).toBeEnabled();
+  await expect(page.getByText('สละล็อค B2 ให้ผู้สำรอง?')).toHaveCount(0);
+  await expect(detail).toContainText('ได้ล็อค B2');
 });
+
+test('← on a request goes back where the vendor came from, or to the requests tab from a direct link', async ({
+  page,
+}) => {
+  await page.setViewportSize(PHONE);
+  const back = page.getByRole('button', { name: 'ย้อนกลับ' });
+  const previousRound = page
+    .getByRole('region', { name: 'คำขอของฉัน' })
+    .getByRole('listitem')
+    .filter({ hasText: 'รอบ 1 พ.ค. 2569' });
+
+  // From the requests tab: the detail hides the tabs, ← returns
+  await page.goto('/vendor');
+  await previousRound.getByRole('link').click();
+  await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toHaveCount(0);
+  const detailUrl = page.url();
+  await back.click();
+  await expect(page).toHaveURL(/\/vendor\/requests$/);
+
+  // A submit from the spaces tab opens the new request; ← goes back to the spaces tab
+  await vendorTab(page, 'หาพื้นที่');
+  await page
+    .getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })
+    .getByRole('listitem')
+    .filter({ hasText: 'ปากซอยจรัญฯ 79' })
+    .getByRole('button', { name: 'ยื่นคำขอ' })
+    .click();
+  await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toContainText('ยื่นคำขอแล้ว');
+  await back.click();
+  await expect(page).toHaveURL(/\/vendor\/spaces$/);
+
+  // Opened straight from a link there is nothing to go back to inside the app: ← lands on the requests tab
+  await page.goto(detailUrl);
+  await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toBeVisible();
+  await back.click();
+  await expect(page).toHaveURL(/\/vendor\/requests$/);
+});
+
 
 test('the vendor app opens on its requests tab, with its own app bar instead of the site header', async ({ page }) => {
   await page.setViewportSize(PHONE);

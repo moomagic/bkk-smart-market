@@ -55,6 +55,17 @@ for (const { path, role, device, loaded } of [
         await expectMockBadge(page);
         await expectNoBookingWording(page);
       }
+      // …and the request's own screen
+      await vendorTab(page, 'คำขอ');
+      await page
+        .getByRole('region', { name: 'คำขอของฉัน' })
+        .getByRole('listitem')
+        .filter({ hasText: 'ยื่นคำขอแล้ว' })
+        .getByRole('link')
+        .click();
+      await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toContainText('ยื่นคำขอแล้ว');
+      await expectMockBadge(page);
+      await expectNoBookingWording(page);
     });
   });
 }

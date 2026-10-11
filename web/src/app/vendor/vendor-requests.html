@@ -14,7 +14,7 @@
         } @else {
           <ul class="list">
             @for (req of current(); track req.id) {
-              <li><p-card><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></p-card></li>
+              <li><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></li>
             }
           </ul>
           @if (finished().length > 0) {
@@ -22,7 +22,7 @@
               <summary>คำขอที่จบแล้ว ({{ finished().length }})</summary>
               <ul class="list">
                 @for (req of finished(); track req.id) {
-                  <li><p-card><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></p-card></li>
+                  <li><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></li>
                 }
               </ul>
             </details>
@@ -35,109 +35,20 @@
   <p class="muted">คำขอของฉันแสดงเมื่อใช้งานในบทบาทผู้ค้า</p>
 }
 
+<!-- A card only says where the request stands and leads to it; every action is on the request's own screen -->
 <ng-template #requestCard let-r>
   @let req = asRequest(r);
-
-                <div class="head">
-                  <h3>{{ req.spaceName }}</h3>
-                  <app-status-tag [request]="req.status" />
-                </div>
-                <p class="meta">
-                  รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}
-                </p>
-                @if (nextStep(req); as step) {
-                  <!-- What happens next, in the vendor's words, for every state that is not a decision of their own -->
-                  <p class="next">{{ step }}</p>
-                }
-                @if (req.ineligibleReason) {
-                  <p class="error">{{ req.ineligibleReason }}</p>
-                }
-                @if ((req.status === 'Won' || req.status === 'Confirmed') && req.lockCode) {
-                  <p class="won">ได้ล็อค <span class="mono">{{ req.lockCode }}</span></p>
-                }
-                @if (req.resultReason) {
-                  <p class="reason">{{ req.resultReason }}</p>
-                }
-                @if (req.confirmBy && req.status === 'Won') {
-                  <p class="deadline">ยืนยันสิทธิ์ภายใน {{ dateTime(req.confirmBy) }}</p>
-                  <p class="meta">ถ้าไม่ยืนยันภายในเวลานี้ ถือว่าสละสิทธิ์ และล็อคจะส่งต่อให้ผู้สำรอง</p>
-                  <div class="actions">
-                    @if (confirmingForfeit() === req.id) {
-                      <!-- Forfeiting is final: say so, and keep "ไม่สละ" as easy to reach as the forfeit itself -->
-                      <div class="ask" role="group" [attr.aria-labelledby]="'ask-' + req.id">
-                        <p [id]="'ask-' + req.id" class="ask-title">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</p>
-                        <p class="ask-detail">ยกเลิกไม่ได้ ล็อค {{ req.lockCode }} จะส่งต่อให้ผู้สำรองกลุ่มเดียวกันทันที</p>
-                      </div>
-                      <!-- The safe choice is the filled one and comes first; the forfeit is outlined in the warn colour -->
-                      <p-button fluid label="ไม่สละ" (onClick)="confirmingForfeit.set(null)" [disabled]="acting() !== null" />
-                      <p-button severity="danger" variant="outlined" fluid
-                        [label]="acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์'"
-                        (onClick)="forfeit(req)" [disabled]="acting() !== null" />
-                    } @else {
-                      <p-button fluid [label]="acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์'" (onClick)="confirm(req)"
-                        [disabled]="acting() !== null" />
-                      <p-button text class="forfeit" label="สละสิทธิ์" (onClick)="confirmingForfeit.set(req.id)"
-                        [disabled]="acting() !== null" />
-                    }
-                  </div>
-                }
-                @if (req.status === 'Confirmed' && req.lockCode) {
-                  <div class="actions">
-                    <p-button fluid [label]="acting() === req.id ? 'กำลังเช็คอิน…' : 'สแกน QR เช็คอินที่ล็อค ' + req.lockCode"
-                      (onClick)="checkIn(req)" [disabled]="acting() !== null" />
-                    <!-- A presenter's control, dressed like the mock-data stamp so a vendor never takes it for a setting -->
-                    <span class="toggle demo">
-                      <p-checkbox binary [inputId]="'outside-' + req.id" [ngModel]="outsideGeofence()"
-                        (ngModelChange)="outsideGeofence.set($event)" />
-                      <label [for]="'outside-' + req.id">จำลอง: อยู่นอกพื้นที่</label>
-                    </span>
-                  </div>
-                  @if (req.lastCheckInAt) {
-                    <p class="meta">เช็คอินล่าสุด {{ dateTime(req.lastCheckInAt) }}</p>
-                  }
-                }
-                @if (req.referenceNo) {
-                  <p class="meta">เลขอ้างอิง <span class="mono">{{ req.referenceNo }}</span></p>
-                }
-                @if (req.review; as rv) {
-                  <div class="review">
-                    <p class="meta">ขอทบทวนผลเมื่อ {{ dateTime(rv.submittedAt) }} · "{{ rv.reason }}"</p>
-                    @if (rv.outcome) {
-                      <p><strong>ผลการทบทวน: {{ reviewOutcome[rv.outcome] }}</strong> — {{ rv.response }}</p>
-                    } @else {
-                      <p class="meta">รอเขตตอบ</p>
-                    }
-                  </div>
-                }
-                @if (canReview(req)) {
-                  @if (reviewing() === req.id) {
-                    <form ngNoForm class="review-form" (submit)="$event.preventDefault(); fileReview(req)">
-                      <label [attr.for]="'review-' + req.id">เหตุผลที่ขอทบทวน</label>
-                      <textarea pTextarea [id]="'review-' + req.id" rows="2" maxlength="500" [value]="reviewReason()"
-                        (input)="reviewReason.set($any($event.target).value)"></textarea>
-                      <p class="meta">ทบทวนได้เฉพาะผลการตรวจสิทธิ ผลการจับฉลากทบทวนไม่ได้ · ยื่นได้ครั้งเดียวภายในกำหนดหลังประกาศผล</p>
-                      <div class="actions">
-                        <p-button type="submit" fluid label="ส่งคำขอทบทวน"
-                          [disabled]="acting() !== null || reviewReason().trim().length === 0" />
-                        <p-button variant="outlined" fluid label="ยกเลิก" (onClick)="reviewing.set(null)" />
-                      </div>
-                    </form>
-                  } @else {
-                    <p-button link class="review-link" label="ขอทบทวนผล" (onClick)="reviewing.set(req.id)" />
-                  }
-                }
-                @if (req.runs.length > 0) {
-                  <details class="runs">
-                    <summary>ประวัติการจับฉลากของรอบนี้ ({{ req.runs.length }})</summary>
-                    <ul>
-                      @for (run of req.runs; track run.referenceNo) {
-                        <li><span class="mono">{{ run.referenceNo }}</span> · {{ vendorRunStatus[run.status] }} · {{ dateTime(run.ranAt) }}
-                          @if (run.rejectReason) {
-                            · เหตุผล: {{ run.rejectReason }}
-                          }
-                        </li>
-                      }
-                    </ul>
-                  </details>
-                }
+  <a class="card" [routerLink]="[req.id]">
+    <span class="body">
+      <span class="head">
+        <h3>{{ req.spaceName }}</h3>
+        <app-status-tag [request]="req.status" />
+      </span>
+      <span class="meta">รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}</span>
+      @if (line(req); as text) {
+        <span class="line" [class.urgent]="req.status === 'Won'">{{ text }}</span>
+      }
+    </span>
+    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+  </a>
 </ng-template>

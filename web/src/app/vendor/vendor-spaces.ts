@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { SpaceSummary } from '../core/api';
 import { DemoSession } from '../core/demo-session';
@@ -28,8 +29,12 @@ export class VendorSpaces {
   protected readonly closesAt = this.store.closesAt;
   protected readonly submitting = this.store.submitting;
 
-  protected submit(space: SpaceSummary): void {
-    void this.store.submit(space);
+  private readonly router = inject(Router);
+
+  /** A filed request opens on its own screen: what it is now and what happens next. */
+  protected async submit(space: SpaceSummary): Promise<void> {
+    const req = await this.store.submit(space);
+    if (req) await this.router.navigate(['/vendor/requests', req.id]);
   }
 
   /** Retry after a failed load. */

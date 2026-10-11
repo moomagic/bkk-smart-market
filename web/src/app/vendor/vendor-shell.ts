@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChi
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
+import { Location } from '@angular/common';
 import { Message } from 'primeng/message';
 import { MockBadge } from '../shared/mock-badge';
 import { RoleSwitcher } from '../shared/role-switcher';
@@ -26,7 +27,12 @@ const TABS = [
   providers: [VendorStore],
   template: `
     <header class="appbar">
-      <h1>{{ heading() }}</h1>
+      @if (screen().back) {
+        <button type="button" class="back" aria-label="ย้อนกลับ" (click)="back()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        </button>
+      }
+      <h1>{{ screen().heading }}</h1>
       <app-mock-badge />
       <!-- A presenter's control, dressed like the mock-data stamp so a vendor never takes it for part of the app -->
       <button type="button" class="demo" aria-label="เมนูเดโม" aria-controls="vendor-demo" [attr.aria-expanded]="demoOpen()"
@@ -52,31 +58,34 @@ const TABS = [
     </div>
 
     <!-- The app root keeps the page's one <main>; this is the scrolling screen inside it -->
-    <div #screen class="screen">
+    <div #scroller class="screen">
       <router-outlet />
     </div>
 
-    <nav class="tabs" aria-label="เมนูหลัก">
-      @for (tab of tabs; track tab.path) {
-        <!-- A tab is a fresh screen: the last screen's notice stays behind -->
-        <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="store.notice.set(null)">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            @switch (tab.path) {
-              @case ('requests') {
-                <path d="M7 3h7l5 5v13H7z" /><path d="M14 3v5h5" /><path d="M10 13h6M10 17h6" />
+    <!-- A screen with ← has its own actions at the bottom in place of the tabs -->
+    @if (!screen().back) {
+      <nav class="tabs" aria-label="เมนูหลัก">
+        @for (tab of tabs; track tab.path) {
+          <!-- A tab is a fresh screen: the last screen's notice stays behind -->
+          <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="store.notice.set(null)">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              @switch (tab.path) {
+                @case ('requests') {
+                  <path d="M7 3h7l5 5v13H7z" /><path d="M14 3v5h5" /><path d="M10 13h6M10 17h6" />
+                }
+                @case ('spaces') {
+                  <path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z" /><circle cx="12" cy="10" r="2.2" />
+                }
+                @case ('assistant') {
+                  <path d="M4 5h16v11H9l-5 4z" /><path d="M8 9.5h8M8 12.5h5" />
+                }
               }
-              @case ('spaces') {
-                <path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z" /><circle cx="12" cy="10" r="2.2" />
-              }
-              @case ('assistant') {
-                <path d="M4 5h16v11H9l-5 4z" /><path d="M8 9.5h8M8 12.5h5" />
-              }
-            }
-          </svg>
-          <span>{{ tab.label }}</span>
-        </a>
-      }
-    </nav>
+            </svg>
+            <span>{{ tab.label }}</span>
+          </a>
+        }
+      </nav>
+    }
   `,
   styles: `
     :host {
@@ -107,6 +116,25 @@ const TABS = [
       padding: env(safe-area-inset-top) var(--space-4) 0;
       background: var(--surface);
       border-bottom: 1px solid var(--line);
+    }
+    .back {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin-left: calc(-1 * var(--space-3));
+      padding: 0;
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .back:active {
+      background: var(--accent-soft);
+    }
+    .back:focus-visible {
+      outline: 2px solid var(--accent);
     }
     h1 {
       flex: 1;
@@ -192,26 +220,33 @@ export class VendorShell {
 
   protected readonly tabs = TABS;
   protected readonly demoOpen = signal(false);
-  private readonly screen = viewChild.required<ElementRef<HTMLElement>>('screen');
+  private readonly scroller = viewChild.required<ElementRef<HTMLElement>>('scroller');
+  private readonly location = inject(Location);
 
   constructor() {
     // The screens share one scroll container, which the router's scroll restoration (window only) never touches
     this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed())
-      .subscribe(() => this.screen().nativeElement.scrollTo({ top: 0 }));
+      .subscribe(() => this.scroller().nativeElement.scrollTo({ top: 0 }));
   }
 
-  /** The screen's name for the app bar, from the active child route. */
-  protected readonly heading = toSignal(
+  /** The active screen's name for the app bar, and whether it is a sub-screen with ←, from the child route's data. */
+  protected readonly screen = toSignal(
     this.router.events.pipe(
       filter((e) => e instanceof NavigationEnd),
       startWith(null),
       map(() => {
         let r = this.router.routerState.snapshot.root;
         while (r.firstChild) r = r.firstChild;
-        return (r.data['heading'] as string | undefined) ?? '';
+        return { heading: (r.data['heading'] as string | undefined) ?? '', back: r.data['back'] === true };
       }),
     ),
-    { initialValue: '' },
+    { initialValue: { heading: '', back: false } },
   );
+
+  /** Back where the vendor came from inside the app; opened straight from a link, to the requests tab. */
+  protected back(): void {
+    if (this.router.lastSuccessfulNavigation()?.previousNavigation) this.location.back();
+    else void this.router.navigateByUrl('/vendor/requests');
+  }
 }
