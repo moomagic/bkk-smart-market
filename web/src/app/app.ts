@@ -15,7 +15,8 @@ import { RoleSwitcher } from './shared/role-switcher';
     nav { display: flex; gap: 12px; }
     nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
     nav a.active { color: var(--accent); font-weight: 600; }
-    app-role-switcher { margin-left: auto; }
+    app-role-switcher, .role-placeholder { margin-left: auto; }
+    .role-placeholder { min-width: 150px; min-height: 32px; font-size: 0.8rem; }
     main { max-width: 1280px; margin: 0 auto; padding: 16px; }
   `,
 })

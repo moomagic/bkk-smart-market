@@ -6,17 +6,24 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "e2e": "playwright test --project=e2e",
+    "e2e:visual": "playwright test --project=visual"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
   "dependencies": {
+    "@angular/cdk": "~21.2.14",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",
     "@angular/forms": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
+    "@primeuix/themes": "~2.0.3",
+    "chart.js": "~4.5.1",
+    "chartjs-plugin-annotation": "~3.1.0",
+    "primeng": "~21.1.10",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -24,6 +31,7 @@
     "@angular/build": "^21.2.9",
     "@angular/cli": "^21.2.9",
     "@angular/compiler-cli": "^21.2.0",
+    "@playwright/test": "^1.64.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   }

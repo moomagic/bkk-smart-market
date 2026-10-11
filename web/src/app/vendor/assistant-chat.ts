@@ -1,4 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Button } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { InputText } from 'primeng/inputtext';
 import { Api, AssistantSource, problemMessage } from '../core/api';
 
 type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source?: AssistantSource };
@@ -6,9 +9,11 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source
 /** Vendor Assistant: answers from the published rules only, with the file and section it used. */
 @Component({
   selector: 'app-assistant-chat',
+  imports: [Button, Card, InputText],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="chat" aria-labelledby="assistant-heading">
+    <section aria-labelledby="assistant-heading">
+      <p-card>
       <h1 id="assistant-heading">ถามผู้ช่วยเรื่องระเบียบ</h1>
       <p class="hint">ตอบจากระเบียบที่ประกาศเท่านั้น ไม่ตอบเรื่องผลของแต่ละคน</p>
 
@@ -27,13 +32,15 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source
 
       <div class="suggestions">
         @for (q of suggestions; track q) {
-          <button type="button" class="chip" (click)="ask(q)" [disabled]="busy()">{{ q }}</button>
+          <!-- Buttons, not p-chip: each suggestion is an action -->
+          <p-button rounded variant="outlined" severity="secondary" size="small" [label]="q" (onClick)="ask(q)" [disabled]="busy()" />
         }
       </div>
 
       <form (submit)="$event.preventDefault(); ask(draft())">
         <label class="sr-only" for="assistant-question">คำถาม</label>
         <input
+          pInputText
           id="assistant-question"
           type="text"
           maxlength="500"
@@ -41,12 +48,12 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source
           [value]="draft()"
           (input)="draft.set($any($event.target).value)"
         />
-        <button type="submit" [disabled]="busy() || draft().trim().length === 0">{{ busy() ? 'กำลังตอบ…' : 'ถาม' }}</button>
+        <p-button type="submit" [label]="busy() ? 'กำลังตอบ…' : 'ถาม'" [disabled]="busy() || draft().trim().length === 0" />
       </form>
+      </p-card>
     </section>
   `,
   styles: `
-    .chat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
     h1 { font-size: 1.1rem; margin: 0; }
     .hint { color: var(--muted); font-size: 0.85rem; margin: 2px 0 10px; }
     .messages { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -55,12 +62,8 @@ type Message = { from: 'me' | 'assistant'; text: string; found?: boolean; source
     .messages li.not-found { background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
     .source { display: block; margin-top: 4px; font-size: 0.75rem; color: var(--muted); }
     .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    .chip { font: inherit; font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
     form { display: flex; gap: 8px; }
-    input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; }
-    form button { font: inherit; font-weight: 600; padding: 8px 14px; color: var(--surface); background: var(--accent); border: 0; border-radius: 6px; cursor: pointer; }
-    button:disabled { opacity: 0.6; cursor: default; }
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    input { flex: 1; min-width: 0; }
   `,
 })
 export class AssistantChat {

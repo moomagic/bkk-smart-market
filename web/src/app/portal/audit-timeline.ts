@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, inject, input, output } from '@angular/core';
+import { Button } from 'primeng/button';
+import { Timeline } from 'primeng/timeline';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, of, startWith, switchMap } from 'rxjs';
 import { Api, AuditChange, AuditEntry } from '../core/api';
@@ -14,7 +16,10 @@ const STATE_LABEL: Record<AuditChange['State'], string> = { Added: 'สร้า
 /** Who did what, when, and what changed — for a round or a single entity. Personal data arrives masked ("***"). */
 @Component({
   selector: 'app-audit-timeline',
+  imports: [Button, Timeline],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Unencapsulated so the layout can reach into p-timeline; every selector is scoped under the host tag.
+  encapsulation: ViewEncapsulation.None,
   template: `
     @switch (entries().state) {
       @case ('loading') {
@@ -24,21 +29,26 @@ const STATE_LABEL: Record<AuditChange['State'], string> = { Added: 'สร้า
         <p class="error">โหลด audit trail ไม่สำเร็จ</p>
       }
       @case ('ready') {
-        <ol class="timeline">
-          @for (e of list(); track e.id) {
-            <li>
-              <div class="when mono">{{ dateTime(e.at) }}</div>
+        @if (list().length === 0) {
+          <p class="muted">ยังไม่มีบันทึก</p>
+        } @else {
+          <!-- Entries keep their list semantics (the old markup was an <ol>) -->
+          <p-timeline class="panel" [value]="list()" align="left" [pt]="listSemantics">
+            <ng-template #opposite let-entry>
+              <span class="when mono">{{ dateTime(asEntry(entry).at) }}</span>
+            </ng-template>
+            <ng-template #content let-entry>
+              @let e = asEntry(entry);
               <div class="what">
+                <span class="when when-inline mono">{{ dateTime(e.at) }}</span>
                 <strong>{{ actionLabel(e.action) }}</strong>
                 <span class="muted"> · {{ e.actorName }} ({{ role(e.actorRole) }})</span>
                 <div class="action mono">{{ e.action }}</div>
                 <ul class="changes">
                   @for (c of e.changes; track c.Entity + c.Id) {
                     <li>
-                      <button type="button" class="entity mono" (click)="openEntity.emit({ type: c.Entity, id: c.Id })"
-                        [attr.aria-label]="'ดูประวัติ ' + c.Entity + ' ' + c.Id">
-                        {{ c.Entity }} …{{ c.Id.slice(-8) }}
-                      </button>
+                      <p-button link class="entity mono" [label]="c.Entity + ' …' + c.Id.slice(-8)"
+                        [ariaLabel]="'ดูประวัติ ' + c.Entity + ' ' + c.Id" (onClick)="openEntity.emit({ type: c.Entity, id: c.Id })" />
                       · {{ stateLabel[c.State] }}
                       @if (fields(c); as f) {
                         @if (f.length > 0) {
@@ -49,25 +59,25 @@ const STATE_LABEL: Record<AuditChange['State'], string> = { Added: 'สร้า
                   }
                 </ul>
               </div>
-            </li>
-          } @empty {
-            <li class="muted">ยังไม่มีบันทึก</li>
-          }
-        </ol>
+            </ng-template>
+          </p-timeline>
+        }
       }
     }
   `,
   styles: `
-    .timeline { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
-    .timeline > li { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
-    .timeline > li:last-child { border-bottom: 0; }
-    .when { font-size: 0.82rem; color: var(--muted); }
-    .action { font-size: 0.75rem; color: var(--muted); }
-    .changes { margin: 4px 0 0; padding-left: 16px; font-size: 0.85rem; overflow-wrap: anywhere; }
-    .entity { font: inherit; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; }
-    .muted { color: var(--muted); }
-    .error { color: var(--warn); }
-    @media (max-width: 640px) { .timeline > li { grid-template-columns: 1fr; gap: 2px; } }
+    app-audit-timeline .panel { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 14px 2px; }
+    app-audit-timeline .p-timeline-left .p-timeline-event-opposite { flex: 0 0 170px; padding: 1px 12px 0 0; text-align: left; white-space: nowrap; }
+    app-audit-timeline .what { padding-bottom: 12px; }
+    app-audit-timeline .when { font-size: 0.82rem; color: var(--muted); }
+    app-audit-timeline .when-inline { display: none; }
+    app-audit-timeline .action { font-size: 0.75rem; color: var(--muted); }
+    app-audit-timeline .changes { margin: 4px 0 0; padding-left: 16px; font-size: 0.85rem; overflow-wrap: anywhere; }
+    /* Narrow: one column — the time moves into the entry and the opposite column goes */
+    @media (max-width: 640px) {
+      app-audit-timeline .p-timeline-left .p-timeline-event-opposite { display: none; }
+      app-audit-timeline .when-inline { display: block; }
+    }
   `,
 })
 export class AuditTimeline {
@@ -82,6 +92,7 @@ export class AuditTimeline {
 
   protected readonly dateTime = formatThaiDateTime;
   protected readonly stateLabel = STATE_LABEL;
+  protected readonly listSemantics = { root: { role: 'list' }, event: { role: 'listitem' } };
 
   private readonly target = computed(() => ({ type: this.entityType(), id: this.entityId(), version: this.version() }));
 
@@ -101,6 +112,11 @@ export class AuditTimeline {
   protected list(): AuditEntry[] {
     const e = this.entries();
     return e.state === 'ready' ? e.data : [];
+  }
+
+  /** p-timeline hands entries to its templates untyped; this restores the type for the template checker. */
+  protected asEntry(entry: AuditEntry): AuditEntry {
+    return entry;
   }
 
   protected actionLabel(action: string): string {

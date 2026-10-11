@@ -89,6 +89,14 @@ cd api && ConnectionStrings__SmartMarket="Host=localhost;Port=5432;Database=smar
 
 # ตรวจคำต้องห้าม (Guardrail 4)
 scripts/check-wording.sh
+
+# E2E (Playwright) — เดิน demo script 1–6 + guardrail กับ stack ที่รันอยู่ · ทุก test reset demo เอง
+# รันโดยไม่มี ANTHROPIC_API_KEY ให้ Assistant ตอบแบบ keyword match (คำตอบคงที่)
+ANTHROPIC_API_KEY= docker compose up -d --build
+(cd web && npx playwright install chromium)   # ครั้งแรกครั้งเดียว
+(cd web && npm run e2e)                       # E2E_BASE_URL=... เพื่อชี้ไปที่อื่น (ค่าเริ่มต้น http://localhost:8080)
+# Visual snapshot ของหน้าตาหลังย้ายไป PrimeNG (baseline บันทึกบน macOS) — เปลี่ยนหน้าตาโดยตั้งใจแล้วเติม -- --update-snapshots
+(cd web && npm run e2e:visual)
 ```
 
 โครงสร้าง, domain model, กติกา และ guardrail อยู่ใน `CLAUDE.md` · ศัพท์ใน `CONTEXT.md` · การตัดสินใจที่ย้อนยากใน `docs/adr/`

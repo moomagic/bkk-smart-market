@@ -1,10 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { Checkbox } from 'primeng/checkbox';
+import { Message } from 'primeng/message';
+import { Tag } from 'primeng/tag';
+import { Textarea } from 'primeng/textarea';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { Api, SpaceSummary, StallRequest, lockQr, problemMessage } from '../core/api';
+import { Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AssistantChat } from './assistant-chat';
 import { SpaceMatching } from './space-matching';
+import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
   REVIEW_OUTCOME_LABEL,
@@ -20,7 +28,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AssistantChat, SpaceMatching],
+  imports: [FormsModule, Button, Card, Checkbox, Message, Tag, Textarea, AssistantChat, SpaceMatching, StatusTag],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })
@@ -30,7 +38,6 @@ export class VendorHome {
 
   protected readonly typeLabel = SPACE_TYPE_LABEL;
   protected readonly categoryLabel = CATEGORY_LABEL;
-  protected readonly statusLabel = STATUS_LABEL;
   protected readonly date = formatThaiDate;
   protected readonly dateTime = formatThaiDateTime;
   protected readonly runStatus = RUN_STATUS_LABEL;
@@ -60,15 +67,16 @@ export class VendorHome {
     { initialValue: null as Load<StallRequest[]> | null },
   );
 
-  protected readonly requestedRoundIds = computed(() => {
+  /** The vendor's request status in each round they applied to. */
+  protected readonly requestStatusByRound = computed(() => {
     const mine = this.myRequests();
-    return new Set(mine?.state === 'ready' ? mine.data.map((r) => r.roundId) : []);
+    return new Map(mine?.state === 'ready' ? mine.data.map((r) => [r.roundId, r.status]) : []);
   });
 
   /** A matched space the vendor can submit to right now, for the "ยื่นคำขอที่นี่" button. */
   protected readonly submittable = computed(() => {
     const spaces = this.spaceList();
-    const requested = this.requestedRoundIds();
+    const requested = this.requestStatusByRound();
     const isVendor = this.session.role() === 'vendor';
     return (spaceId: string): SpaceSummary | null => {
       const space = spaces.find((s) => s.id === spaceId);
@@ -76,12 +84,13 @@ export class VendorHome {
     };
   });
 
-  protected readonly hasRequested = computed(() => {
+  /** The status of the vendor's request in a space's open round, or null when they have none there. */
+  protected readonly requestStatus = computed(() => {
     const spaces = this.spaceList();
-    const requested = this.requestedRoundIds();
-    return (spaceId: string) => {
+    const requested = this.requestStatusByRound();
+    return (spaceId: string): StallRequestStatus | null => {
       const round = spaces.find((s) => s.id === spaceId)?.openRound;
-      return !!round && requested.has(round.id);
+      return (round && requested.get(round.id)) ?? null;
     };
   });
 

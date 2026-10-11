@@ -12,34 +12,31 @@ section + section {
   display: grid;
   gap: 12px;
 }
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 14px 16px;
-}
 .head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
 }
+.head > p-tag,
+.head > app-status-tag {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 h2 {
   font-size: 1.05rem;
   margin: 0;
 }
-.type,
-.status {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-radius: 4px;
-  padding: 1px 8px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-.status.submitted {
-  display: inline-block;
+.submitted {
   margin: 12px 0 0;
+}
+/* Full-width buttons on a phone, as before; side by side they wrap one per line */
+p-button[fluid] {
+  display: block;
+  width: 100%;
+}
+.submit {
+  margin-top: 12px;
 }
 dl {
   margin: 10px 0 0;
@@ -63,39 +60,9 @@ dd {
   color: var(--muted);
   font-size: 0.9rem;
 }
-button {
-  margin-top: 12px;
-  width: 100%;
-  padding: 10px 14px;
-  font: inherit;
-  font-weight: 600;
-  color: var(--surface);
-  background: var(--accent);
-  border: 0;
-  border-radius: 6px;
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
+/* p-message is display: grid (its enter/leave animation collapses the rows), so only spacing here */
 .notice {
-  background: var(--accent-soft);
-  color: var(--ink);
-  border-radius: 6px;
-  padding: 10px 12px;
   margin: 0 0 16px;
-}
-.notice.error,
-.error {
-  color: var(--warn);
-}
-.notice.error {
-  background: var(--surface);
-  border: 1px solid var(--warn);
-}
-.muted {
-  color: var(--muted);
 }
 .small {
   font-size: 0.85rem;
@@ -135,17 +102,6 @@ button:disabled {
   gap: 8px;
   margin-top: 10px;
 }
-.actions button {
-  margin-top: 0;
-}
-button.secondary {
-  color: var(--accent);
-  background: var(--surface);
-  border: 1px solid var(--accent);
-}
-button.danger {
-  background: var(--warn);
-}
 .ask {
   flex-basis: 100%;
   font-weight: 600;
@@ -156,11 +112,6 @@ button.danger {
   gap: 6px;
   font-size: 0.85rem;
   color: var(--muted);
-}
-.notice.warn {
-  background: var(--surface);
-  border: 1px solid var(--warn);
-  color: var(--warn);
 }
 app-assistant-chat,
 app-space-matching {
@@ -181,18 +132,7 @@ app-space-matching {
   gap: 6px;
   margin-top: 8px;
 }
-.review-form textarea {
-  font: inherit;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-}
-button.link-button {
+.review-link {
+  display: block;
   margin-top: 8px;
-  padding: 0;
-  background: none;
-  border: 0;
-  color: var(--accent);
-  font-weight: 600;
-  width: auto;
 }

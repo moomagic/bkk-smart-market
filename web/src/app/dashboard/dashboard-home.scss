@@ -10,11 +10,9 @@ section {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
-.tile {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 14px 16px;
+.tile p-card {
+  display: block;
+  height: 100%;
 }
 .tile h2 {
   font-size: 0.9rem;
@@ -49,6 +47,7 @@ section {
   height: 12px;
   border-radius: 3px;
 }
+/* Legend swatches; the chart reads the same --series-* tokens */
 [data-category='Legacy'] {
   background: var(--series-1);
 }
@@ -79,53 +78,18 @@ section {
   font-weight: 400;
   font-size: 0.8rem;
 }
-.bar-row {
-  display: grid;
-  grid-template-columns: 90px 1fr 44px;
-  align-items: center;
-  gap: 8px;
-  height: 22px;
-  margin-bottom: 4px;
-  font-size: 0.85rem;
+.space {
+  min-width: 0;
 }
-.bar-label {
-  color: var(--muted);
-}
-.track {
-  position: relative;
-  height: 14px;
-  border-bottom: 1px solid var(--line);
-}
-.bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 14px;
-  border-radius: 0 4px 4px 0;
-}
-.target {
-  position: absolute;
-  top: -3px;
-  width: 2px;
-  height: 20px;
-  margin-left: -1px;
-  background: var(--ink);
-}
-.bar-value {
-  text-align: right;
-  color: var(--ink);
-}
-.table-wrap {
+.frame {
+  display: block;
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
   font-size: 0.9rem;
 }
+/* Cell rules apply to the cells in our p-table templates */
 th,
 td {
   text-align: left;
@@ -138,19 +102,13 @@ th {
   font-weight: 600;
   font-size: 0.8rem;
 }
-tbody tr:last-child td {
+.frame tr:last-child > td {
   border-bottom: 0;
 }
 .num {
   text-align: right;
 }
-.muted {
-  color: var(--muted);
-}
 .small {
   font-size: 0.85rem;
   margin: 0 0 8px;
-}
-.error {
-  color: var(--warn);
 }
