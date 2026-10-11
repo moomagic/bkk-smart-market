@@ -1,46 +1,57 @@
 h2 {
-  font-size: 1.05rem;
-  margin: 0 0 8px;
+  font-size: var(--text-h2);
+  margin: 0 0 var(--space-2);
 }
 section {
-  margin-top: 24px;
+  margin-top: var(--space-5);
 }
 .kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
 }
 .tile p-card {
   display: block;
   height: 100%;
 }
 .tile h2 {
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   color: var(--muted);
   font-weight: 600;
 }
 .value {
-  font-size: 2.2rem;
-  margin: 2px 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  margin: var(--space-1) 0;
   color: var(--ink);
+}
+/* The unit reads with the figure but does not compete with it */
+.unit {
+  font-size: var(--text-h3);
+  font-weight: 400;
+  margin-left: var(--space-1);
+  color: var(--muted);
 }
 .detail {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-small);
   color: var(--muted);
 }
 .legend {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
   list-style: none;
   padding: 0;
-  margin: 0 0 10px;
-  font-size: 0.85rem;
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-small);
 }
 .legend li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .swatch {
   width: 12px;
@@ -60,55 +71,38 @@ section {
 .chart {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px 24px;
+  gap: var(--space-4) var(--space-5);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: var(--space-4) var(--space-4);
 }
 .space-name {
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-2);
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  gap: var(--space-1) var(--space-2);
   align-items: baseline;
 }
 .space-name span {
   font-weight: 400;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
 }
 .space {
   min-width: 0;
 }
-.frame {
-  display: block;
-  overflow-x: auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font-size: 0.9rem;
-}
-/* Cell rules apply to the cells in our p-table templates */
-th,
-td {
-  text-align: left;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-}
-th {
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 0.8rem;
-}
-.frame tr:last-child > td {
-  border-bottom: 0;
-}
-.num {
-  text-align: right;
-}
 .small {
-  font-size: 0.85rem;
-  margin: 0 0 8px;
+  font-size: var(--text-small);
+  margin: 0 0 var(--space-2);
+}
+/* Off quota is allowed (rollover) but worth a look: weight and the warn colour, explained above the table */
+.off-quota {
+  color: var(--warn);
+  font-weight: 600;
+}
+.off-word {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  margin-left: 2px;
 }

@@ -1,21 +1,27 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, afterRenderEffect, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Badge } from 'primeng/badge';
+import { Drawer } from 'primeng/drawer';
+import { Popover } from 'primeng/popover';
+import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { Button } from 'primeng/button';
-import { Card } from 'primeng/card';
 import { RadioButton } from 'primeng/radiobutton';
 import { Tag } from 'primeng/tag';
 import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, Category, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
+import { ApproveRunDialog } from './approve-run-dialog';
+import { RoundList } from './round-list';
+import { RoundStep, RoundSteps } from './round-steps';
 import { AuditTimeline } from './audit-timeline';
+import { AuditNames } from './audit-view';
 import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
-  OUTCOME_LABEL,
   REVIEW_OUTCOME_LABEL,
   RUN_STATUS_LABEL,
   STATUS_LABEL,
@@ -23,12 +29,37 @@ import {
   formatThaiDateTime,
 } from '../shared/labels';
 
+type RoundTab = 'requests' | 'run' | 'reviews' | 'insight';
+
+const CATEGORY_ORDER: Category[] = ['Legacy', 'Vulnerable', 'New'];
+
 type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
 @Component({
   selector: 'app-portal-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Card, Message, RadioButton, TableModule, Tag, Textarea, AuditTimeline, StatusTag],
+  imports: [
+    FormsModule,
+    Badge,
+    Button,
+    Drawer,
+    Message,
+    Popover,
+    RadioButton,
+    Tab,
+    TabList,
+    TabPanel,
+    TabPanels,
+    Tabs,
+    TableModule,
+    Tag,
+    Textarea,
+    ApproveRunDialog,
+    RoundList,
+    RoundSteps,
+    AuditTimeline,
+    StatusTag,
+  ],
   templateUrl: './portal-home.html',
   styleUrl: './portal-home.scss',
 })
@@ -41,7 +72,6 @@ export class PortalHome {
   protected readonly category = CATEGORY_LABEL;
   protected readonly dateTime = formatThaiDateTime;
   protected readonly runStatus = RUN_STATUS_LABEL;
-  protected readonly outcome = OUTCOME_LABEL;
   protected readonly reviewOutcome = REVIEW_OUTCOME_LABEL;
 
   protected readonly isOfficer = computed(() => this.session.role() !== 'vendor');
@@ -64,6 +94,29 @@ export class PortalHome {
 
   protected readonly selected = computed(() => this.roundList().find((r) => r.id === this.selectedId()) ?? null);
 
+  /** Rounds still waiting on the district lead; approved ones (nothing left to decide) follow, newest first. */
+  protected readonly currentRounds = computed(() => this.roundList().filter((r) => r.status !== 'Approved'));
+  protected readonly pastRounds = computed(() =>
+    this.roundList()
+      .filter((r) => r.status === 'Approved')
+      .sort((a, b) => b.startsOn.localeCompare(a.startsOn)),
+  );
+
+  /** Where the selected round stands, from its status and the eligibility checks done so far. */
+  protected readonly steps = computed(() => {
+    const round = this.selected();
+    if (!round) return [];
+    const current =
+      round.status === 'Approved' ? 4
+        : round.status === 'Drawn' ? 3
+          : this.requestRows().length === 0 ? 0
+            : this.uncheckedCount() > 0 ? 1
+              : 2;
+    return ['ยื่นคำขอ', 'ตรวจสิทธิ', 'จับฉลาก', 'อนุมัติผล'].map(
+      (label, i): RoundStep => ({ label, state: i < current || current === 4 ? 'done' : i === current ? 'current' : 'todo' }),
+    );
+  });
+
   protected readonly requests = toSignal(
     combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
       switchMap(([id]) => (id ? load(this.api.roundRequests(id)) : of(null))),
@@ -74,6 +127,15 @@ export class PortalHome {
   protected readonly requestRows = computed(() => {
     const r = this.requests();
     return r?.state === 'ready' ? r.data : [];
+  });
+
+  /** Masked names of the selected round's vendors, so the audit trail names people instead of ids. */
+  protected readonly auditNames = computed<AuditNames>(() => {
+    const rows = this.requestRows();
+    return {
+      requests: new Map(rows.map((r) => [r.requestId, r.vendorName])),
+      vendors: new Map(rows.map((r) => [r.vendorId, r.vendorName])),
+    };
   });
 
   /** Every run of the selected round, newest first (rejected ones stay visible). */
@@ -125,7 +187,103 @@ export class PortalHome {
   /** Review being answered, with the chosen outcome and the answer typed so far. */
   protected readonly answering = signal<{ id: string; outcome: ReviewOutcome; response: string } | null>(null);
 
-  protected readonly latestRun = computed(() => this.runList()[0] ?? null);
+  protected readonly latestRun = computed<AllocationRun | null>(() => this.runList()[0] ?? null);
+
+  protected readonly pendingReviews = computed(() => this.reviewList().filter((r) => !r.outcome).length);
+
+  /** The latest run's outcomes in quota-group order (the table groups rows by category). */
+  protected readonly outcomeRows = computed(() => {
+    const run = this.latestRun();
+    if (!run) return [];
+    return [...run.outcomes].sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category));
+  });
+
+  /** The tab the officer picked for this round; null follows what the round needs next. */
+  private readonly tabChoice = signal<RoundTab | null>(null);
+
+  protected readonly tab = computed<RoundTab>(() => {
+    const choice = this.tabChoice();
+    const available = (t: RoundTab) =>
+      t === 'requests' || (t === 'run' && this.hasRun()) || (t === 'reviews' && this.reviewList().length > 0) ||
+      (t === 'insight' && this.insightList().length > 0);
+    if (choice && available(choice)) return choice;
+    // Unanswered reviews have a deadline; a drawn round waits for a decision; otherwise the requests
+    if (this.pendingReviews() > 0) return 'reviews';
+    const status = this.selected()?.status;
+    // Decided from the round's status, not from the run arriving: the tab is right on first paint instead of
+    // jumping across once the runs load
+    if (status === 'Drawn' || status === 'Approved') return 'run';
+    return 'requests';
+  });
+
+  private readonly tabList = viewChild(TabList);
+
+  constructor() {
+    // On arrival, open the round that needs the officer now: a draw waiting for a decision, else unchecked requests
+    let picked = false;
+    effect(() => {
+      const list = this.roundList();
+      if (picked || this.rounds().state !== 'ready' || untracked(this.selectedId)) return;
+      picked = true;
+      const next =
+        list.find((r) => r.status === 'Drawn') ??
+        list.find((r) => (r.status === 'Open' || r.status === 'Closed') && r.requestCount > r.eligibleCount + r.ineligibleCount);
+      if (next) untracked(() => this.selectedId.set(next.id));
+    });
+    // PrimeNG places the active-tab bar when the selected tab changes, not when a tab's width does. The counts on
+    // the tabs arrive after the round opens and widen them, so re-place the bar once they have rendered.
+    afterRenderEffect(() => {
+      this.requestRows().length;
+      this.reviewList().length;
+      this.pendingReviews();
+      this.insightList().length;
+      this.tab();
+      this.tabList()?.updateInkBar();
+    });
+  }
+
+  /** The round has a run to show, or will once the runs load (a drawn or approved round always has one). */
+  protected readonly hasRun = computed(() => {
+    const status = this.selected()?.status;
+    return !!this.latestRun() || status === 'Drawn' || status === 'Approved';
+  });
+
+  private readonly injector = inject(Injector);
+
+  /** "ตรวจผลและอนุมัติ": open the run tab, then bring the decision bar (after the evidence) into view. */
+  protected goToDecision(): void {
+    this.tabChoice.set('run');
+    afterNextRender(
+      () => {
+        const decision = document.getElementById('decision');
+        decision?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        decision?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
+  }
+
+  protected pickTab(value: string | number | undefined): void {
+    this.tabChoice.set(value as RoundTab);
+  }
+
+  /** Retry after a failed load. */
+  protected reload(): void {
+    this.refresh.update((n) => n + 1);
+  }
+
+  /** Some group won more or fewer seats than its quota (rollover). */
+  protected offQuota(run: AllocationRun): boolean {
+    return run.quota.some((q) => q.allocated !== q.base);
+  }
+
+  protected quotaOf(run: AllocationRun, category: Category): number {
+    return run.quota.find((q) => q.category === category)?.base ?? 0;
+  }
+
+  protected pct(share: number): string {
+    return `${Math.round(share * 100)}%`;
+  }
 
   protected readonly uncheckedCount = computed(() => this.requestRows().filter((r) => r.status === 'Submitted').length);
 
@@ -159,6 +317,8 @@ export class PortalHome {
   protected readonly refreshCount = this.refresh.asReadonly();
 
   protected readonly running = signal(false);
+  /** Run id whose approval is being confirmed in the dialog. */
+  protected readonly approving = signal<string | null>(null);
   protected readonly deciding = signal(false);
   /** Run id whose reject form is open, and the reason typed so far. */
   protected readonly rejecting = signal<string | null>(null);
@@ -190,8 +350,14 @@ export class PortalHome {
 
   protected select(round: RoundSummary): void {
     this.notice.set(null);
-    this.auditTarget.set(null);
+    this.tabChoice.set(null);
     this.selectedId.set(round.id);
+    // One column (under 1024px): the round opens below the list, so bring its heading into view
+    if (window.innerWidth < 1024) {
+      afterNextRender(() => document.getElementById('round-heading')?.scrollIntoView({ block: 'start' }), {
+        injector: this.injector,
+      });
+    }
   }
 
   protected checkEligibility(round: RoundSummary): void {
@@ -202,6 +368,7 @@ export class PortalHome {
         this.checking.set(false);
         const failed = rows.filter((r) => r.status === 'Ineligible').length;
         this.notice.set({ kind: 'ok', text: `ตรวจสิทธิแล้ว ${rows.length} คำขอ · ไม่ผ่าน ${failed}` });
+        this.tabChoice.set('requests');
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {
@@ -218,6 +385,7 @@ export class PortalHome {
       next: (run) => {
         this.running.set(false);
         this.notice.set({ kind: 'ok', text: `รันจัดสรรแล้ว · ${run.referenceNo} · ร่างรออนุมัติ` });
+        this.tabChoice.set('run');
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {
@@ -278,6 +446,7 @@ export class PortalHome {
     this.api.approveAllocationRun(run.id).subscribe({
       next: (approved) => {
         this.deciding.set(false);
+        this.approving.set(null);
         this.notice.set({ kind: 'ok', text: `อนุมัติผลจัดสรร ${approved.referenceNo} แล้ว · ผู้ค้าเห็นผลและต้องยืนยันสิทธิ์ภายในกำหนด` });
         this.refresh.update((n) => n + 1);
       },

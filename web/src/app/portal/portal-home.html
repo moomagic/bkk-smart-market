@@ -1,332 +1,413 @@
-<h1>พอร์ทัลเจ้าหน้าที่เขต</h1>
+<div class="page-head">
+  <h1>พอร์ทัลเจ้าหน้าที่เขต</h1>
+  @if (clock(); as now) {
+    <!-- Development only: the demo clock and reset sit behind one quiet trigger, apart from the officer's work -->
+    <p-button text size="small" class="demo-trigger" [label]="'เวลา demo ' + dateTime(now)" ariaLabel="เครื่องมือ demo"
+      (onClick)="demoTools.toggle($event)" />
+    <p-popover #demoTools (onHide)="confirmReset.set(false)">
+      <div class="demo-clock" role="group" aria-label="เครื่องมือ demo">
+        <p class="muted text-small flush">เวลา demo <span class="mono">{{ dateTime(now) }}</span></p>
+        <div class="actions">
+          <p-button variant="outlined" size="small" label="+1 วัน" (onClick)="advanceClock(1)" />
+          <p-button variant="outlined" size="small" label="+4 วัน" (onClick)="advanceClock(4)" />
+        </div>
+        <!-- Two presses: the first arms the reset and turns the button to the warn colour -->
+        <p-button variant="outlined" size="small" [severity]="confirmReset() ? 'danger' : undefined"
+          [label]="confirmReset() ? 'กดอีกครั้งเพื่อล้างข้อมูลทั้งหมด' : 'เริ่ม demo ใหม่'" (onClick)="resetDemo()" />
+      </div>
+    </p-popover>
+  }
+</div>
 
-@if (clock(); as now) {
-  <div class="demo-clock" role="group" aria-label="เวลา demo">
-    <span>เวลา demo <span class="mono">{{ dateTime(now) }}</span></span>
-    <p-button variant="outlined" size="small" label="+1 วัน" (onClick)="advanceClock(1)" />
-    <p-button variant="outlined" size="small" label="+4 วัน" (onClick)="advanceClock(4)" />
-    <!-- Two presses: the first arms the reset and turns the button to the warn colour -->
-    <p-button variant="outlined" size="small" [severity]="confirmReset() ? 'danger' : undefined"
-      [label]="confirmReset() ? 'กดอีกครั้งเพื่อล้างข้อมูลทั้งหมด' : 'เริ่ม demo ใหม่'" (onClick)="resetDemo()" />
-  </div>
-}
-<!-- Live regions stay in place; the messages inside are presentational, so one animating out never doubles them -->
-@if (!selected()) {
-  <div role="status">
-    @if (notice(); as n) {
-      <p-message class="notice" role="presentation" aria-live="off" [severity]="n.kind === 'ok' ? 'info' : 'error'">{{ n.text }}</p-message>
-    }
-  </div>
-}
+<!-- One live region for every notice, outside the tabs so it is announced whichever tab is open; the message
+     inside is presentational, so one animating out never doubles it -->
+<div role="status">
+  @if (notice(); as n) {
+    <p-message class="notice" role="presentation" aria-live="off" [severity]="n.kind === 'ok' ? 'info' : 'error'">{{ n.text }}</p-message>
+  }
+</div>
 
 @if (!isOfficer()) {
   <p class="muted">สลับบทบาทเป็นเจ้าหน้าที่เขตที่มุมขวาบนเพื่อใช้งาน</p>
 } @else {
-  <section aria-labelledby="rounds-heading">
+  <!-- Two columns from 1024px: the rounds stay in view on the left while the selected round is worked on the right -->
+  <div class="workspace">
+  <section class="rounds-pane" aria-labelledby="rounds-heading">
     <h2 id="rounds-heading">รอบ</h2>
     @switch (rounds().state) {
       @case ('loading') {
         <p class="muted">กำลังโหลด…</p>
       }
       @case ('error') {
-        <p class="error">โหลดรายการรอบไม่สำเร็จ</p>
+        <p class="error">โหลดรายการรอบไม่สำเร็จ — ตรวจการเชื่อมต่อแล้ว <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
       }
       @case ('ready') {
-        <p-table class="frame" [value]="roundList()" dataKey="id">
-          <ng-template #header>
-              <tr>
-                <th scope="col">พื้นที่</th>
-                <th scope="col">ช่วงรอบ</th>
-                <th scope="col">ปิดรับ</th>
-                <th scope="col">สถานะ</th>
-                <th scope="col" class="num">คำขอ</th>
-                <th scope="col" class="num">ผ่าน</th>
-                <th scope="col" class="num">ไม่ผ่าน</th>
-                <th scope="col"><span class="sr-only">ดำเนินการ</span></th>
-              </tr>
-          </ng-template>
-          <ng-template #body let-r>
-                @let round = asRound(r);
-                <tr [class.selected]="round.id === selectedId()">
-                  <td>{{ round.spaceName }}</td>
-                  <td>{{ date(round.startsOn) }} – {{ date(round.endsOn) }}</td>
-                  <td>{{ date(round.applyClosesAt) }}</td>
-                  <td><app-status-tag [round]="round.status" /></td>
-                  <td class="num mono">{{ round.requestCount }}</td>
-                  <td class="num mono">{{ round.eligibleCount }}</td>
-                  <td class="num mono">{{ round.ineligibleCount }}</td>
-                  <td><p-button link label="ดูคำขอ" (onClick)="select(round)" /></td>
-                </tr>
-          </ng-template>
-        </p-table>
+        @if (currentRounds().length > 0) {
+          <h3 class="group-title">รอบที่ต้องดำเนินการ</h3>
+          <app-round-list label="รอบที่ต้องดำเนินการ" [rounds]="currentRounds()" [selectedId]="selectedId()" (pick)="select($event)" />
+        }
+        @if (pastRounds().length > 0) {
+          <!-- Nothing left to decide in these; folded unless the round being worked on is one of them -->
+          <details class="disclosure past" [open]="selected()?.status === 'Approved'">
+            <summary>รอบที่อนุมัติผลแล้ว ({{ pastRounds().length }})</summary>
+            <app-round-list label="รอบที่อนุมัติผลแล้ว" [rounds]="pastRounds()" [selectedId]="selectedId()" (pick)="select($event)" />
+          </details>
+        }
       }
     }
   </section>
 
   @if (selected(); as round) {
-    <section aria-labelledby="requests-heading">
+    <section class="round" aria-labelledby="round-heading">
       <div class="section-head">
-        <h2 id="requests-heading">
-          คำขอ · {{ round.spaceName }}
-          <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}</span>
+        <h2 id="round-heading">
+          {{ round.spaceName }}
+          <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับ {{ date(round.applyClosesAt) }}</span>
+          <app-status-tag [round]="round.status" />
         </h2>
+        <!-- Only the actions for where the round stands; the step strip below already shows what is done -->
         <div class="actions">
-          <p-button
-            variant="outlined"
-            [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
-            (onClick)="checkEligibility(round)"
-            [disabled]="checking() || running() || round.status === 'Drawn' || round.status === 'Approved'"
-          />
-          <p-button [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
-            [disabled]="running() || checking() || !canRun()" />
-          <p-button variant="outlined" label="Audit trail ของรอบ" (onClick)="showRoundAudit(round)" />
+          <p-button text label="ประวัติการดำเนินการ" (onClick)="showRoundAudit(round)" />
+          @if (round.status === 'Open' || round.status === 'Closed') {
+            <p-button
+              variant="outlined"
+              [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
+              (onClick)="checkEligibility(round)"
+              [disabled]="checking() || running()"
+            />
+            <p-button [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
+              [disabled]="running() || checking() || !canRun()" [attr.aria-describedby]="canRun() ? null : 'run-blocked'" />
+          } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft') {
+            <p-button label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
+          }
         </div>
       </div>
 
-      @if (uncheckedCount() > 0 && (round.status === 'Open' || round.status === 'Closed')) {
-        <p class="muted small-note">มีคำขอที่ยังไม่ได้ตรวจสิทธิ {{ uncheckedCount() }} คำขอ ต้องตรวจสิทธิก่อนจึงรันจัดสรรได้</p>
-      }
+      <app-round-steps [steps]="steps()" />
 
-      <div role="status">
-        @if (notice(); as n) {
-          <p-message class="notice" role="presentation" aria-live="off" [severity]="n.kind === 'ok' ? 'info' : 'error'">{{ n.text }}</p-message>
+      @if (round.status === 'Open' || round.status === 'Closed') {
+        @if (uncheckedCount() > 0) {
+          <p id="run-blocked" class="muted small-note">มีคำขอที่ยังไม่ได้ตรวจสิทธิ {{ uncheckedCount() }} คำขอ ต้องตรวจสิทธิก่อนจึงรันจัดสรรได้</p>
+        } @else if (requests()?.state === 'ready' && requestRows().length === 0) {
+          <p id="run-blocked" class="muted small-note">ยังไม่มีคำขอในรอบนี้ จึงยังรันจัดสรรไม่ได้</p>
+        } @else if (requests()?.state === 'ready' && !canRun()) {
+          <p id="run-blocked" class="muted small-note">ไม่มีคำขอที่ผ่านการตรวจสิทธิ จึงยังรันจัดสรรไม่ได้</p>
         }
-      </div>
-
-      @if (requests()?.state === 'loading') {
-        <p class="muted">กำลังโหลด…</p>
-      } @else if (requests()?.state === 'error') {
-        <p class="error">โหลดคำขอไม่สำเร็จ</p>
-      } @else {
-        <p-table class="frame" [value]="requestRows()" dataKey="requestId">
-          <ng-template #header>
-              <tr>
-                <th scope="col">ผู้ค้า</th>
-                <th scope="col">กลุ่ม</th>
-                <th scope="col">สถานะ</th>
-                <th scope="col" class="num">น้ำหนัก</th>
-                <th scope="col">เหตุผล</th>
-                <th scope="col"><span class="sr-only">ประวัติ</span></th>
-              </tr>
-          </ng-template>
-          <ng-template #body let-r>
-                @let row = asRequestRow(r);
-                <tr>
-                  <td>{{ row.vendorName }}</td>
-                  <td>{{ category[row.category] }}</td>
-                  <td><app-status-tag [request]="row.status" /></td>
-                  <td class="num mono">×{{ row.carryOverWeight }}</td>
-                  <td>{{ row.ineligibleReason ?? '' }}</td>
-                  <td><p-button link label="ประวัติ" (onClick)="showRequestAudit(row)" /></td>
-                </tr>
-          </ng-template>
-          <ng-template #emptymessage>
-            <tr><td colspan="6" class="muted">ยังไม่มีคำขอ</td></tr>
-          </ng-template>
-        </p-table>
       }
-    </section>
 
-    @if (insightList().length > 0) {
-      <section aria-labelledby="insight-heading">
-        <h2 id="insight-heading">Allocation Insight <span class="muted small">{{ insightList().length }} รายการ · ข้อสังเกตให้ตรวจสอบ ไม่มีผลกับสิทธิ์โดยอัตโนมัติ</span></h2>
-        <ul class="insights">
-          @for (f of insightList(); track $index) {
-            <li [attr.data-severity]="f.severity">
-              <p-tag [value]="insightKind[f.kind]" [severity]="f.severity !== 'Info' ? 'warn' : 'secondary'" />
-              <strong>{{ f.vendorName }}</strong> <span class="mono muted">{{ f.lockCode }}</span>
-              <div>{{ f.message }}</div>
-            </li>
-          }
-        </ul>
-      </section>
-    }
-
-    @if (reviewList().length > 0) {
-      <section aria-labelledby="reviews-heading">
-        <h2 id="reviews-heading">คำขอทบทวน</h2>
-        <ul class="reviews">
-          @for (rv of reviewList(); track rv.id) {
-            <li><p-card>
-              <div class="review-head">
-                <strong>{{ rv.vendorName }}</strong>
-                <span class="muted">· {{ category[rv.category] }} · {{ status[rv.requestStatus] }}</span>
-                @if (rv.outcome) {
-                  <p-tag [value]="reviewOutcome[rv.outcome]" severity="secondary" />
-                } @else {
-                  <p-tag [value]="'ตอบภายใน ' + date(rv.respondBy)" severity="warn" />
-                }
-              </div>
-              @if (rv.ineligibleReason) {
-                <p class="muted small-note">ผลตรวจสิทธิ: {{ rv.ineligibleReason }}</p>
+      <p-tabs [value]="tab()" (valueChange)="pickTab($event)">
+        <p-tablist>
+          <p-tab value="requests">คำขอ <p-badge [value]="requestRows().length" severity="secondary" /></p-tab>
+          <p-tab value="run" [disabled]="!hasRun()">ผลจัดสรร</p-tab>
+          @if (reviewList().length > 0) {
+            <p-tab value="reviews">
+              คำขอทบทวน
+              @if (pendingReviews() > 0) {
+                <p-badge [value]="pendingReviews()" severity="warn" />
               }
-              <p>เหตุผลของผู้ค้า: "{{ rv.reason }}" <span class="muted small">{{ dateTime(rv.submittedAt) }}</span></p>
-              @if (rv.outcome) {
-                <p class="muted">คำตอบ: {{ rv.response }}</p>
-              } @else if (answering()?.id === rv.id) {
-                <form ngNoForm class="answer-form" (submit)="$event.preventDefault(); answer(rv)">
-                  <fieldset class="outcomes">
-                    <legend class="sr-only">ผลการทบทวน</legend>
-                    <span class="outcome">
-                      <p-radiobutton [inputId]="'upheld-' + rv.id" [name]="'outcome-' + rv.id" value="Upheld"
-                        [ngModel]="answering()!.outcome" [ngModelOptions]="{ standalone: true }"
-                        (ngModelChange)="pickOutcome('Upheld')" />
-                      <label [for]="'upheld-' + rv.id">ยืนตามเดิม</label>
-                    </span>
-                    <span class="outcome" [class.muted]="rv.requestStatus !== 'Ineligible'">
-                      <!-- Only an eligibility mistake can be corrected (ADR-0005) -->
-                      <p-radiobutton [inputId]="'corrected-' + rv.id" [name]="'outcome-' + rv.id" value="Corrected"
-                        [disabled]="rv.requestStatus !== 'Ineligible'"
-                        [ngModel]="answering()!.outcome" [ngModelOptions]="{ standalone: true }"
-                        (ngModelChange)="pickOutcome('Corrected')" />
-                      <label [for]="'corrected-' + rv.id">แก้ไข (ตรวจสิทธิผิด)</label>
-                    </span>
-                  </fieldset>
-                  <label [attr.for]="'answer-' + rv.id">คำตอบถึงผู้ค้า</label>
-                  <textarea pTextarea [id]="'answer-' + rv.id" rows="2" maxlength="1000" [value]="answering()!.response"
-                    (input)="answering.set({ id: rv.id, outcome: answering()!.outcome, response: $any($event.target).value })"></textarea>
-                  <div class="actions">
-                    <p-button type="submit" label="ส่งคำตอบ" [disabled]="deciding() || answering()!.response.trim().length === 0" />
-                    <p-button link label="ยกเลิก" (onClick)="answering.set(null)" />
+            </p-tab>
+          }
+          @if (insightList().length > 0) {
+            <p-tab value="insight">ข้อสังเกต <p-badge [value]="insightList().length" severity="secondary" /></p-tab>
+          }
+        </p-tablist>
+        <p-tabpanels>
+          <p-tabpanel value="requests">
+            <section [attr.aria-label]="'คำขอ · ' + round.spaceName">
+              @if (requests()?.state === 'loading') {
+                <p class="muted">กำลังโหลด…</p>
+              } @else if (requests()?.state === 'error') {
+                <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+              } @else {
+                <p-table class="frame" [value]="requestRows()" dataKey="requestId">
+                  <ng-template #header>
+                    <tr>
+                      <th scope="col">ผู้ค้า</th>
+                      <th scope="col">กลุ่ม</th>
+                      <th scope="col">สถานะ</th>
+                      <th scope="col" class="num">น้ำหนัก</th>
+                      <th scope="col">เหตุผล</th>
+                      <th scope="col"><span class="sr-only">ประวัติ</span></th>
+                    </tr>
+                  </ng-template>
+                  <ng-template #body let-r>
+                    @let row = asRequestRow(r);
+                    <tr>
+                      <td>{{ row.vendorName }}</td>
+                      <td>{{ category[row.category] }}</td>
+                      <td><app-status-tag [request]="row.status" /></td>
+                      <td class="num mono">×{{ row.carryOverWeight }}</td>
+                      <td>{{ row.ineligibleReason ?? '' }}</td>
+                      <td><p-button link label="ประวัติ" [ariaLabel]="'ประวัติคำขอของ ' + row.vendorName" (onClick)="showRequestAudit(row)" /></td>
+                    </tr>
+                  </ng-template>
+                  <ng-template #emptymessage>
+                    <tr><td colspan="6" class="muted">ยังไม่มีคำขอ</td></tr>
+                  </ng-template>
+                </p-table>
+              }
+            </section>
+          </p-tabpanel>
+
+          <p-tabpanel value="run">
+            @if (latestRun(); as run) {
+              <section aria-labelledby="run-heading">
+                <div class="section-head">
+                  <h3 id="run-heading">
+                    ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
+                    <app-status-tag [run]="run.status" />
+                    @if (run.status === 'Draft') {
+                      <span class="muted small">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
+                    }
+                  </h3>
+                </div>
+
+
+                <!-- Summary first: who ran it, with which seed, against which quota -->
+                <div class="run-summary">
+                  <dl class="run-meta">
+                    <div><dt>เลขตั้งต้นการสุ่ม (seed)</dt><dd class="mono">{{ run.seed }}</dd></div>
+                    <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
+                    @if (run.decidedAt) {
+                      <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
+                    }
+                  </dl>
+                  <div class="quota-block">
+                    <h4>โควตา</h4>
+                    <p-table class="quota" [value]="run.quota" dataKey="category">
+                      <ng-template #header>
+                        <tr>
+                          <th scope="col">กลุ่ม</th>
+                          <th scope="col" class="num">โควตา</th>
+                          <th scope="col" class="num">ได้สิทธิ์จริง</th>
+                        </tr>
+                      </ng-template>
+                      <ng-template #body let-r>
+                        @let q = asQuota(r);
+                        <tr>
+                          <td>{{ category[q.category] }}</td>
+                          <td class="num mono">{{ q.base }}</td>
+                          <td class="num mono" [class.warn]="q.allocated !== q.base">{{ q.allocated }}</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                    @if (run.pooledDraw) {
+                      <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
+                    } @else if (offQuota(run)) {
+                      <p class="muted small-note">ตัวเลขที่ต่างจากโควตามาจากการโอนโควตาของกลุ่มที่ผู้สมัครไม่พอให้กลุ่มถัดไป</p>
+                    }
                   </div>
-                </form>
-              } @else {
-                <p-button variant="outlined" label="ตอบคำขอ" (onClick)="answering.set({ id: rv.id, outcome: 'Upheld', response: '' })" />
-              }
-            </p-card></li>
-          }
-        </ul>
-      </section>
-    }
+                  <details class="disclosure evidence">
+                    <summary>หลักฐานการสุ่ม</summary>
+                    <p class="muted small-note">รันซ้ำด้วยเลขตั้งต้นการสุ่มและข้อมูลนำเข้าชุดเดิมจะได้ผลเดิมทุกครั้ง ค่าแฮชยืนยันว่าข้อมูลนำเข้าไม่ถูกเปลี่ยน</p>
+                    <dl>
+                      <div><dt>ค่าแฮชข้อมูลนำเข้า (SHA-256)</dt><dd class="mono hash">{{ run.inputHash }}</dd></div>
+                      <div>
+                        <dt>กติกาที่ใช้</dt>
+                        <dd>ผู้ค้าเดิม ≤ {{ pct(run.rules.legacyMax) }} · กลุ่มเปราะบาง ≥ {{ pct(run.rules.vulnerableMin) }} · ผู้ค้าใหม่ ≥ {{ pct(run.rules.newMin) }} · สำรอง {{ run.rules.waitlistPerGroup }} คนต่อกลุ่ม</dd>
+                      </div>
+                    </dl>
+                  </details>
+                </div>
 
-    @if (latestRun(); as run) {
-      <section aria-labelledby="run-heading">
-        <div class="section-head">
-          <h2 id="run-heading">
-            ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
-            <app-status-tag [run]="run.status" />
-            @if (run.status === 'Draft') {
-              <span class="muted small">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
-            }
-          </h2>
-          @if (run.status === 'Draft') {
-            <div class="actions">
-              <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
-                [disabled]="deciding() || rejecting() === run.id" />
-              <p-button [label]="deciding() ? 'กำลังบันทึก…' : 'อนุมัติผล'" (onClick)="approve(run)" [disabled]="deciding()" />
-            </div>
-          }
-        </div>
+                <h4>ผลรายคน</h4>
+                <p-table class="frame" [value]="outcomeRows()" dataKey="vendorId" rowGroupMode="subheader" groupRowsBy="category">
+                  <ng-template #header>
+                    <tr>
+                      <th scope="col">ผู้ค้า</th>
+                      <th scope="col" class="num">น้ำหนัก</th>
+                      <th scope="col">ผล</th>
+                      <th scope="col">ล็อค</th>
+                      <th scope="col">เหตุผล</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template #groupheader let-r>
+                    @let g = asOutcome(r);
+                    <tr class="group">
+                      <th scope="colgroup" colspan="5">
+                        {{ category[g.category] }}
+                        <span class="muted">· โควตา {{ quotaOf(run, g.category) }}</span>
+                      </th>
+                    </tr>
+                  </ng-template>
+                  <ng-template #body let-r>
+                    @let o = asOutcome(r);
+                    <tr>
+                      <td>{{ o.vendorName }}</td>
+                      <td class="num mono">×{{ o.weight }}</td>
+                      <td><app-status-tag [outcome]="o.kind" /></td>
+                      <td class="mono">{{ o.lockCode ?? '' }}</td>
+                      <td>{{ o.reason }}</td>
+                    </tr>
+                  </ng-template>
+                </p-table>
 
-        @if (run.status === 'Draft' && rejecting() === run.id) {
-          <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
-            <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
-            <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
-              (input)="rejectReason.set($any($event.target).value)"></textarea>
-            <p class="muted small-note">
-              @if (round.rejectsLeft > 0) {
-                ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-              } @else if (isExecutive()) {
-                ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว · ผู้บริหารปฏิเสธเพิ่มได้ และนับรวมในรอบนี้
-              } @else {
-                ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-              }
-            </p>
-            <div class="actions">
-              <p-button type="submit" severity="danger" label="ยืนยันการปฏิเสธ"
-                [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
-              <p-button link label="ยกเลิก" (onClick)="rejecting.set(null)" />
-            </div>
-          </form>
-        }
-
-        <dl class="run-meta">
-          <div><dt>เลขอ้างอิง</dt><dd class="mono">{{ run.referenceNo }}</dd></div>
-          <div><dt>Seed (ระบบสุ่ม)</dt><dd class="mono">{{ run.seed }}</dd></div>
-          <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
-          @if (run.decidedAt) {
-            <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
-          }
-          <div class="wide"><dt>Input hash (SHA-256)</dt><dd class="mono hash">{{ run.inputHash }}</dd></div>
-        </dl>
-
-        <h3>โควตา</h3>
-        <p-table class="frame quota" [value]="run.quota" dataKey="category">
-          <ng-template #header>
-            <tr>
-              <th scope="col">กลุ่ม</th>
-              <th scope="col" class="num">โควตา</th>
-              <th scope="col" class="num">ได้สิทธิ์จริง</th>
-            </tr>
-          </ng-template>
-          <ng-template #body let-r>
-            @let q = asQuota(r);
-            <tr>
-              <td>{{ category[q.category] }}</td>
-              <td class="num mono">{{ q.base }}</td>
-              <td class="num mono" [class.warn]="q.allocated !== q.base">{{ q.allocated }}</td>
-            </tr>
-          </ng-template>
-        </p-table>
-        @if (run.pooledDraw) {
-          <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
-        }
-
-        <h3>ผลรายคน</h3>
-        <p-table class="frame" [value]="run.outcomes" dataKey="vendorId">
-          <ng-template #header>
-            <tr>
-              <th scope="col">ผู้ค้า</th>
-              <th scope="col">กลุ่ม</th>
-              <th scope="col" class="num">น้ำหนัก</th>
-              <th scope="col">ผล</th>
-              <th scope="col">ล็อค</th>
-              <th scope="col">เหตุผล</th>
-            </tr>
-          </ng-template>
-          <ng-template #body let-r>
-            @let o = asOutcome(r);
-            <tr>
-              <td>{{ o.vendorName }}</td>
-              <td>{{ category[o.category] }}</td>
-              <td class="num mono">×{{ o.weight }}</td>
-              <td [class.won]="o.kind === 'Won'">{{ outcome[o.kind] }}</td>
-              <td class="mono">{{ o.lockCode ?? '' }}</td>
-              <td>{{ o.reason }}</td>
-            </tr>
-          </ng-template>
-        </p-table>
-
-        @if (runList().length > 1) {
-          <h3>รันก่อนหน้าของรอบนี้</h3>
-          <ul class="earlier-runs">
-            @for (r of runList().slice(1); track r.id) {
-              <li>
-                <span class="mono">{{ r.referenceNo }}</span> · {{ runStatus[r.status] }} · {{ dateTime(r.ranAt) }}
-                @if (r.rejectReason) {
-                  · เหตุผล: {{ r.rejectReason }}{{ r.rejectCountsTowardLimit ? '' : ' (ไม่นับลิมิต)' }}
+                <!-- The decision comes after the evidence: the officer reads the result before approving or rejecting it -->
+                @if (run.status === 'Draft') {
+                  <div id="decision" class="decision" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
+                  @if (run.status === 'Draft' && rejecting() === run.id) {
+                    <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
+                      <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
+                      <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
+                        (input)="rejectReason.set($any($event.target).value)"></textarea>
+                      <p class="muted small-note">
+                        @if (round.rejectsLeft > 0) {
+                          ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
+                        } @else if (isExecutive()) {
+                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว · ผู้บริหารปฏิเสธเพิ่มได้ และนับรวมในรอบนี้
+                        } @else {
+                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
+                        }
+                      </p>
+                      <div class="actions">
+                        <p-button type="submit" severity="danger" label="ยืนยันการปฏิเสธ"
+                          [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
+                        <p-button link label="ยกเลิก" (onClick)="rejecting.set(null)" />
+                      </div>
+                    </form>
+                  }
+                    <div class="decision-bar">
+                      <p class="muted text-small flush">ตรวจผลรายคนครบแล้ว อนุมัติเพื่อประกาศผล หรือปฏิเสธเพื่อจับฉลากใหม่ด้วย seed ใหม่</p>
+                      <div class="actions">
+                        <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
+                          [disabled]="deciding() || rejecting() === run.id" />
+                        <p-button label="อนุมัติผล" (onClick)="approving.set(run.id)" [disabled]="deciding()" />
+                      </div>
+                    </div>
+                  </div>
                 }
-              </li>
-            }
-          </ul>
-        }
-      </section>
-    }
 
+                @if (runList().length > 1) {
+                  <h4>รันก่อนหน้าของรอบนี้</h4>
+                  <ul class="earlier-runs">
+                    @for (r of runList().slice(1); track r.id) {
+                      <li>
+                        <span class="mono">{{ r.referenceNo }}</span> · {{ runStatus[r.status] }} · {{ dateTime(r.ranAt) }}
+                        @if (r.rejectReason) {
+                          · เหตุผล: {{ r.rejectReason }}{{ r.rejectCountsTowardLimit ? '' : ' (ไม่นับลิมิต)' }}
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </section>
+            } @else if (runs()?.state === 'error') {
+              <p class="error">โหลดผลจัดสรรไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+            } @else {
+              <p class="muted">กำลังโหลด…</p>
+            }
+          </p-tabpanel>
+
+          @if (reviewList().length > 0) {
+            <p-tabpanel value="reviews">
+              <section aria-label="คำขอทบทวน">
+                <ul class="reviews">
+                  @for (rv of reviewList(); track rv.id) {
+                    <li>
+                      <div class="review-head">
+                        <strong>{{ rv.vendorName }}</strong>
+                        <span class="muted">· {{ category[rv.category] }} · {{ status[rv.requestStatus] }}</span>
+                        @if (rv.outcome) {
+                          <p-tag [value]="reviewOutcome[rv.outcome]" severity="secondary" />
+                        } @else {
+                          <p-tag [value]="'ตอบภายใน ' + date(rv.respondBy)" severity="warn" />
+                        }
+                      </div>
+                      @if (rv.ineligibleReason) {
+                        <p class="muted small-note">ผลตรวจสิทธิ: {{ rv.ineligibleReason }}</p>
+                      }
+                      <p>เหตุผลของผู้ค้า: "{{ rv.reason }}" <span class="muted small">{{ dateTime(rv.submittedAt) }}</span></p>
+                      @if (rv.outcome) {
+                        <p class="muted">คำตอบ: {{ rv.response }}</p>
+                      } @else if (answering()?.id === rv.id) {
+                        <form ngNoForm class="answer-form" (submit)="$event.preventDefault(); answer(rv)">
+                          <fieldset class="outcomes">
+                            <legend class="sr-only">ผลการทบทวน</legend>
+                            <span class="outcome">
+                              <p-radiobutton [inputId]="'upheld-' + rv.id" [name]="'outcome-' + rv.id" value="Upheld"
+                                [ngModel]="answering()!.outcome" [ngModelOptions]="{ standalone: true }"
+                                (ngModelChange)="pickOutcome('Upheld')" />
+                              <label [for]="'upheld-' + rv.id">ยืนตามเดิม</label>
+                            </span>
+                            <span class="outcome" [class.muted]="rv.requestStatus !== 'Ineligible'">
+                              <!-- Only an eligibility mistake can be corrected (ADR-0005) -->
+                              <p-radiobutton [inputId]="'corrected-' + rv.id" [name]="'outcome-' + rv.id" value="Corrected"
+                                [disabled]="rv.requestStatus !== 'Ineligible'"
+                                [ngModel]="answering()!.outcome" [ngModelOptions]="{ standalone: true }"
+                                (ngModelChange)="pickOutcome('Corrected')" />
+                              <label [for]="'corrected-' + rv.id">แก้ไข (ตรวจสิทธิผิด)</label>
+                            </span>
+                          </fieldset>
+                          <label [attr.for]="'answer-' + rv.id">คำตอบถึงผู้ค้า</label>
+                          <textarea pTextarea [id]="'answer-' + rv.id" rows="2" maxlength="1000" [value]="answering()!.response"
+                            (input)="answering.set({ id: rv.id, outcome: answering()!.outcome, response: $any($event.target).value })"></textarea>
+                          <div class="actions">
+                            <p-button type="submit" label="ส่งคำตอบ" [disabled]="deciding() || answering()!.response.trim().length === 0" />
+                            <p-button link label="ยกเลิก" (onClick)="answering.set(null)" />
+                          </div>
+                        </form>
+                      } @else {
+                        <p-button variant="outlined" size="small" label="ตอบคำขอ" (onClick)="answering.set({ id: rv.id, outcome: 'Upheld', response: '' })" />
+                      }
+                    </li>
+                  }
+                </ul>
+              </section>
+            </p-tabpanel>
+          }
+
+          @if (insightList().length > 0) {
+            <p-tabpanel value="insight">
+              <section aria-label="ข้อสังเกตการจัดสรร">
+                <p class="muted small-note">ข้อสังเกตให้ตรวจสอบ ไม่มีผลกับสิทธิ์โดยอัตโนมัติ</p>
+                <ul class="insights">
+                  @for (f of insightList(); track $index) {
+                    <li [attr.data-severity]="f.severity">
+                      <p-tag [value]="insightKind[f.kind]" [severity]="f.severity !== 'Info' ? 'warn' : 'secondary'" />
+                      <strong>{{ f.vendorName }}</strong> <span class="mono muted">{{ f.lockCode }}</span>
+                      <div>{{ f.message }}</div>
+                    </li>
+                  }
+                </ul>
+              </section>
+            </p-tabpanel>
+          }
+        </p-tabpanels>
+      </p-tabs>
+    </section>
+  } @else if (rounds().state === 'ready') {
+    <section class="round round-empty" aria-label="รายละเอียดรอบ">
+      <p class="muted">เลือกรอบทางซ้ายเพื่อดูคำขอ ผลจัดสรร และประวัติการดำเนินการ</p>
+    </section>
+  }
+  </div>
+
+  <!-- Approving publishes the result to every applicant and cannot be undone: the dialog restates what is approved -->
+  @if (latestRun(); as run) {
+    <app-approve-run-dialog [run]="run" [visible]="approving() === run.id" [deciding]="deciding()"
+      (cancel)="approving.set(null)" (confirm)="approve(run)" />
+  }
+
+  <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->
+  <p-drawer [visible]="auditTarget() !== null" (visibleChange)="$event || auditTarget.set(null)" position="right"
+    [modal]="false" [style]="{ width: 'min(36rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ">
+    <ng-template #header>
+      @if (auditTarget(); as t) {
+        <h2 id="audit-heading" class="audit-heading">ประวัติการดำเนินการ · {{ t.label }}</h2>
+      }
+    </ng-template>
     @if (auditTarget(); as t) {
       <section aria-labelledby="audit-heading">
-        <div class="section-head">
-          <h2 id="audit-heading">Audit trail · {{ t.label }}</h2>
-          <p-button link label="ปิด" (onClick)="auditTarget.set(null)" />
-        </div>
         <p class="muted small-note">ข้อมูลส่วนบุคคลแสดงเป็น *** ตามหลัก PDPA</p>
         <app-audit-timeline
           [entityType]="t.type"
           [entityId]="t.id"
           [version]="refreshCount()"
-          (openEntity)="auditTarget.set({ type: $event.type, id: $event.id, label: $event.type + ' …' + $event.id.slice(-8) })"
+          [names]="auditNames()"
+          (openEntity)="auditTarget.set($event)"
         />
       </section>
     }
-  }
+  </p-drawer>
 }
+

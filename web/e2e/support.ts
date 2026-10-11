@@ -77,7 +77,7 @@ export async function switchRole(
 ): Promise<void> {
   await page.getByRole('combobox', { name: 'บทบาท' }).click();
   await page.getByRole('option', { name: ROLE_LABEL[role], exact: true }).click();
-  await expect(page.locator('app-role-switcher')).toContainText(`${role} ·`);
+  await expect(page.locator('app-role-switcher')).toHaveAttribute('data-confirmed-role', role);
 }
 
 /** What the switcher shows for each role. */
@@ -104,15 +104,16 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
   expect(overflow, 'page scrolls horizontally').toBeLessThanOrEqual(0);
 }
 
-/** Opens a round's requests in the portal (selection is not kept across navigation). Default: the current round. */
+/** Opens a round in the portal (selection is not kept across navigation). Default: the current round. */
 export async function openRound(
   page: Page,
   spaceName: string,
   startsOn = '1 พ.ย. 2569',
 ): Promise<void> {
-  const row = page.getByRole('row').filter({ hasText: spaceName }).filter({ hasText: startsOn });
-  await row.getByRole('button', { name: 'ดูคำขอ' }).click();
-  await expect(
-    page.getByRole('heading', { name: new RegExp(`คำขอ · ${spaceName}`) }),
-  ).toBeVisible();
+  const rounds = page.getByRole('region', { name: 'รอบ', exact: true });
+  const item = rounds.getByRole('listitem').filter({ hasText: spaceName }).filter({ hasText: startsOn });
+  // Approved rounds are folded under their own heading
+  if (!(await item.isVisible())) await rounds.getByText(/รอบที่อนุมัติผลแล้ว/).click();
+  await item.getByRole('button').click();
+  await expect(page.getByRole('heading', { level: 2, name: new RegExp(spaceName) })).toBeVisible();
 }

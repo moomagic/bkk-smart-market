@@ -1,6 +1,8 @@
+<h1 class="sr-only">บริการผู้ค้า เขตบางพลัด</h1>
+
 <!-- One live region that is always there; the message inside is presentational, so a notice that is still
      animating out never makes a second status (or alert) -->
-<div role="status">
+<div role="status" class="notices">
   @if (notice(); as n) {
     <p-message class="notice" role="presentation" aria-live="off" [severity]="n.kind === 'ok' ? 'info' : n.kind">{{ n.text }}</p-message>
   }
@@ -8,28 +10,116 @@
 
 @if (myRequests(); as mine) {
   <section aria-labelledby="mine-heading">
-    <h1 id="mine-heading">คำขอของฉัน</h1>
+    <h2 id="mine-heading">คำขอของฉัน</h2>
     @switch (mine.state) {
       @case ('loading') {
         <p class="muted">กำลังโหลด…</p>
       }
       @case ('error') {
-        <p class="error">โหลดคำขอไม่สำเร็จ</p>
+        <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
       }
       @case ('ready') {
         @if (mine.data.length === 0) {
           <p class="muted">ยังไม่มีคำขอ</p>
         } @else {
           <ul class="list">
-            @for (req of mine.data; track req.id) {
-              <li><p-card>
+            @for (req of current(); track req.id) {
+              <li><p-card><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></p-card></li>
+            }
+          </ul>
+          @if (finished().length > 0) {
+            <details class="disclosure finished">
+              <summary>คำขอที่จบแล้ว ({{ finished().length }})</summary>
+              <ul class="list">
+                @for (req of finished(); track req.id) {
+                  <li><p-card><ng-container *ngTemplateOutlet="requestCard; context: { $implicit: req }" /></p-card></li>
+                }
+              </ul>
+            </details>
+          }
+        }
+      }
+    }
+  </section>
+}
+
+<app-assistant-chat [(open)]="assistantOpen" />
+
+<app-space-matching
+  [(open)]="matchOpen"
+  [canSubmit]="submittable()"
+  [requestStatus]="requestStatus()"
+  [submitting]="submitting() !== null"
+  (submit)="submit($event)"
+/>
+
+<section aria-labelledby="spaces-heading">
+  <h2 id="spaces-heading">พื้นที่ค้าขายในเขตบางพลัด</h2>
+  <p class="lead">
+    พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ
+    @if (closesAt(); as close) {
+      · <strong>รับคำขอถึง {{ date(close) }}</strong>
+    }
+  </p>
+
+  @switch (spaces().state) {
+    @case ('loading') {
+      <p class="muted">กำลังโหลด…</p>
+    }
+    @case ('error') {
+      <p class="error">โหลดรายการพื้นที่ไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+    }
+    @case ('ready') {
+      <!-- One list, rows divided: the spaces are peers, not a stack of cards -->
+      <ul class="spaces">
+        @for (space of spaceList(); track space.id) {
+          <li>
+            <div class="head">
+              <h3>{{ space.name }}</h3>
+              <span class="type">{{ typeLabel[space.type] }}</span>
+            </div>
+            <p class="facts"><span class="mono">{{ space.lockCount }}</span> ล็อค · {{ space.productTypes.join(' · ') }} · {{ space.openHours }}</p>
+            @if (space.openRound; as round) {
+              <p class="meta">
+                รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }}
+                @if (!closesAt()) {
+                  · ปิดรับ {{ date(round.applyClosesAt) }}
+                }
+              </p>
+            }
+            @if (space.openRound && session.role() === 'vendor') {
+              @if (requestStatusByRound().get(space.openRound.id); as status) {
+                <p class="submitted"><app-status-tag [request]="status" /></p>
+              } @else {
+                <p-button class="submit" variant="outlined" [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
+                  (onClick)="submit(space)" [disabled]="submitting() !== null" />
+              }
+            } @else if (!space.openRound) {
+              <p class="meta">ไม่มีรอบที่เปิดรับคำขอ</p>
+            }
+          </li>
+        } @empty {
+          <li class="muted">ยังไม่มีพื้นที่</li>
+        }
+      </ul>
+    }
+  }
+</section>
+
+<ng-template #requestCard let-r>
+  @let req = asRequest(r);
+
                 <div class="head">
-                  <h2>{{ req.spaceName }}</h2>
+                  <h3>{{ req.spaceName }}</h3>
                   <app-status-tag [request]="req.status" />
                 </div>
                 <p class="meta">
                   รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}
                 </p>
+                @if (nextStep(req); as step) {
+                  <!-- What happens next, in the vendor's words, for every state that is not a decision of their own -->
+                  <p class="next">{{ step }}</p>
+                }
                 @if (req.ineligibleReason) {
                   <p class="error">{{ req.ineligibleReason }}</p>
                 }
@@ -41,17 +131,23 @@
                 }
                 @if (req.confirmBy && req.status === 'Won') {
                   <p class="deadline">ยืนยันสิทธิ์ภายใน {{ dateTime(req.confirmBy) }}</p>
+                  <p class="meta">ถ้าไม่ยืนยันภายในเวลานี้ ถือว่าสละสิทธิ์ และล็อคจะส่งต่อให้ผู้สำรอง</p>
                   <div class="actions">
                     @if (confirmingForfeit() === req.id) {
-                      <span class="ask">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</span>
-                      <p-button severity="danger" fluid [label]="acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์'"
+                      <!-- Forfeiting is final: say so, and keep "ไม่สละ" as easy to reach as the forfeit itself -->
+                      <div class="ask" role="group" [attr.aria-labelledby]="'ask-' + req.id">
+                        <p [id]="'ask-' + req.id" class="ask-title">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</p>
+                        <p class="ask-detail">ยกเลิกไม่ได้ ล็อค {{ req.lockCode }} จะส่งต่อให้ผู้สำรองกลุ่มเดียวกันทันที</p>
+                      </div>
+                      <!-- The safe choice is the filled one and comes first; the forfeit is outlined in the warn colour -->
+                      <p-button fluid label="ไม่สละ" (onClick)="confirmingForfeit.set(null)" [disabled]="acting() !== null" />
+                      <p-button severity="danger" variant="outlined" fluid
+                        [label]="acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์'"
                         (onClick)="forfeit(req)" [disabled]="acting() !== null" />
-                      <p-button variant="outlined" fluid label="ไม่สละ" (onClick)="confirmingForfeit.set(null)"
-                        [disabled]="acting() !== null" />
                     } @else {
                       <p-button fluid [label]="acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์'" (onClick)="confirm(req)"
                         [disabled]="acting() !== null" />
-                      <p-button variant="outlined" fluid label="สละสิทธิ์" (onClick)="confirmingForfeit.set(req.id)"
+                      <p-button text class="forfeit" label="สละสิทธิ์" (onClick)="confirmingForfeit.set(req.id)"
                         [disabled]="acting() !== null" />
                     }
                   </div>
@@ -60,7 +156,8 @@
                   <div class="actions">
                     <p-button fluid [label]="acting() === req.id ? 'กำลังเช็คอิน…' : 'สแกน QR เช็คอินที่ล็อค ' + req.lockCode"
                       (onClick)="checkIn(req)" [disabled]="acting() !== null" />
-                    <span class="toggle">
+                    <!-- A presenter's control, dressed like the mock-data stamp so a vendor never takes it for a setting -->
+                    <span class="toggle demo">
                       <p-checkbox binary [inputId]="'outside-' + req.id" [ngModel]="outsideGeofence()"
                         (ngModelChange)="outsideGeofence.set($event)" />
                       <label [for]="'outside-' + req.id">จำลอง: อยู่นอกพื้นที่</label>
@@ -102,10 +199,10 @@
                 }
                 @if (req.runs.length > 0) {
                   <details class="runs">
-                    <summary>ผลจัดสรรทุกครั้งของรอบนี้ ({{ req.runs.length }})</summary>
+                    <summary>ประวัติการจับฉลากของรอบนี้ ({{ req.runs.length }})</summary>
                     <ul>
                       @for (run of req.runs; track run.referenceNo) {
-                        <li><span class="mono">{{ run.referenceNo }}</span> · {{ runStatus[run.status] }} · {{ dateTime(run.ranAt) }}
+                        <li><span class="mono">{{ run.referenceNo }}</span> · {{ vendorRunStatus[run.status] }} · {{ dateTime(run.ranAt) }}
                           @if (run.rejectReason) {
                             · เหตุผล: {{ run.rejectReason }}
                           }
@@ -114,69 +211,4 @@
                     </ul>
                   </details>
                 }
-              </p-card></li>
-            }
-          </ul>
-        }
-      }
-    }
-  </section>
-}
-
-<app-assistant-chat />
-
-<app-space-matching
-  [canSubmit]="submittable()"
-  [requestStatus]="requestStatus()"
-  [submitting]="submitting() !== null"
-  (submit)="submit($event)"
-/>
-
-<section aria-labelledby="spaces-heading">
-  <h1 id="spaces-heading">พื้นที่ค้าขายในเขตบางพลัด</h1>
-  <p class="lead">พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ</p>
-
-  @switch (spaces().state) {
-    @case ('loading') {
-      <p class="muted">กำลังโหลด…</p>
-    }
-    @case ('error') {
-      <p class="error">โหลดรายการพื้นที่ไม่สำเร็จ ลองใหม่อีกครั้ง</p>
-    }
-    @case ('ready') {
-      <ul class="list">
-        @for (space of spaceList(); track space.id) {
-          <li><p-card>
-            <div class="head">
-              <h2>{{ space.name }}</h2>
-              <p-tag [value]="typeLabel[space.type]" />
-            </div>
-            <dl>
-              <div><dt>ล็อค</dt><dd class="mono">{{ space.lockCount }}</dd></div>
-              <div><dt>สินค้า</dt><dd>{{ space.productTypes.join(' · ') }}</dd></div>
-              <div><dt>เวลา</dt><dd>{{ space.openHours }}</dd></div>
-              @if (space.openRound; as round) {
-                <div>
-                  <dt>รอบ</dt>
-                  <dd>{{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับ {{ date(round.applyClosesAt) }}</dd>
-                </div>
-              }
-            </dl>
-            @if (space.openRound && session.role() === 'vendor') {
-              @if (requestStatusByRound().get(space.openRound.id); as status) {
-                <p class="submitted"><app-status-tag [request]="status" /></p>
-              } @else {
-                <p-button class="submit" fluid [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
-                  (onClick)="submit(space)" [disabled]="submitting() !== null" />
-              }
-            } @else if (!space.openRound) {
-              <p class="muted small">ไม่มีรอบที่เปิดรับคำขอ</p>
-            }
-          </p-card></li>
-        } @empty {
-          <li class="muted">ยังไม่มีพื้นที่</li>
-        }
-      </ul>
-    }
-  }
-</section>
+</ng-template>

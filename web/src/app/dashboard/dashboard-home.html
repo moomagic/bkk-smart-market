@@ -8,31 +8,35 @@
       <p class="muted">กำลังโหลด…</p>
     }
     @case ('error') {
-      <p class="error">โหลดตัวชี้วัดไม่สำเร็จ</p>
+      <p class="error">โหลดตัวชี้วัดไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
     }
   }
 
   @if (data(); as k) {
     <section class="kpis" aria-label="ตัวชี้วัดหลัก">
       <article class="tile"><p-card styleClass="fill">
-        <h2>การใช้พื้นที่ (Occupancy)</h2>
-        <p class="value mono">{{ pct(k.occupancy) }}</p>
-        <p class="detail">ล็อคที่ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
+        <h2 title="Occupancy">การใช้พื้นที่</h2>
+        <p class="value">{{ pct(k.occupancy) }}</p>
+        <p class="detail">ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
-        <h2>ความเร็ว (LeadTime)</h2>
-        <p class="value mono">{{ k.leadTime.medianDays === null ? '–' : k.leadTime.medianDays + ' วัน' }}</p>
-        <p class="detail">มัธยฐานจากปิดรับคำขอถึงอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
+        <h2 title="LeadTime">ความเร็วในการประกาศผล</h2>
+        <p class="value">@if (k.leadTime.medianDays === null) {
+          –
+        } @else {
+          {{ k.leadTime.medianDays }}<span class="unit">วัน</span>
+        }</p>
+        <p class="detail">ค่ามัธยฐานจากวันปิดรับคำขอถึงวันอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
-        <h2>ผู้ค้าหน้าใหม่ (NewVendors)</h2>
-        <p class="value mono">{{ pct(k.newVendors) }}</p>
-        <p class="detail">ผู้ได้สิทธิ์กลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} จาก {{ k.newVendors.of }} คน</p>
+        <h2 title="NewVendors">ผู้ค้าหน้าใหม่</h2>
+        <p class="value">{{ pct(k.newVendors) }}</p>
+        <p class="detail">ผู้ได้สิทธิ์ {{ k.newVendors.of }} คน เป็นกลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} คน</p>
       </p-card></article>
       <article class="tile"><p-card styleClass="fill">
-        <h2>การหมุนเวียน (FairRotation)</h2>
-        <p class="value mono">{{ pct(k.fairRotation) }}</p>
-        <p class="detail">ผู้ได้สิทธิ์ที่ไม่ได้ถือล็อคที่เดิมรอบก่อน {{ k.fairRotation.count }} จาก {{ k.fairRotation.of }} คน</p>
+        <h2 title="FairRotation">การหมุนเวียนสิทธิ์</h2>
+        <p class="value">{{ pct(k.fairRotation) }}</p>
+        <p class="detail">ผู้ได้สิทธิ์ {{ k.fairRotation.of }} คน ไม่ได้ถือล็อคที่เดิมในรอบก่อน {{ k.fairRotation.count }} คน</p>
       </p-card></article>
     </section>
 
@@ -67,6 +71,7 @@
 
     <section aria-labelledby="spaces-heading">
       <h2 id="spaces-heading">รายพื้นที่</h2>
+      <p class="muted small">ช่องกลุ่มผู้ค้า = ได้สิทธิ์จริง / โควตา · ช่องที่ระบุ <span class="off-quota">เกิน/ขาด</span> ต่างจากโควตา เพราะโอนโควตาจากกลุ่มที่ผู้สมัครไม่พอ</p>
       <p-table class="frame" [value]="k.spaces" dataKey="spaceId">
         <ng-template #header>
             <tr>
@@ -77,29 +82,42 @@
               <th scope="col" class="num">ได้สิทธิ์</th>
               <th scope="col" class="num">ยืนยันแล้ว</th>
               @for (c of categories; track c) {
-                <th scope="col" class="num">{{ categoryLabel[c] }} (จริง/โควตา)</th>
+                <th scope="col" class="num">{{ categoryLabel[c] }}</th>
               }
             </tr>
         </ng-template>
         <ng-template #body let-r>
             @let row = asSpace(r);
+              @if (!row.referenceNo) {
+                <!-- No approved run yet: one quiet line instead of a row of dashes -->
+                <tr>
+                  <td>{{ row.name }}</td>
+                  <td colspan="8" class="muted">ยังไม่มีผลจัดสรรที่อนุมัติ · <span class="mono">{{ row.locks }}</span> ล็อค</td>
+                </tr>
+              } @else {
               <tr>
                 <td>{{ row.name }}</td>
                 <td>{{ row.startsOn ? date(row.startsOn) + ' – ' + date(row.endsOn!) : '–' }}</td>
-                <td class="mono">{{ row.referenceNo ?? '–' }}</td>
+                <td class="mono">{{ row.referenceNo }}</td>
                 <td class="num mono">{{ row.locks }}</td>
                 <td class="num mono">{{ row.winners }}</td>
                 <td class="num mono">{{ row.confirmed }}</td>
                 @for (c of categories; track c) {
                   <td class="num mono">
                     @if (quotaFor(row, c); as q) {
-                      {{ q.winners }}/{{ q.base }}
+                      @if (q.winners !== q.base) {
+                        <span class="off-quota">{{ q.winners }}/{{ q.base }}
+                          <span class="off-word">{{ q.winners > q.base ? 'เกิน' : 'ขาด' }}</span></span>
+                      } @else {
+                        {{ q.winners }}/{{ q.base }}
+                      }
                     } @else {
                       –
                     }
                   </td>
                 }
               </tr>
+              }
         </ng-template>
       </p-table>
     </section>

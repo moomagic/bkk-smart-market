@@ -1,5 +1,15 @@
+:host {
+  display: block;
+  /* A phone-first page: on a laptop it keeps a readable column instead of stretching cards across 1280px */
+  max-width: 36rem;
+  margin: 0 auto;
+}
 section + section {
-  margin-top: 24px;
+  margin-top: var(--space-5);
+}
+section > h2 {
+  font-size: var(--text-h2);
+  margin: var(--space-2) 0;
 }
 .lead {
   color: var(--muted);
@@ -8,27 +18,32 @@ section + section {
 .list {
   list-style: none;
   padding: 0;
-  margin: 12px 0 0;
+  margin: var(--space-3) 0 0;
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-2);
 }
-.head > p-tag,
+.head > .type,
 .head > app-status-tag {
   flex-shrink: 0;
   white-space: nowrap;
 }
-h2 {
-  font-size: 1.05rem;
+h3 {
+  font-size: var(--text-h3);
   margin: 0;
 }
+/* The kind of space is a fact about it, not a status: plain muted text */
+.type {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
 .submitted {
-  margin: 12px 0 0;
+  margin: var(--space-3) 0 0;
 }
 /* Full-width buttons on a phone, as before; side by side they wrap one per line */
 p-button[fluid] {
@@ -36,91 +51,102 @@ p-button[fluid] {
   width: 100%;
 }
 .submit {
-  margin-top: 12px;
+  display: block;
+  margin-top: var(--space-3);
 }
-dl {
-  margin: 10px 0 0;
-  display: grid;
-  gap: 4px;
+/* Spaces: one bordered list, rows divided */
+.spaces {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
-dl div {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 8px;
+.spaces > li {
+  padding: var(--space-4) var(--space-4);
 }
-dt {
-  color: var(--muted);
-  font-size: 0.85rem;
+.spaces > li + li {
+  border-top: 1px solid var(--line);
 }
-dd {
-  margin: 0;
+.facts {
+  margin: var(--space-1) 0 0;
 }
 .meta {
-  margin: 6px 0 0;
+  margin: var(--space-2) 0 0;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
 }
 /* p-message is display: grid (its enter/leave animation collapses the rows), so only spacing here */
 .notice {
-  margin: 0 0 16px;
-}
-.small {
-  font-size: 0.85rem;
-  margin: 10px 0 0;
+  margin: 0 0 var(--space-4);
 }
 .won {
-  margin: 10px 0 2px;
+  margin: var(--space-3) 0 2px;
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: var(--text-h2);
   font-weight: 600;
   color: var(--accent);
 }
 .reason {
-  margin: 4px 0;
+  margin: var(--space-1) 0;
 }
 .deadline {
-  margin: 4px 0;
+  margin: var(--space-1) 0;
   color: var(--warn);
   font-weight: 600;
 }
 .runs {
-  margin-top: 8px;
-  font-size: 0.85rem;
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
   color: var(--muted);
 }
 .runs summary {
   cursor: pointer;
 }
 .runs ul {
-  margin: 6px 0 0;
-  padding-left: 18px;
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
 }
 .actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 .ask {
   flex-basis: 100%;
+}
+.ask p {
+  margin: 0;
+}
+.ask-title {
   font-weight: 600;
+}
+.ask-detail {
+  color: var(--warn);
+  font-size: var(--text-small);
+}
+/* Forfeit is the quiet way out, centred under the confirm button rather than a second full-width option */
+.forfeit {
+  margin: 0 auto;
 }
 .toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
+  gap: var(--space-2);
+  font-size: var(--text-small);
   color: var(--muted);
 }
 app-assistant-chat,
 app-space-matching {
   display: block;
-  margin-top: 20px;
+  margin-top: var(--space-5);
 }
 .review {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
   border-top: 1px dashed var(--line);
 }
 .review p {
@@ -129,10 +155,28 @@ app-space-matching {
 .review-form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 .review-link {
   display: block;
-  margin-top: 8px;
+  margin-top: var(--space-2);
+}
+.next {
+  margin: var(--space-2) 0 0;
+  font-weight: 600;
+}
+/* Notices stay in view at the top of the phone while the thumb is down at the card that caused them */
+.notices {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.toggle.demo {
+  padding: 2px var(--space-2);
+  border: 1px dashed var(--muted);
+  border-radius: 2px;
+}
+.finished {
+  margin-top: var(--space-3);
 }

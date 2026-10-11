@@ -2,11 +2,6 @@
   <div class="bar-inner">
     <a class="brand" routerLink="/">BKK Smart Market</a>
     <app-mock-badge />
-    <nav aria-label="พื้นที่ใช้งาน">
-      <a routerLink="/vendor" routerLinkActive="active">ผู้ค้า</a>
-      <a routerLink="/portal" routerLinkActive="active">เจ้าหน้าที่</a>
-      <a routerLink="/dashboard" routerLinkActive="active">ผู้บริหาร</a>
-    </nav>
     <!-- Deferred: PrimeNG Select would otherwise put ~190 kB into the initial bundle of every page.
          Loaded right after first render; the placeholder holds the switcher's size so the header doesn't jump. -->
     @defer (on immediate) {

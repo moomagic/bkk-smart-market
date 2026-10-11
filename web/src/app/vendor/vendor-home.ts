@@ -1,14 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { Checkbox } from 'primeng/checkbox';
 import { Message } from 'primeng/message';
-import { Tag } from 'primeng/tag';
 import { Textarea } from 'primeng/textarea';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
+import { AllocationRunStatus, Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AssistantChat } from './assistant-chat';
 import { SpaceMatching } from './space-matching';
@@ -23,12 +23,15 @@ import {
   formatThaiDateTime,
 } from '../shared/labels';
 
+const FINISHED = new Set<StallRequestStatus>(['NotSelected', 'Forfeited']);
+const IN_PLAY = new Set<StallRequestStatus>(['Submitted', 'Eligible', 'Ineligible', 'Won', 'Waitlisted']);
+
 type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Card, Checkbox, Message, Tag, Textarea, AssistantChat, SpaceMatching, StatusTag],
+  imports: [FormsModule, NgTemplateOutlet, Button, Card, Checkbox, Message, Textarea, AssistantChat, SpaceMatching, StatusTag],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })
@@ -94,6 +97,35 @@ export class VendorHome {
     };
   });
 
+  /** The one apply-by date of every open round, when they share it; otherwise each space states its own. */
+  protected readonly closesAt = computed(() => {
+    const dates = new Set(this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.applyClosesAt] : [])));
+    return dates.size === 1 ? [...dates][0] : null;
+  });
+
+  /**
+   * The assistant starts open until the vendor has an application in play (submitted, being checked, won or
+   * waitlisted, or in a round open now); decided once, on first load, so it never folds away under the vendor's
+   * hand after a submit. A lock already confirmed from an earlier round does not count: that vendor may be
+   * asking about the next one.
+   */
+  protected readonly assistantOpen = signal(true);
+  /** Space Matching folds away on the same rule: once an application is in play it is not the next step. */
+  protected readonly matchOpen = signal(true);
+
+  constructor() {
+    let decided = false;
+    effect(() => {
+      const mine = this.myRequests();
+      if (decided || mine?.state !== 'ready' || this.spaces().state !== 'ready') return;
+      decided = true;
+      const open = new Set(this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.id] : [])));
+      const startOpen = !mine.data.some((r) => IN_PLAY.has(r.status) || open.has(r.roundId));
+      this.assistantOpen.set(startOpen);
+      this.matchOpen.set(startOpen);
+    });
+  }
+
   protected readonly submitting = signal<string | null>(null);
   /** Request id with a confirm/forfeit in flight. */
   protected readonly acting = signal<string | null>(null);
@@ -121,6 +153,54 @@ export class VendorHome {
         this.notice.set({ kind: 'error', text: problemMessage(err) });
       },
     });
+  }
+
+  /** Requests still in play lead; a draw that went elsewhere or a forfeited lock folds under "คำขอที่จบแล้ว". */
+  protected readonly current = computed(() => this.requestList().filter((r) => !FINISHED.has(r.status)));
+  protected readonly finished = computed(() => this.requestList().filter((r) => FINISHED.has(r.status)));
+
+  private requestList(): StallRequest[] {
+    const mine = this.myRequests();
+    return mine?.state === 'ready' ? mine.data : [];
+  }
+
+  /** The vendor-facing word for a run: they wait on the district, they do not hold a draft. */
+  protected readonly vendorRunStatus: Record<AllocationRunStatus, string> = {
+    Draft: 'รอเขตอนุมัติ',
+    Approved: 'ประกาศผลแล้ว',
+    Rejected: 'เขตไม่อนุมัติ จับฉลากใหม่',
+  };
+
+  /** One plain line on what happens next, for the states where the vendor is waiting rather than deciding. */
+  protected nextStep(req: StallRequest): string | null {
+    switch (req.status) {
+      case 'Submitted':
+        return 'รอเขตตรวจสิทธิ';
+      case 'Eligible':
+        return req.runs.some((r) => r.status === 'Draft')
+          ? 'เขตจับฉลากแล้ว รออนุมัติผล'
+          : 'ผ่านการตรวจสิทธิแล้ว รอเขตจับฉลาก';
+      case 'Ineligible':
+        return this.canReview(req) ? 'ถ้าคิดว่าตรวจสิทธิผิด ขอทบทวนผลได้ด้านล่าง' : null;
+      case 'Waitlisted':
+        return req.waitlistPosition
+          ? `สำรองลำดับ ${req.waitlistPosition} · ถ้ามีผู้ได้สิทธิ์สละ คุณจะเลื่อนขึ้นตามลำดับ`
+          : 'สำรอง · ถ้ามีผู้ได้สิทธิ์สละ คุณจะเลื่อนขึ้นตามลำดับ';
+      case 'NotSelected':
+        return 'ถ้ายื่นรอบถัดไปของพื้นที่นี้ จะได้น้ำหนัก ×2 ในการจับฉลาก';
+      default:
+        return null;
+    }
+  }
+
+  /** The request-card template hands its row over untyped; this restores the type for the checker. */
+  protected asRequest(req: StallRequest): StallRequest {
+    return req;
+  }
+
+  /** Retry after a failed load. */
+  protected reload(): void {
+    this.refresh.update((n) => n + 1);
   }
 
   protected confirm(req: StallRequest): void {

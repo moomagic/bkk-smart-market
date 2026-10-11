@@ -108,6 +108,12 @@ export const SmartMarketPreset = definePreset(Aura, {
       columnTitle: { fontWeight: '600' },
       bodyCell: { padding: '8px 12px' },
     },
+    // Tabs sit on the page ground, not on a panel of their own: the content inside brings its own surface
+    tabs: {
+      tablist: { background: 'transparent' },
+      tab: { padding: '10px 16px' },
+      tabpanel: { background: 'transparent', padding: '16px 0 0 0' },
+    },
     // Audit timeline: entries as tall as their content, flat markers
     timeline: {
       event: { minHeight: '0' },
@@ -147,18 +153,26 @@ export const SmartMarketPreset = definePreset(Aura, {
         },
       },
     },
-    // The old status pill: small, semibold, 4px corners; primary text in the accent itself
+    // Status pills: small, semibold, 4px corners. Four roles (shared/status-tag.ts), so colour stays rare:
+    //   success   — a good, standing result (won, confirmed, approved run): the accent on accent-soft
+    //   info      — in progress, nothing to do yet (submitted, eligible, waitlisted, open round): ink, outlined
+    //   secondary — over and done (not selected, forfeited, approved round): muted on a quiet fill
+    //   warn      — someone has to act (ineligible, a draft awaiting decision, a reply due): --warn on its tint, 4.7:1
     tag: {
       root: {
-        fontSize: '0.75rem',
+        // 13px: Thai tone marks stay legible in a semibold pill
+        fontSize: '0.8125rem',
         fontWeight: '600',
         padding: '2px 8px',
         borderRadius: '{border.radius.sm}',
       },
-      // Warn (the mock-data badge, drafts, Ineligible) is the --warn token itself on a light tint: 4.7:1
+      css: '.p-tag-info { box-shadow: inset 0 0 0 1px var(--line); }',
       colorScheme: {
         light: {
           primary: { background: '{primary.100}', color: '{primary.600}' },
+          success: { background: '{primary.100}', color: '{primary.600}' },
+          info: { background: '{surface.0}', color: '{text.color}' },
+          secondary: { background: '{surface.100}', color: '{text.muted.color}' },
           warn: { background: '{orange.50}', color: '{orange.500}' },
         },
       },

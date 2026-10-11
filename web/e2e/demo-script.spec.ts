@@ -63,10 +63,15 @@ test('demo script 1–6', async ({ page, request }) => {
     await expect(statusCell(requests, 'สมศรี ใ.', 'ผ่านการตรวจสิทธิ')).toBeVisible();
 
     await page.getByRole('button', { name: 'รันจัดสรร' }).click();
+    // Once drawn, the header offers only the next step; running or checking again is no longer on screen
+    await expect(page.getByRole('button', { name: 'ตรวจผลและอนุมัติ' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'รันจัดสรร' })).toHaveCount(0);
     const run = page.getByRole('region', { name: new RegExp(`ผลจัดสรร · ${ref}`) });
     await expect(run).toContainText('ร่าง รออนุมัติ');
-    await expect(run.getByText('Seed (ระบบสุ่ม)')).toBeVisible();
-    await expect(run.getByText('Input hash (SHA-256)')).toBeVisible();
+    await expect(run.getByText('เลขตั้งต้นการสุ่ม (seed)')).toBeVisible();
+    // The input hash sits in the folded evidence, one click away
+    await run.getByText('หลักฐานการสุ่ม').click();
+    await expect(run.getByText('ค่าแฮชข้อมูลนำเข้า (SHA-256)')).toBeVisible();
     for (const [group, quota] of [
       ['ผู้ค้าเดิม', '2'],
       ['กลุ่มเปราะบาง', '1'],
@@ -78,7 +83,13 @@ test('demo script 1–6', async ({ page, request }) => {
     }
     await expect(run.getByRole('row').filter({ hasText: 'สมศรี ใ.' })).toContainText('B2');
 
+    // Approval publishes the result, so a dialog restates it before the officer commits
     await run.getByRole('button', { name: 'อนุมัติผล' }).click();
+    const confirm = page.getByRole('dialog', { name: 'อนุมัติผลจัดสรร' });
+    await expect(confirm).toContainText(ref);
+    await expect(confirm).toContainText('ผู้ค้าที่ผ่านการตรวจสิทธิ 10 คนจะเห็นผลนี้ทันที');
+    await confirm.getByRole('button', { name: 'ยืนยันอนุมัติผล' }).click();
+    await expect(confirm).toBeHidden();
     await expect(run).toContainText('อนุมัติแล้ว');
   });
 
@@ -107,9 +118,9 @@ test('demo script 1–6', async ({ page, request }) => {
     await page.setViewportSize(DESKTOP);
     await switchRole(page, 'officer');
     await openRound(page, 'ปากซอยจรัญฯ 79');
-    await page.getByRole('button', { name: 'Audit trail ของรอบ' }).click();
+    await page.getByRole('button', { name: 'ประวัติการดำเนินการ' }).click();
 
-    const audit = page.getByRole('region', { name: /Audit trail ·/ });
+    const audit = page.getByRole('region', { name: /ประวัติการดำเนินการ ·/ });
     for (const action of [
       'ยื่นคำขอ',
       'ตรวจสิทธิทั้งรอบ',
@@ -121,15 +132,17 @@ test('demo script 1–6', async ({ page, request }) => {
       await expect(audit.getByText(action, { exact: true }).first()).toBeVisible();
     }
     await expect(audit).toContainText('***');
+    await page.getByRole('button', { name: 'ปิดประวัติการดำเนินการ' }).click();
+    await expect(audit).toHaveCount(0);
   });
 
   await test.step('6 · the executive dashboard shows occupancy up by one lock', async () => {
     await switchRole(page, 'executive');
     await expect(page).toHaveURL(/\/dashboard$/);
     await expectMockBadge(page);
-    const occupancy = page.getByRole('article').filter({ hasText: 'การใช้พื้นที่ (Occupancy)' });
+    const occupancy = page.getByRole('article').filter({ hasText: 'การใช้พื้นที่' });
     await expect(occupancy).toContainText(
-      `ล็อคที่ผู้ได้สิทธิ์ยืนยันแล้ว ${before.count + 1} จาก ${before.of} ล็อค`,
+      `ผู้ได้สิทธิ์ยืนยันแล้ว ${before.count + 1} จาก ${before.of} ล็อค`,
     );
     await expect(page.getByRole('region', { name: 'ผู้ได้สิทธิ์จริงเทียบโควตา' })).toContainText(
       ref,

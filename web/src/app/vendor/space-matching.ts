@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
-import { Card } from 'primeng/card';
 import { InputText } from 'primeng/inputtext';
+import { Panel } from 'primeng/panel';
 import { Select } from 'primeng/select';
 import { StatusTag } from '../shared/status-tag';
 import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, problemMessage } from '../core/api';
@@ -10,12 +10,14 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
 @Component({
   selector: 'app-space-matching',
-  imports: [FormsModule, Button, Card, InputText, Select, StatusTag],
+  imports: [FormsModule, Button, InputText, Panel, Select, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section aria-labelledby="match-heading">
-      <p-card>
-      <h1 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h1>
+      <p-panel toggleable toggler="header" [collapsed]="!open()" (collapsedChange)="open.set(!$event)">
+      <ng-template #header>
+        <h2 id="match-heading">หาพื้นที่ที่เหมาะกับร้าน</h2>
+      </ng-template>
       <!-- ngNoForm: FormsModule is here only for the select; the form keeps its plain submit -->
       <form ngNoForm (submit)="$event.preventDefault(); find()">
         <label>
@@ -34,8 +36,12 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
           <p-select ariaLabelledBy="match-time-label" appendTo="body" fluid placeholder="ไม่ระบุ" [options]="times"
             optionLabel="label" optionValue="value" [ngModel]="time()" (ngModelChange)="time.set($event)" />
         </div>
+        <!-- Disabled until there is something to match on; the hint says so instead of leaving a dead button -->
         <p-button class="find" type="submit" fluid [label]="busy() ? 'กำลังหา…' : 'แนะนำพื้นที่'"
           [disabled]="busy() || product().trim().length === 0" />
+        @if (product().trim().length === 0) {
+          <p class="find-hint">กรอกสิ่งที่ขายก่อน แล้วระบบจะแนะนำพื้นที่ 3 อันดับพร้อมเหตุผล</p>
+        }
       </form>
 
       @if (error(); as e) {
@@ -49,7 +55,7 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
             @for (m of list; track m.spaceId; let i = $index) {
               <li>
                 <div class="head">
-                  <h2>{{ i + 1 }}. {{ m.name }}</h2>
+                  <h3>{{ i + 1 }}. {{ m.name }}</h3>
                   <span class="score mono">{{ m.score }}/100</span>
                 </div>
                 <ul class="reasons">
@@ -60,31 +66,33 @@ import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequestStatus, probl
                 @if (requestStatus()(m.spaceId); as status) {
                   <p class="requested"><app-status-tag [request]="status" /></p>
                 } @else if (canSubmit()(m.spaceId); as space) {
-                  <p-button class="submit-here" variant="outlined" label="ยื่นคำขอที่นี่" (onClick)="submit.emit(space)"
-                    [disabled]="submitting()" />
+                  <!-- The best match carries the page's one filled button; the others stay outlined -->
+                  <p-button class="submit-here" [variant]="i === 0 ? undefined : 'outlined'" label="ยื่นคำขอที่นี่"
+                    (onClick)="submit.emit(space)" [disabled]="submitting()" />
                 }
               </li>
             }
           </ol>
         }
       }
-      </p-card>
+      </p-panel>
     </section>
   `,
   styles: `
-    h1 { font-size: 1.1rem; margin: 0 0 10px; }
-    form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-items: end; }
-    label, .field { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); min-width: 0; }
+    h2 { font-size: var(--text-h3); margin: 0; }
+    .find-hint { grid-column: 1 / -1; margin: 0; font-size: var(--text-small); color: var(--muted); }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); align-items: end; }
+    label, .field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-small); color: var(--muted); min-width: 0; }
     label:first-child { grid-column: 1 / -1; }
     .find { grid-column: 1 / -1; }
-    .submit-here { display: inline-block; margin-top: 6px; }
-    .results { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-    .results > li { border-top: 1px solid var(--line); padding-top: 10px; }
-    .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-    h2 { font-size: 1rem; margin: 0; }
+    .submit-here { display: inline-block; margin-top: var(--space-2); }
+    .results { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+    .results > li { border-top: 1px solid var(--line); padding-top: var(--space-3); }
+    .head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+    h3 { font-size: var(--text-body); margin: 0; }
     .score { color: var(--accent); font-weight: 600; }
-    .reasons { margin: 6px 0 0; padding-left: 18px; font-size: 0.9rem; }
-    .requested { margin: 6px 0 0; }
+    .reasons { margin: var(--space-2) 0 0; padding-left: var(--space-4); font-size: var(--text-small); }
+    .requested { margin: var(--space-2) 0 0; }
   `,
 })
 export class SpaceMatching {
@@ -97,6 +105,8 @@ export class SpaceMatching {
   /** A submit is in flight (from here or from the list below). */
   readonly submitting = input(false);
   readonly submit = output<SpaceSummary>();
+  /** Two-way: the page sets where it starts (open until an application is in play); the vendor's folding wins. */
+  readonly open = model(true);
 
   protected readonly product = signal('');
   protected readonly area = signal('');

@@ -96,3 +96,18 @@ const thaiDateTime = new Intl.DateTimeFormat('th-TH', {
 export function formatThaiDateTime(value: string): string {
   return thaiDateTime.format(new Date(value));
 }
+
+const thaiDateTimeSeconds = new Intl.DateTimeFormat('th-TH', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  timeZone: 'Asia/Bangkok',
+});
+
+/** ISO instant → "25 ต.ค. 2569 09:00:04": the audit trail, where entries in one minute must still read in order. */
+export function formatThaiDateTimeSeconds(value: string): string {
+  return thaiDateTimeSeconds.format(new Date(value));
+}
