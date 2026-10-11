@@ -217,7 +217,7 @@
                     <tr>
                       <td>{{ o.vendorName }}</td>
                       <td class="num mono">×{{ o.weight }}</td>
-                      <td [class.won]="o.kind === 'Won'">{{ outcome[o.kind] }}</td>
+                      <td><app-status-tag [outcome]="o.kind" /></td>
                       <td class="mono">{{ o.lockCode ?? '' }}</td>
                       <td>{{ o.reason }}</td>
                     </tr>

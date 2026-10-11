@@ -1,37 +1,50 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Tag } from 'primeng/tag';
-import { AllocationRunStatus, RoundStatus, StallRequestStatus } from '../core/api';
-import { ROUND_STATUS_LABEL, RUN_STATUS_LABEL, STATUS_LABEL } from './labels';
+import { AllocationRunStatus, OutcomeKind, RoundStatus, StallRequestStatus } from '../core/api';
+import { OUTCOME_LABEL, ROUND_STATUS_LABEL, RUN_STATUS_LABEL, STATUS_LABEL } from './labels';
 
-/** Tag colour: undefined = primary (accent) for good news, secondary = neutral, warn = needs attention. */
-type Severity = 'secondary' | 'warn' | undefined;
+/**
+ * Tag role (theme preset › tag): success = a good, standing result · info = in progress, nothing to do yet ·
+ * secondary = over and done · warn = someone has to act. Warn stays rare so it still means something.
+ */
+type Severity = 'success' | 'info' | 'secondary' | 'warn';
 
 const REQUEST_SEVERITY: Record<StallRequestStatus, Severity> = {
-  Submitted: 'secondary',
-  Eligible: undefined,
+  Submitted: 'info',
+  Eligible: 'info',
   Ineligible: 'warn',
-  Won: undefined,
-  Waitlisted: 'secondary',
+  Won: 'success',
+  // A waitlisted vendor can still move up, so it is in progress rather than over
+  Waitlisted: 'info',
   NotSelected: 'secondary',
-  Confirmed: undefined,
+  Confirmed: 'success',
   Forfeited: 'secondary',
 };
 
 const ROUND_SEVERITY: Record<RoundStatus, Severity> = {
-  Open: undefined,
-  Closed: 'secondary',
+  Open: 'success',
+  Closed: 'info',
+  // Drawn waits on the officer's approve or reject
   Drawn: 'warn',
-  Approved: undefined,
+  // Nothing left to decide in an approved round; the list's attention goes to the rounds still in play
+  Approved: 'secondary',
 };
 
 const RUN_SEVERITY: Record<AllocationRunStatus, Severity> = {
   Draft: 'warn',
-  Approved: undefined,
+  Approved: 'success',
   Rejected: 'secondary',
 };
 
+const OUTCOME_SEVERITY: Record<OutcomeKind, Severity> = {
+  Won: 'success',
+  Waitlisted: 'info',
+  NotSelected: 'secondary',
+  Forfeited: 'secondary',
+};
+
 /**
- * A request, round or allocation-run status as a tag. The text always comes from the shared Thai label maps,
+ * A request, round, allocation-run or draw-outcome status as a tag. The text always comes from the shared Thai label maps,
  * so a submitted request reads "ยื่นคำขอแล้ว" and never anything that sounds like a booking (Guardrail 4).
  * Pass exactly one of the inputs.
  */
@@ -49,6 +62,7 @@ export class StatusTag {
   readonly request = input<StallRequestStatus>();
   readonly round = input<RoundStatus>();
   readonly run = input<AllocationRunStatus>();
+  readonly outcome = input<OutcomeKind>();
 
   protected readonly view = computed(() => {
     const request = this.request();
@@ -57,6 +71,8 @@ export class StatusTag {
     if (round) return { label: ROUND_STATUS_LABEL[round], severity: ROUND_SEVERITY[round] };
     const run = this.run();
     if (run) return { label: RUN_STATUS_LABEL[run], severity: RUN_SEVERITY[run] };
+    const outcome = this.outcome();
+    if (outcome) return { label: OUTCOME_LABEL[outcome], severity: OUTCOME_SEVERITY[outcome] };
     return null;
   });
 }

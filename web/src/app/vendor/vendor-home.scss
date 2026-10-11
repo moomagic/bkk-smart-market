@@ -18,7 +18,7 @@ section + section {
   align-items: baseline;
   gap: 8px;
 }
-.head > p-tag,
+.head > .type,
 .head > app-status-tag {
   flex-shrink: 0;
   white-space: nowrap;
@@ -26,6 +26,11 @@ section + section {
 h2 {
   font-size: 1.05rem;
   margin: 0;
+}
+/* The kind of space is a fact about it, not a status: plain muted text */
+.type {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 .submitted {
   margin: 12px 0 0;

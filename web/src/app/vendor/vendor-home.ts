@@ -5,7 +5,6 @@ import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { Checkbox } from 'primeng/checkbox';
 import { Message } from 'primeng/message';
-import { Tag } from 'primeng/tag';
 import { Textarea } from 'primeng/textarea';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
@@ -28,7 +27,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, Button, Card, Checkbox, Message, Tag, Textarea, AssistantChat, SpaceMatching, StatusTag],
+  imports: [FormsModule, Button, Card, Checkbox, Message, Textarea, AssistantChat, SpaceMatching, StatusTag],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })

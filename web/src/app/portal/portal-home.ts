@@ -22,7 +22,6 @@ import { AuditNames } from './audit-view';
 import { StatusTag } from '../shared/status-tag';
 import {
   CATEGORY_LABEL,
-  OUTCOME_LABEL,
   REVIEW_OUTCOME_LABEL,
   RUN_STATUS_LABEL,
   STATUS_LABEL,
@@ -73,7 +72,6 @@ export class PortalHome {
   protected readonly category = CATEGORY_LABEL;
   protected readonly dateTime = formatThaiDateTime;
   protected readonly runStatus = RUN_STATUS_LABEL;
-  protected readonly outcome = OUTCOME_LABEL;
   protected readonly reviewOutcome = REVIEW_OUTCOME_LABEL;
 
   protected readonly isOfficer = computed(() => this.session.role() !== 'vendor');
