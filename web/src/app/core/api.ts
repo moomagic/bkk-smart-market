@@ -49,6 +49,21 @@ export interface StallRequest {
   confirmBy: string | null;
   /** Every run of the round, newest first. */
   runs: RunReference[];
+  lastCheckInAt: string | null;
+}
+
+export interface CheckIn {
+  id: string;
+  stallRequestId: string;
+  spaceName: string;
+  lockCode: string;
+  at: string;
+  withinGeofence: boolean;
+}
+
+/** What the (simulated) QR posted at a lock encodes — mirrors CheckInQr on the API. */
+export function lockQr(spaceId: string, lockCode: string): string {
+  return `bkk-smart-market:lock:${spaceId}:${lockCode}`;
 }
 
 export interface RunReference {
@@ -172,6 +187,10 @@ export class Api {
 
   forfeitStallRequest(requestId: string) {
     return this.http.post<StallRequest>(`/api/stall-requests/${requestId}/forfeit`, null);
+  }
+
+  checkIn(stallRequestId: string, qrCode: string, withinGeofence: boolean) {
+    return this.http.post<CheckIn>('/api/check-ins', { stallRequestId, qrCode, withinGeofence });
   }
 
   /** Development only: 404 elsewhere. */

@@ -1,5 +1,5 @@
 @if (notice(); as n) {
-  <p class="notice" [class.error]="n.kind === 'error'" role="status">{{ n.text }}</p>
+  <p class="notice" [class.error]="n.kind === 'error'" [class.warn]="n.kind === 'warn'" role="status">{{ n.text }}</p>
 }
 
 @if (myRequests(); as mine) {
@@ -55,6 +55,20 @@
                       </button>
                     }
                   </div>
+                }
+                @if (req.status === 'Confirmed' && req.lockCode) {
+                  <div class="actions">
+                    <button type="button" (click)="checkIn(req)" [disabled]="acting() !== null">
+                      {{ acting() === req.id ? 'กำลังเช็คอิน…' : 'สแกน QR เช็คอินที่ล็อค ' + req.lockCode }}
+                    </button>
+                    <label class="toggle">
+                      <input type="checkbox" [checked]="outsideGeofence()" (change)="outsideGeofence.set(!outsideGeofence())" />
+                      จำลอง: อยู่นอกพื้นที่
+                    </label>
+                  </div>
+                  @if (req.lastCheckInAt) {
+                    <p class="meta">เช็คอินล่าสุด {{ dateTime(req.lastCheckInAt) }}</p>
+                  }
                 }
                 @if (req.referenceNo) {
                   <p class="meta">เลขอ้างอิง <span class="mono">{{ req.referenceNo }}</span></p>

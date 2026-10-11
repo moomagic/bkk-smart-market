@@ -150,3 +150,15 @@ button.danger {
   flex-basis: 100%;
   font-weight: 600;
 }
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.notice.warn {
+  background: var(--surface);
+  border: 1px solid var(--warn);
+  color: var(--warn);
+}

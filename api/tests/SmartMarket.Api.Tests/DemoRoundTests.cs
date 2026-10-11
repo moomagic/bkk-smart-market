@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using SmartMarket.Application.CheckIns;
 using SmartMarket.Infrastructure.Seed;
 using static SmartMarket.Api.Tests.AllocationRunTests;
 using static SmartMarket.Api.Tests.ApproveAllocationTests;
@@ -14,7 +15,7 @@ namespace SmartMarket.Api.Tests;
 public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task Somsri_submits_as_the_11th_officer_checks_runs_and_approves_and_she_wins_and_confirms_B2()
+    public async Task Somsri_submits_as_the_11th_officer_checks_runs_and_approves_and_she_wins_confirms_and_checks_in_at_B2()
     {
         var officer = api.Officer();
         var somsri = api.ClientAs("vendor", SeedData.Somsri.ToString());
@@ -53,5 +54,12 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
         (await somsri.GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
             .Single(r => r.RoundId == SeedData.CharanCurrentRound)
             .Should().Match<MyRequestDto>(r => r.Status == "Confirmed" && r.LockCode == "B2");
+
+        (await somsri.PostAsJsonAsync("/api/check-ins", new
+        {
+            stallRequestId = mine.Id, qrCode = CheckInQr.For(SeedData.PakSoiCharan79, "B2"), withinGeofence = true,
+        })).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await somsri.GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
+            .Single(r => r.RoundId == SeedData.CharanCurrentRound).LastCheckInAt.Should().NotBeNull();
     }
 }

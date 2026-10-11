@@ -79,7 +79,7 @@ AllocationRun   Id, RoundId, ReferenceNo, Seed, InputHash, RulesSnapshot, RanAt,
                 Status(Draft|Approved|Rejected), DecidedAt?, DecidedBy?, RejectReason?, RejectCountsTowardLimit
 Assignment      Id, RoundId, VendorId, LockId, ConfirmBy, ConfirmedAt?, ForfeitedAt? (แถวที่สละแล้วเก็บเป็นประวัติ)
 Review          Id, StallRequestId, Reason, SubmittedAt, Outcome?(Upheld|Corrected), Response?, RespondedAt?
-CheckIn         Id, AssignmentId, At, Method(QR), WithinGeofence
+CheckIn         Id, AssignmentId, At, Day (วันตามเวลาไทย · 1 ครั้ง/วัน), Method(QR), WithinGeofence
 AuditEntry      Id, At, Actor, ActorRole, Action, EntityType, EntityId (entity หลักของ command),
                 Changes (jsonb: [{Entity, Id, State, Before?, After?}] ทุก entity ที่ command แตะ · ฟิลด์ [PersonalData] = "***")
 ```

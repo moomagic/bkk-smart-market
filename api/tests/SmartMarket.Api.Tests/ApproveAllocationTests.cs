@@ -15,8 +15,8 @@ namespace SmartMarket.Api.Tests;
 public sealed class ApproveAllocationTests(ApiFactory api)
 {
     internal sealed record RunRefDto(string ReferenceNo, string Status, DateTimeOffset RanAt);
-    internal sealed record MyRequestDto(Guid Id, Guid RoundId, string Status, int? WaitlistPosition, string? LockCode,
-        string? ResultReason, string? ReferenceNo, DateTimeOffset? ConfirmBy, RunRefDto[] Runs);
+    internal sealed record MyRequestDto(Guid Id, Guid RoundId, Guid SpaceId, string Status, int? WaitlistPosition, string? LockCode,
+        string? ResultReason, string? ReferenceNo, DateTimeOffset? ConfirmBy, RunRefDto[] Runs, DateTimeOffset? LastCheckInAt = null);
 
     private HttpClient Officer => api.Officer();
 

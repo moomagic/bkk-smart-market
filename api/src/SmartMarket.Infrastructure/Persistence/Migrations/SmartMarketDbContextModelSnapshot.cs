@@ -182,6 +182,37 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditEntries");
                 });
 
+            modelBuilder.Entity("SmartMarket.Domain.CheckIns.CheckIn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AssignmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<bool>("WithinGeofence")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignmentId", "Day")
+                        .IsUnique();
+
+                    b.ToTable("CheckIns");
+                });
+
             modelBuilder.Entity("SmartMarket.Domain.Districts.District", b =>
                 {
                     b.Property<Guid>("Id")
@@ -976,6 +1007,15 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.HasOne("SmartMarket.Domain.Vendors.Vendor", null)
                         .WithMany()
                         .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartMarket.Domain.CheckIns.CheckIn", b =>
+                {
+                    b.HasOne("SmartMarket.Domain.Allocation.Assignment", null)
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

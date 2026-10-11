@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { Api, SpaceSummary, StallRequest, problemMessage } from '../core/api';
+import { Api, SpaceSummary, StallRequest, lockQr, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import {
   CATEGORY_LABEL,
@@ -62,7 +62,9 @@ export class VendorHome {
   protected readonly acting = signal<string | null>(null);
   /** Request id whose forfeit is waiting for a second, deliberate click. */
   protected readonly confirmingForfeit = signal<string | null>(null);
-  protected readonly notice = signal<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  /** Demo toggle: pretend the phone is outside the space when scanning. */
+  protected readonly outsideGeofence = signal(false);
+  protected readonly notice = signal<{ kind: 'ok' | 'warn' | 'error'; text: string } | null>(null);
 
   protected submit(space: SpaceSummary): void {
     if (!space.openRound) return;
@@ -90,6 +92,29 @@ export class VendorHome {
 
   protected forfeit(req: StallRequest): void {
     this.act(req, this.api.forfeitStallRequest(req.id), (r) => `สละสิทธิ์แล้ว · ${r.spaceName} — ล็อคส่งต่อให้ผู้สำรองตามลำดับ`);
+  }
+
+  /** Simulates scanning the QR posted at the vendor's own lock. */
+  protected checkIn(req: StallRequest): void {
+    if (!req.lockCode) return;
+    this.acting.set(req.id);
+    this.notice.set(null);
+    this.api.checkIn(req.id, lockQr(req.spaceId, req.lockCode), !this.outsideGeofence()).subscribe({
+      next: (c) => {
+        this.acting.set(null);
+        this.notice.set({
+          kind: c.withinGeofence ? 'ok' : 'warn',
+          text: c.withinGeofence
+            ? `เช็คอินแล้ว · ${c.spaceName} ล็อค ${c.lockCode} · ${formatThaiDateTime(c.at)}`
+            : `เช็คอินแล้ว แต่ตำแหน่งอยู่นอกพื้นที่ — บันทึกไว้ให้เจ้าหน้าที่ตรวจสอบ`,
+        });
+        this.refresh.update((n) => n + 1);
+      },
+      error: (err) => {
+        this.acting.set(null);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
+    });
   }
 
   private act(req: StallRequest, call: Observable<StallRequest>, message: (r: StallRequest) => string): void {

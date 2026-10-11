@@ -46,7 +46,11 @@ internal static class MyStallRequests
             from a in db.Assignments.AsNoTracking().Where(Assignment.Active)
             join l in db.Locks on a.LockId equals l.Id
             where a.VendorId == vendorId && roundIds.Contains(a.RoundId)
-            select new { a.RoundId, l.Code, a.ConfirmBy }).ToDictionaryAsync(a => a.RoundId, ct);
+            select new
+            {
+                a.RoundId, l.Code, a.ConfirmBy,
+                LastCheckInAt = db.CheckIns.Where(c => c.AssignmentId == a.Id).Max(c => (DateTimeOffset?)c.At),
+            }).ToDictionaryAsync(a => a.RoundId, ct);
 
         return [.. requests.Select(x =>
         {
@@ -60,7 +64,8 @@ internal static class MyStallRequests
                 req.Id, round.Id, round.SpaceId, x.SpaceName, round.StartsOn, round.EndsOn, req.SubmittedAt, req.Category,
                 req.Status, req.IneligibleReason, req.WaitlistPosition, assignment?.Code, outcome?.Reason,
                 approved?.ReferenceNo, assignment?.ConfirmBy,
-                [.. runs[round.Id].Select(r => new RunReference(r.ReferenceNo, r.Status, r.RanAt, r.RejectReason))]);
+                [.. runs[round.Id].Select(r => new RunReference(r.ReferenceNo, r.Status, r.RanAt, r.RejectReason))],
+                assignment?.LastCheckInAt);
         })];
     }
 }
