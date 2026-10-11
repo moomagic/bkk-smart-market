@@ -1,5 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { Checkbox } from 'primeng/checkbox';
+import { Message } from 'primeng/message';
+import { Tag } from 'primeng/tag';
+import { Textarea } from 'primeng/textarea';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { Api, SpaceSummary, StallRequest, lockQr, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
@@ -21,7 +28,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AssistantChat, SpaceMatching, StatusTag],
+  imports: [FormsModule, Button, Card, Checkbox, Message, Tag, Textarea, AssistantChat, SpaceMatching, StatusTag],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })
@@ -31,7 +38,6 @@ export class VendorHome {
 
   protected readonly typeLabel = SPACE_TYPE_LABEL;
   protected readonly categoryLabel = CATEGORY_LABEL;
-  protected readonly statusLabel = STATUS_LABEL;
   protected readonly date = formatThaiDate;
   protected readonly dateTime = formatThaiDateTime;
   protected readonly runStatus = RUN_STATUS_LABEL;

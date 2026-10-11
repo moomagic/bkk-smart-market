@@ -1,6 +1,10 @@
-@if (notice(); as n) {
-  <p class="notice" [class.error]="n.kind === 'error'" [class.warn]="n.kind === 'warn'" role="status">{{ n.text }}</p>
-}
+<!-- One live region that is always there; the message inside is presentational, so a notice that is still
+     animating out never makes a second status (or alert) -->
+<div role="status">
+  @if (notice(); as n) {
+    <p-message class="notice" role="presentation" [severity]="n.kind === 'ok' ? 'info' : n.kind">{{ n.text }}</p-message>
+  }
+</div>
 
 @if (myRequests(); as mine) {
   <section aria-labelledby="mine-heading">
@@ -18,7 +22,7 @@
         } @else {
           <ul class="list">
             @for (req of mine.data; track req.id) {
-              <li class="card">
+              <li><p-card>
                 <div class="head">
                   <h2>{{ req.spaceName }}</h2>
                   <app-status-tag [request]="req.status" />
@@ -40,31 +44,27 @@
                   <div class="actions">
                     @if (confirmingForfeit() === req.id) {
                       <span class="ask">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</span>
-                      <button type="button" class="danger" (click)="forfeit(req)" [disabled]="acting() !== null">
-                        {{ acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์' }}
-                      </button>
-                      <button type="button" class="secondary" (click)="confirmingForfeit.set(null)" [disabled]="acting() !== null">
-                        ไม่สละ
-                      </button>
+                      <p-button severity="danger" fluid [label]="acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์'"
+                        (onClick)="forfeit(req)" [disabled]="acting() !== null" />
+                      <p-button variant="outlined" fluid label="ไม่สละ" (onClick)="confirmingForfeit.set(null)"
+                        [disabled]="acting() !== null" />
                     } @else {
-                      <button type="button" (click)="confirm(req)" [disabled]="acting() !== null">
-                        {{ acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์' }}
-                      </button>
-                      <button type="button" class="secondary" (click)="confirmingForfeit.set(req.id)" [disabled]="acting() !== null">
-                        สละสิทธิ์
-                      </button>
+                      <p-button fluid [label]="acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์'" (onClick)="confirm(req)"
+                        [disabled]="acting() !== null" />
+                      <p-button variant="outlined" fluid label="สละสิทธิ์" (onClick)="confirmingForfeit.set(req.id)"
+                        [disabled]="acting() !== null" />
                     }
                   </div>
                 }
                 @if (req.status === 'Confirmed' && req.lockCode) {
                   <div class="actions">
-                    <button type="button" (click)="checkIn(req)" [disabled]="acting() !== null">
-                      {{ acting() === req.id ? 'กำลังเช็คอิน…' : 'สแกน QR เช็คอินที่ล็อค ' + req.lockCode }}
-                    </button>
-                    <label class="toggle">
-                      <input type="checkbox" [checked]="outsideGeofence()" (change)="outsideGeofence.set(!outsideGeofence())" />
-                      จำลอง: อยู่นอกพื้นที่
-                    </label>
+                    <p-button fluid [label]="acting() === req.id ? 'กำลังเช็คอิน…' : 'สแกน QR เช็คอินที่ล็อค ' + req.lockCode"
+                      (onClick)="checkIn(req)" [disabled]="acting() !== null" />
+                    <span class="toggle">
+                      <p-checkbox binary [inputId]="'outside-' + req.id" [ngModel]="outsideGeofence()"
+                        (ngModelChange)="outsideGeofence.set($event)" />
+                      <label [for]="'outside-' + req.id">จำลอง: อยู่นอกพื้นที่</label>
+                    </span>
                   </div>
                   @if (req.lastCheckInAt) {
                     <p class="meta">เช็คอินล่าสุด {{ dateTime(req.lastCheckInAt) }}</p>
@@ -87,16 +87,17 @@
                   @if (reviewing() === req.id) {
                     <form class="review-form" (submit)="$event.preventDefault(); fileReview(req)">
                       <label [attr.for]="'review-' + req.id">เหตุผลที่ขอทบทวน</label>
-                      <textarea [id]="'review-' + req.id" rows="2" maxlength="500" [value]="reviewReason()"
+                      <textarea pTextarea [id]="'review-' + req.id" rows="2" maxlength="500" [value]="reviewReason()"
                         (input)="reviewReason.set($any($event.target).value)"></textarea>
                       <p class="meta">ทบทวนได้เฉพาะผลการตรวจสิทธิ ผลการจับฉลากทบทวนไม่ได้ · ยื่นได้ครั้งเดียวภายในกำหนดหลังประกาศผล</p>
                       <div class="actions">
-                        <button type="submit" [disabled]="acting() !== null || reviewReason().trim().length === 0">ส่งคำขอทบทวน</button>
-                        <button type="button" class="secondary" (click)="reviewing.set(null)">ยกเลิก</button>
+                        <p-button type="submit" fluid label="ส่งคำขอทบทวน"
+                          [disabled]="acting() !== null || reviewReason().trim().length === 0" />
+                        <p-button variant="outlined" fluid label="ยกเลิก" (onClick)="reviewing.set(null)" />
                       </div>
                     </form>
                   } @else {
-                    <button type="button" class="link-button" (click)="reviewing.set(req.id)">ขอทบทวนผล</button>
+                    <p-button link class="review-link" label="ขอทบทวนผล" (onClick)="reviewing.set(req.id)" />
                   }
                 }
                 @if (req.runs.length > 0) {
@@ -113,7 +114,7 @@
                     </ul>
                   </details>
                 }
-              </li>
+              </p-card></li>
             }
           </ul>
         }
@@ -145,10 +146,10 @@
     @case ('ready') {
       <ul class="list">
         @for (space of spaceList(); track space.id) {
-          <li class="card">
+          <li><p-card>
             <div class="head">
               <h2>{{ space.name }}</h2>
-              <span class="type">{{ typeLabel[space.type] }}</span>
+              <p-tag [value]="typeLabel[space.type]" />
             </div>
             <dl>
               <div><dt>ล็อค</dt><dd class="mono">{{ space.lockCount }}</dd></div>
@@ -165,14 +166,13 @@
               @if (requestedRoundIds().has(space.openRound.id)) {
                 <p class="submitted"><app-status-tag request="Submitted" /></p>
               } @else {
-                <button type="button" (click)="submit(space)" [disabled]="submitting() !== null">
-                  {{ submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ' }}
-                </button>
+                <p-button class="submit" fluid [label]="submitting() === space.id ? 'กำลังยื่น…' : 'ยื่นคำขอ'"
+                  (onClick)="submit(space)" [disabled]="submitting() !== null" />
               }
             } @else if (!space.openRound) {
               <p class="muted small">ไม่มีรอบที่เปิดรับคำขอ</p>
             }
-          </li>
+          </p-card></li>
         } @empty {
           <li class="muted">ยังไม่มีพื้นที่</li>
         }

@@ -87,6 +87,54 @@ export const SmartMarketPreset = definePreset(Aura, {
     },
   },
   components: {
+    // Buttons as before: semibold, 8px × 14px, outlined ones bordered in the full accent
+    button: {
+      // Link buttons sit flush with the text around them
+      css: '.p-button-link { padding: 0; }',
+      root: { paddingX: '14px', paddingY: '8px', label: { fontWeight: '600' } },
+      colorScheme: {
+        light: {
+          outlined: {
+            primary: { borderColor: '{primary.color}' },
+            danger: { borderColor: '{red.500}' },
+          },
+        },
+      },
+    },
+    // Cards are bordered panels, not shadowed
+    card: {
+      root: { borderRadius: '{border.radius.lg}', shadow: 'none' },
+      body: { padding: '14px 16px', gap: '0' },
+      css: '.p-card { border: 1px solid var(--p-content-border-color); }',
+    },
+    // Notices: info is the accent-soft note; warn and error are --warn text on the surface with a --warn border
+    message: {
+      root: { borderRadius: '{border.radius.md}' },
+      content: { padding: '10px 12px' },
+      text: { fontSize: '1rem', fontWeight: '400' },
+      colorScheme: {
+        light: {
+          info: {
+            background: '{primary.100}',
+            borderColor: '{primary.100}',
+            color: '{text.color}',
+            shadow: 'none',
+          },
+          warn: {
+            background: '{surface.0}',
+            borderColor: '{orange.500}',
+            color: '{orange.500}',
+            shadow: 'none',
+          },
+          error: {
+            background: '{surface.0}',
+            borderColor: '{red.500}',
+            color: '{red.500}',
+            shadow: 'none',
+          },
+        },
+      },
+    },
     // The old status pill: small, semibold, 4px corners; primary text in the accent itself
     tag: {
       root: {
