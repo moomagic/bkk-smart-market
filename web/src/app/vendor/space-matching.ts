@@ -4,7 +4,7 @@ import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
 import { StatusTag } from '../shared/status-tag';
-import { Api, PreferredTime, SpaceMatch, SpaceSummary, problemMessage } from '../core/api';
+import { Api, PreferredTime, SpaceSummary, problemMessage } from '../core/api';
 import { VendorStore } from './vendor-store';
 
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
@@ -71,6 +71,8 @@ import { VendorStore } from './vendor-store';
             }
           </ol>
         }
+        <!-- The matches stand in for the full list on a phone; this brings the list back -->
+        <p-button class="show-all" link label="ดูพื้นที่ทั้งหมด" (onClick)="results.set(null)" />
       }
     </section>
   `,
@@ -89,6 +91,7 @@ import { VendorStore } from './vendor-store';
     .score { color: var(--accent); font-weight: 600; }
     .reasons { margin: var(--space-2) 0 0; padding-left: var(--space-4); font-size: var(--text-small); }
     .requested { margin: var(--space-2) 0 0; }
+    .show-all { display: block; margin-top: var(--space-3); }
   `,
 })
 export class SpaceMatching {
@@ -102,16 +105,16 @@ export class SpaceMatching {
   /** A submit is in flight (from here or from the list below). */
   protected readonly submitting = computed(() => this.store.submitting() !== null);
 
-  protected readonly product = signal('');
-  protected readonly area = signal('');
-  protected readonly time = signal<PreferredTime | null>(null);
+  protected readonly product = this.store.match.product;
+  protected readonly area = this.store.match.area;
+  protected readonly time = this.store.match.time;
   protected readonly times: { label: string; value: PreferredTime | null }[] = [
     { label: 'ไม่ระบุ', value: null },
     { label: 'เช้า', value: 'Morning' },
     { label: 'เย็น', value: 'Evening' },
   ];
   protected readonly busy = signal(false);
-  protected readonly results = signal<SpaceMatch[] | null>(null);
+  protected readonly results = this.store.match.results;
   protected readonly error = signal<string | null>(null);
 
   protected submit(space: SpaceSummary): void {

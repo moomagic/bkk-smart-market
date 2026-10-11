@@ -2,7 +2,7 @@ import { Injectable, computed, inject, linkedSignal, signal } from '@angular/cor
 import { Router } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
-import { Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
+import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoRole, DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
 
@@ -121,6 +121,17 @@ export class VendorStore {
     const dates = new Set(this.spaceList().flatMap((s) => (s.openRound ? [s.openRound.applyClosesAt] : [])));
     return dates.size === 1 ? [...dates][0] : null;
   });
+
+  /**
+   * Space Matching's last search and its matches. Kept here, not in the screen, so a vendor who submits from a
+   * match and comes back with ← finds the search where they left it. Null matches: no search shown, the full list is.
+   */
+  readonly match = {
+    product: signal(''),
+    area: signal(''),
+    time: signal<PreferredTime | null>(null),
+    results: signal<SpaceMatch[] | null>(null),
+  };
 
   /** Space id with a submit in flight. */
   readonly submitting = signal<string | null>(null);

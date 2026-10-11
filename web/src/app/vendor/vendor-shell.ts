@@ -114,6 +114,10 @@ const TABS = [
         box-shadow: 0 12px 40px rgb(23 32 29 / 0.14);
       }
     }
+    /* Finger-sized buttons on every vendor screen (link-styled ones stay inline with their text) */
+    :host ::ng-deep .p-button:not(.p-button-link) {
+      min-height: 44px;
+    }
     .appbar {
       display: flex;
       align-items: center;

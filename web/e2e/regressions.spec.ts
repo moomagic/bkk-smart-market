@@ -235,3 +235,34 @@ test('the requests tab carries a dot only while a won lock waits to be confirmed
   await expect(page.getByText('สวัสดี สมศรี ใ.')).toBeVisible();
   await expect(page.getByTestId('todo')).toHaveCount(0);
 });
+
+test('the spaces tab shows matches in place of the list, keeps them through a submit, and returns to the list', async ({
+  page,
+}) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/vendor/spaces');
+  const all = page.getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' });
+  await expect(all).toContainText('ตลาดนัดเขตบางพลัด');
+
+  const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
+  await match.getByLabel('ขายอะไร').fill('ข้าวแกง');
+  await match.getByLabel('ย่านที่สะดวก').fill('จรัญฯ');
+  await match.getByRole('button', { name: 'แนะนำพื้นที่' }).click();
+  const first = match.getByRole('listitem').filter({ hasText: '1. ปากซอยจรัญฯ 79' });
+  await expect(first).toContainText('90/100');
+  // On a phone the matches stand in for the list rather than stacking above it
+  await expect(all).toHaveCount(0);
+
+  await first.getByRole('button', { name: 'ยื่นคำขอที่นี่' }).click();
+  await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toContainText('ยื่นคำขอแล้ว');
+  await page.getByRole('button', { name: 'ย้อนกลับ' }).click();
+  // Back on the tab, the search is where it was, with the space now marked as applied
+  await expect(match.getByLabel('ขายอะไร')).toHaveValue('ข้าวแกง');
+  await expect(first).toContainText('ยื่นคำขอแล้ว');
+  await expect(first.getByRole('button', { name: 'ยื่นคำขอที่นี่' })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'ดูพื้นที่ทั้งหมด' }).click();
+  await expect(all).toContainText('ตลาดนัดเขตบางพลัด');
+  await expect(all.getByRole('listitem').filter({ hasText: 'ปากซอยจรัญฯ 79' })).toContainText('ยื่นคำขอแล้ว');
+  await expect(match.getByRole('listitem')).toHaveCount(0);
+});

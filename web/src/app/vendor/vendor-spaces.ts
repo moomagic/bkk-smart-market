@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Button } from 'primeng/button';
 import { SpaceSummary } from '../core/api';
 import { DemoSession } from '../core/demo-session';
@@ -27,6 +27,7 @@ export class VendorSpaces {
   protected readonly requestStatusByRound = this.store.requestStatusByRound;
   protected readonly closesAt = this.store.closesAt;
   protected readonly submitting = this.store.submitting;
+  protected readonly matching = computed(() => this.store.match.results() !== null);
 
   protected submit(space: SpaceSummary): void {
     this.store.submit(space);
