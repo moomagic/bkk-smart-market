@@ -17,7 +17,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 120ms ease-out;
+  transition: background-color var(--motion-fast) var(--ease-standard);
 }
 .card:active {
   background: var(--accent-soft);

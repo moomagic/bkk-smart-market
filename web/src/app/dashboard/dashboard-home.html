@@ -13,13 +13,14 @@
   }
 
   @if (data(); as k) {
+    <!-- The figures come in once, as they load; Chart.js animation stays off, so the bars only fade in with their canvas -->
     <section class="kpis" aria-label="ตัวชี้วัดหลัก">
-      <article class="tile"><p-card styleClass="fill">
+      <article class="tile arrive" style="--i: 0"><p-card styleClass="fill">
         <h2 title="Occupancy">การใช้พื้นที่</h2>
         <p class="value">{{ pct(k.occupancy) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
       </p-card></article>
-      <article class="tile"><p-card styleClass="fill">
+      <article class="tile arrive" style="--i: 1"><p-card styleClass="fill">
         <h2 title="LeadTime">ความเร็วในการประกาศผล</h2>
         <p class="value">@if (k.leadTime.medianDays === null) {
           –
@@ -28,12 +29,12 @@
         }</p>
         <p class="detail">ค่ามัธยฐานจากวันปิดรับคำขอถึงวันอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
       </p-card></article>
-      <article class="tile"><p-card styleClass="fill">
+      <article class="tile arrive" style="--i: 2"><p-card styleClass="fill">
         <h2 title="NewVendors">ผู้ค้าหน้าใหม่</h2>
         <p class="value">{{ pct(k.newVendors) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ {{ k.newVendors.of }} คน เป็นกลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} คน</p>
       </p-card></article>
-      <article class="tile"><p-card styleClass="fill">
+      <article class="tile arrive" style="--i: 3"><p-card styleClass="fill">
         <h2 title="FairRotation">การหมุนเวียนสิทธิ์</h2>
         <p class="value">{{ pct(k.fairRotation) }}</p>
         <p class="detail">ผู้ได้สิทธิ์ {{ k.fairRotation.of }} คน ไม่ได้ถือล็อคที่เดิมในรอบก่อน {{ k.fairRotation.count }} คน</p>
@@ -61,7 +62,7 @@
             </div>
             @if (charts().get(row.spaceId); as chart) {
               <!-- Canvas: the per-space table below carries the same numbers for screen readers -->
-              <p-chart type="bar" [data]="chart.data" [options]="chart.options" height="120px"
+              <p-chart class="appear" type="bar" [data]="chart.data" [options]="chart.options" height="120px"
                 [ariaLabel]="chart.label" />
             }
           </div>

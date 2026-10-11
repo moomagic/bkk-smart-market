@@ -15,6 +15,8 @@ export const SmartMarketPreset = definePreset(Aura, {
     orange: warnScale(),
   },
   semantic: {
+    // Hover, focus and press on every control (form fields reference it) run on the fast motion token
+    transitionDuration: 'var(--motion-fast)',
     primary: {
       50: tint('--accent', 8),
       100: 'var(--accent-soft)',

@@ -106,3 +106,7 @@ section {
   font-size: var(--text-caption);
   margin-left: 2px;
 }
+/* The page has just risen into place; the figures that land after it only fade in, one after another */
+.tile.arrive {
+  animation-name: appear;
+}

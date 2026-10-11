@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, untracked } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Textarea } from 'primeng/textarea';
 import { ChatMessage, VendorStore } from './vendor-store';
@@ -40,8 +40,9 @@ import { ChatMessage, VendorStore } from './vendor-store';
 
       <!-- Always in the page, so screen readers announce the first exchange too (a new live region often is not) -->
       <ol class="messages" aria-live="polite">
-        @for (m of messages(); track $index) {
-          <li [class.me]="m.from === 'me'" [class.not-found]="m.found === false && !m.failed" [class.failed]="m.failed">
+        <!-- Only what arrives while the vendor is here comes in; the conversation they come back to just stands -->
+        @for (m of messages(); track $index; let i = $index) {
+          <li [class.arrive]="i >= shownOnArrival" [class.me]="m.from === 'me'" [class.not-found]="m.found === false && !m.failed" [class.failed]="m.failed">
             @if (m.from === 'me') {
               <span class="sr-only">คุณถาม: </span>
             }
@@ -62,7 +63,8 @@ import { ChatMessage, VendorStore } from './vendor-store';
           </li>
         }
         @if (busy()) {
-          <li class="typing">กำลังตอบ…</li>
+          <!-- Shown for exactly as long as the request is in flight; it fades in once rather than looping -->
+          <li class="typing appear">กำลังตอบ…</li>
         }
       </ol>
 
@@ -122,6 +124,8 @@ import { ChatMessage, VendorStore } from './vendor-store';
     .messages li.me { align-self: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 8px 8px 2px 8px; padding-block: var(--space-2); }
     .messages li.not-found { background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
     .messages li.failed { background: var(--surface); border: 1px solid var(--warn); color: var(--warn); }
+    /* An answer fades in where it lands; the scroll that opens it at its first line measures it mid-animation */
+    .messages li.arrive:not(.me) { animation-name: appear; }
     .messages li.typing { color: var(--muted); font-size: var(--text-small); background: transparent; padding: 0; }
     /* Answers come back with line breaks: keep them */
     .body { white-space: pre-line; }
@@ -155,6 +159,8 @@ export class AssistantChat {
   protected readonly messages = this.store.assistant.messages;
   protected readonly draft = this.store.assistant.draft;
   protected readonly busy = this.store.assistant.busy;
+  /** How many messages were already there when the tab opened. */
+  protected readonly shownOnArrival = untracked(this.messages).length;
 
   constructor() {
     let first = true;

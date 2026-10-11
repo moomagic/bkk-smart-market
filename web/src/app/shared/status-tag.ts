@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+} from '@angular/core';
 import { Tag } from 'primeng/tag';
 import { AllocationRunStatus, OutcomeKind, RoundStatus, StallRequestStatus } from '../core/api';
 import { OUTCOME_LABEL, ROUND_STATUS_LABEL, RUN_STATUS_LABEL, STATUS_LABEL } from './labels';
@@ -76,4 +84,30 @@ export class StatusTag {
     if (outcome) return { label: OUTCOME_LABEL[outcome], severity: OUTCOME_SEVERITY[outcome] };
     return null;
   });
+
+  constructor() {
+    // A status that changes in place (a confirm the server accepted, a draw coming in) fades through once, so the
+    // vendor sees the tag they were watching move. A tag that is simply drawn — a new row, a sorted table — stays still.
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    let shown: string | undefined;
+    effect(() => {
+      const label = this.view()?.label;
+      if (shown !== undefined && label !== shown) {
+        const css = getComputedStyle(host);
+        host.animate([{ opacity: 0.25 }, { opacity: 1 }], {
+          duration: toMs(css.getPropertyValue('--motion-normal')),
+          easing: css.getPropertyValue('--ease-standard').trim() || 'ease-out',
+        });
+      }
+      shown = label;
+    });
+  }
+}
+
+/** A CSS time token in milliseconds; the build minifies 200ms to .2s, so both units come through. */
+function toMs(value: string): number {
+  const v = value.trim();
+  const n = parseFloat(v);
+  if (Number.isNaN(n)) return 200;
+  return v.endsWith('ms') ? n : n * 1000;
 }

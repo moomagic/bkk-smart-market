@@ -35,6 +35,15 @@
   --font-heading: 'Bai Jamjuree', 'IBM Plex Sans Thai', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
+  /* Motion: functional only — it answers an action or brings in what just arrived, never decorates.
+     One curve for everything: a quick start that settles, so nothing reads as bouncing or lagging. */
+  --motion-fast: 120ms; /* feedback: focus, press, hover */
+  --motion-normal: 200ms; /* arrivals: a screen, a message, a result */
+  --motion-slow: 320ms; /* the one success moment: a confirmed lock */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-rise: 6px; /* how far an arrival travels */
+  --motion-stagger: 40ms; /* between siblings, capped at the fourth */
+
   color-scheme: light;
 }
 
@@ -152,4 +161,63 @@ h1 {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ---- Motion ----
+   Keyframes carry only the start: elements rest in their normal state, and no fill mode holds a transform on them
+   afterwards (a lingering transform would trap position: fixed children such as a dialog mask). */
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-rise));
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A screen arriving: the routed page under the site header, or the vendor screen inside its phone frame
+   (the frame itself stays put). Runs on navigation only; nothing inside replays it. */
+main:not(.bare) > router-outlet + *,
+.screen > router-outlet + * {
+  animation: arrive var(--motion-normal) var(--ease-standard);
+}
+
+/* Something that just came back from the server, while the vendor watched: a result, a message, an error.
+   Siblings set --i (0…3) for a short stagger; the class is only ever bound to fresh arrivals, never to a re-render. */
+.arrive {
+  animation: arrive var(--motion-normal) var(--ease-standard) backwards;
+  animation-delay: calc(min(var(--i, 0), 3) * var(--motion-stagger));
+}
+
+.arrive.success {
+  animation-duration: var(--motion-slow);
+}
+
+.appear {
+  animation: appear var(--motion-normal) var(--ease-standard) backwards;
+}
+
+/* PrimeNG notices bring their own enter/leave (grid-row collapse): keep it, on the app's tokens */
+.p-message-enter-active {
+  animation-duration: var(--motion-normal);
+  animation-timing-function: var(--ease-standard);
+}
+
+.p-message-leave-active {
+  animation-duration: var(--motion-fast);
+}
+
+/* Reduced motion: nothing travels, nothing waits for its turn; the fades stay (shorter) so arrivals and
+   confirmations are still seen to happen */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-rise: 0px;
+    --motion-stagger: 0ms;
+    --motion-normal: 120ms;
+    --motion-slow: 160ms;
+  }
 }

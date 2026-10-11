@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
@@ -41,16 +41,18 @@ import { VendorStore } from './vendor-store';
       </form>
 
       @if (error(); as e) {
-        <p class="error" role="status">{{ e }}</p>
+        <p class="error" [class.appear]="e !== errorOnArrival" role="status">{{ e }}</p>
       }
       @if (results(); as list) {
         @if (list.length === 0) {
           <p class="muted">ไม่พบพื้นที่ที่รับสินค้านี้ กรุณาติดต่อสำนักงานเขตบางพลัด</p>
         } @else {
           <ol class="results">
-            @for (m of list; track m.spaceId; let i = $index) {
+            @for (m of list; track m; let i = $index) {
               @let status = requestStatus()(m.spaceId);
-              <li>
+              <!-- Matches the vendor just asked for come in one after another (tracked by object, so every search is new rows);
+                   ones already found (back on the tab) just stand -->
+              <li [class.arrive]="fresh()" [style.--i]="i">
                 <!-- The same row as the full list: name and status, the space's facts, then why it matched -->
                 <div class="head">
                   <h3>{{ i + 1 }}. {{ m.name }}</h3>
@@ -131,6 +133,10 @@ export class SpaceMatching {
   protected readonly results = this.store.match.results;
   protected readonly error = this.store.match.error;
   private readonly injector = inject(Injector);
+  /** The matches already on screen when the tab opened: they are not news, so only a newer search animates in. */
+  private readonly shownOnArrival = untracked(this.results);
+  protected readonly fresh = computed(() => this.results() !== this.shownOnArrival);
+  protected readonly errorOnArrival = untracked(this.error);
 
   protected submit(space: SpaceSummary): void {
     this.store.submit(space);
