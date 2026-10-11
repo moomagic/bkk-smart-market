@@ -27,7 +27,7 @@ for (const { path, role, device, loaded } of [
     path: '/dashboard',
     role: 'executive',
     device: { viewport: DESKTOP },
-    loaded: 'การใช้พื้นที่ (Occupancy)',
+    loaded: 'การใช้พื้นที่',
   },
 ] as const) {
   test.describe(path, () => {

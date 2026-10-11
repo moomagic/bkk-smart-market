@@ -137,9 +137,9 @@ test('demo script 1–6', async ({ page, request }) => {
     await switchRole(page, 'executive');
     await expect(page).toHaveURL(/\/dashboard$/);
     await expectMockBadge(page);
-    const occupancy = page.getByRole('article').filter({ hasText: 'การใช้พื้นที่ (Occupancy)' });
+    const occupancy = page.getByRole('article').filter({ hasText: 'Occupancy' });
     await expect(occupancy).toContainText(
-      `ล็อคที่ผู้ได้สิทธิ์ยืนยันแล้ว ${before.count + 1} จาก ${before.of} ล็อค`,
+      `ผู้ได้สิทธิ์ยืนยันแล้ว ${before.count + 1} จาก ${before.of} ล็อค`,
     );
     await expect(page.getByRole('region', { name: 'ผู้ได้สิทธิ์จริงเทียบโควตา' })).toContainText(
       ref,
