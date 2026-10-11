@@ -293,13 +293,27 @@ test('the assistant is a full-screen chat that keeps its history across tabs', a
   expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
   expect(nav.y - (box.y + box.height)).toBeLessThan(40);
 
+  // A suggestion does not wipe what the vendor had started typing
+  await input.fill('ร่างคำถาม');
   await chat.getByRole('button', { name: 'ต้องใช้เอกสารอะไร' }).click();
   await expect(chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' })).toContainText('documents.md');
+  await expect(input).toHaveValue('ร่างคำถาม');
   // Suggestions are for an empty chat only
   await expect(chat.getByRole('button', { name: 'จัดสรรล็อคยังไง' })).toHaveCount(0);
 
+  for (const q of ['จัดสรรล็อคยังไง', 'ต้องยืนยันสิทธิ์ภายในกี่วัน']) {
+    await input.fill(q);
+    await chat.getByRole('button', { name: 'ถาม', exact: true }).click();
+    await expect(chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' })).toHaveCount(
+      q === 'จัดสรรล็อคยังไง' ? 2 : 3,
+    );
+  }
+  const newest = chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' }).last();
+  await expect(newest).toBeInViewport();
+
   await vendorTab(page, 'คำขอ');
   await vendorTab(page, 'ถามระเบียบ');
-  await expect(chat.getByRole('listitem').filter({ hasText: 'ต้องใช้เอกสารอะไร' })).toBeVisible();
-  await expect(chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' })).toContainText('documents.md');
+  await expect(chat.getByRole('listitem').filter({ hasText: 'ต้องใช้เอกสารอะไร' })).toHaveCount(1);
+  // Back on the tab, the conversation opens at its newest answer
+  await expect(newest).toBeInViewport();
 });

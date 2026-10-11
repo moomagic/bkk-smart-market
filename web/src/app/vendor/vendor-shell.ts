@@ -246,10 +246,13 @@ export class VendorShell {
 
   constructor() {
     this.router.events.pipe(takeUntilDestroyed()).subscribe((e) => {
-      // Every screen is a fresh one: the last screen's notice stays behind (a submit sets its own after arriving)
-      if (e instanceof NavigationStart) this.store.notice.set(null);
-      // The screens share one scroll container, which the router's scroll restoration (window only) never touches
-      if (e instanceof NavigationEnd) this.scroller().nativeElement.scrollTo({ top: 0 });
+      if (e instanceof NavigationStart) {
+        // Every screen is a fresh one: the last screen's notice stays behind (a submit sets its own after arriving)
+        this.store.notice.set(null);
+        // The screens share one scroll container, which the router's scroll restoration (window only) never
+        // touches. Reset before the next screen renders, so a screen that scrolls itself (the chat) has the last word.
+        this.scroller().nativeElement.scrollTo({ top: 0 });
+      }
     });
   }
 

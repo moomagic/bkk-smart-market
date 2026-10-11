@@ -1,6 +1,6 @@
-import { Injectable, computed, inject, linkedSignal, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, linkedSignal, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
 import { Api, AssistantSource, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoRole, DemoSession } from '../core/demo-session';
@@ -23,6 +23,8 @@ export class VendorStore {
   private readonly api = inject(Api);
   private readonly session = inject(DemoSession);
   private readonly router = inject(Router);
+  /** In-flight calls end with the vendor app (the shell provides this store). */
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Bumped after an action so both lists reload. */
   private readonly refresh = signal(0);
@@ -145,7 +147,10 @@ export class VendorStore {
     this.matchCall?.unsubscribe();
     m.busy.set(true);
     m.error.set(null);
-    this.matchCall = this.api.matchSpaces(m.product().trim(), m.area().trim(), m.time()).subscribe({
+    this.matchCall = this.api
+      .matchSpaces(m.product().trim(), m.area().trim(), m.time())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (r) => {
         m.busy.set(false);
         m.results.set(r);
@@ -180,9 +185,10 @@ export class VendorStore {
     const q = question.trim();
     if (!q || a.busy()) return;
     a.busy.set(true);
-    a.draft.set('');
+    // A suggestion leaves whatever the vendor was typing in the box
+    if (q === a.draft().trim()) a.draft.set('');
     a.messages.update((m) => [...m, { from: 'me', text: q }]);
-    this.api.askAssistant(q).subscribe({
+    this.api.askAssistant(q).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (ans) => {
         a.busy.set(false);
         a.messages.update((m) => [...m, { from: 'assistant', text: ans.text, found: ans.found, source: ans.source }]);

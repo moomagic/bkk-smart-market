@@ -17,6 +17,21 @@ import { VendorStore } from './vendor-store';
       <h2 id="assistant-heading" class="sr-only">ถามผู้ช่วยเรื่องระเบียบ</h2>
       <p class="hint">ตอบจากระเบียบที่ประกาศเท่านั้น ไม่ตอบเรื่องผลของแต่ละคน</p>
 
+      <!-- Always in the page, so screen readers announce the first exchange too (a new live region often is not) -->
+      <ol class="messages" aria-live="polite">
+        @for (m of messages(); track $index) {
+          <li [class.me]="m.from === 'me'" [class.not-found]="m.found === false">
+            {{ m.text }}
+            @if (m.source) {
+              <span class="source">{{ m.source === 'claude' ? 'ตอบโดย AI จากระเบียบที่ประกาศ' : 'ค้นจากหัวข้อระเบียบ' }}</span>
+            }
+          </li>
+        }
+        @if (busy()) {
+          <li class="typing">กำลังตอบ…</li>
+        }
+      </ol>
+
       @if (messages().length === 0) {
         <!-- An empty chat offers questions to start from; once talking, they would only push the answers away -->
         <div class="start">
@@ -24,24 +39,10 @@ import { VendorStore } from './vendor-store';
           <div class="suggestions">
             @for (q of suggestions; track q) {
               <!-- Buttons, not p-chip: each suggestion is an action -->
-              <p-button variant="outlined" severity="secondary" size="small" [label]="q" (onClick)="ask(q)" [disabled]="busy()" />
+              <p-button variant="outlined" severity="secondary" size="small" [label]="q" (onClick)="ask(q)" />
             }
           </div>
         </div>
-      } @else {
-        <ol class="messages" aria-live="polite">
-          @for (m of messages(); track $index) {
-            <li [class.me]="m.from === 'me'" [class.not-found]="m.found === false">
-              {{ m.text }}
-              @if (m.source) {
-                <span class="source">{{ m.source === 'claude' ? 'ตอบโดย AI จากระเบียบที่ประกาศ' : 'ค้นจากหัวข้อระเบียบ' }}</span>
-              }
-            </li>
-          }
-          @if (busy()) {
-            <li class="typing" aria-hidden="true">กำลังตอบ…</li>
-          }
-        </ol>
       }
 
       <form (submit)="$event.preventDefault(); ask(draft())">
@@ -65,6 +66,7 @@ import { VendorStore } from './vendor-store';
     .hint { color: var(--muted); font-size: var(--text-small); margin: 0 0 var(--space-3); }
     .start { flex: 1; }
     .start p { margin: 0 0 var(--space-3); }
+    .messages:empty { display: none; }
     .messages { flex: 1; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
     .messages li { white-space: pre-line; background: var(--accent-soft); border-radius: 12px 12px 12px 4px; padding: var(--space-2) var(--space-3); max-width: 88%; }
     .messages li.me { align-self: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 12px 12px 4px 12px; }
@@ -97,13 +99,26 @@ export class AssistantChat {
   protected readonly busy = this.store.assistant.busy;
 
   constructor() {
-    // The newest message (and the box to answer it from) in view, also on coming back to the tab
+    let first = true;
     effect(() => {
-      this.messages();
-      this.busy();
-      // The composer is sticky, so it is always "in view"; the whole chat's end is what has to be
-      afterNextRender(() => this.host.nativeElement.scrollIntoView({ block: 'end' }), { injector: this.injector });
+      const messages = this.messages();
+      const scroller = this.scroller();
+      // Follow the conversation, but leave a vendor who scrolled up to reread an answer where they are:
+      // always on arriving at the tab and after their own question, otherwise only if they were at the end
+      const atEnd = !scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+      const follow = first || atEnd || messages.at(-1)?.from === 'me';
+      first = false;
+      if (follow) {
+        afterNextRender(() => scroller?.scrollTo({ top: scroller.scrollHeight }), { injector: this.injector });
+      }
     });
+  }
+
+  /** The screen's scroll container (the shell's); only it scrolls, never the page or the phone frame. */
+  private scroller(): HTMLElement | null {
+    let el = this.host.nativeElement.parentElement;
+    while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
+    return el;
   }
 
   protected ask(question: string): void {
