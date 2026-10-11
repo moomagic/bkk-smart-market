@@ -148,8 +148,11 @@ test('← on a request goes back where the vendor came from, or to the requests 
     .getByRole('button', { name: 'ยื่นคำขอ' })
     .click();
   await expect(page.getByRole('region', { name: 'รายละเอียดคำขอ' })).toContainText('ยื่นคำขอแล้ว');
+  await expect(page.getByRole('status')).toContainText('ยื่นคำขอแล้ว · ปากซอยจรัญฯ 79');
   await back.click();
   await expect(page).toHaveURL(/\/vendor\/spaces$/);
+  // A notice belongs to the screen it was made on
+  await expect(page.getByRole('status')).toHaveText('');
 
   // Opened straight from a link there is nothing to go back to inside the app: ← lands on the requests tab
   await page.goto(detailUrl);

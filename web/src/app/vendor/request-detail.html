@@ -1,3 +1,6 @@
+@if (!mine()) {
+  <p class="muted">คำขอแสดงเมื่อใช้งานในบทบาทผู้ค้า</p>
+}
 @switch (mine()?.state) {
   @case ('loading') {
     <p class="muted">กำลังโหลด…</p>

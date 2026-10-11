@@ -1,8 +1,9 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
+import { Observable, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
 import { Api, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
-import { DemoSession } from '../core/demo-session';
+import { DemoRole, DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
 
 const FINISHED = new Set<StallRequestStatus>(['NotSelected', 'Forfeited']);
@@ -18,13 +19,22 @@ export type Notice = { kind: 'ok' | 'warn' | 'error'; text: string };
 export class VendorStore {
   private readonly api = inject(Api);
   private readonly session = inject(DemoSession);
+  private readonly router = inject(Router);
 
   /** Bumped after an action so both lists reload. */
   private readonly refresh = signal(0);
-  private readonly reload$ = combineLatest([toObservable(this.session.role), toObservable(this.refresh)]);
+  /**
+   * Each load, and whether it only refreshes what is already on screen (same role). A refresh keeps the current
+   * data until the new data arrives, so the screen the vendor just acted on keeps its buttons, focus and scroll;
+   * a role switch starts again from "กำลังโหลด…".
+   */
+  private readonly reload$ = combineLatest([toObservable(this.session.role), toObservable(this.refresh)]).pipe(
+    scan((prev: Reload | null, [role]) => ({ role, quiet: prev?.role === role }), null),
+    map((r) => r!),
+  );
 
   readonly spaces = toSignal(
-    this.reload$.pipe(switchMap(() => loadState(this.api.spaces()))),
+    this.reload$.pipe(switchMap(({ quiet }) => loadState(this.api.spaces(), quiet))),
     { initialValue: { state: 'loading' } as Load<SpaceSummary[]> },
   );
 
@@ -33,12 +43,17 @@ export class VendorStore {
     return s.state === 'ready' ? s.data : [];
   });
 
-  readonly myRequests = toSignal(
+  private readonly fetchedRequests = toSignal(
     this.reload$.pipe(
-      switchMap(([role]) => (role === 'vendor' ? loadState(this.api.myStallRequests()) : of(null))),
+      switchMap(({ role, quiet }) =>
+        role === 'vendor' ? loadState(this.api.myStallRequests(), quiet) : of(null),
+      ),
     ),
     { initialValue: null as Load<StallRequest[]> | null },
   );
+
+  /** The vendor's requests as fetched; a submit adds its new request at once, until the next fetch replaces it. */
+  readonly myRequests = linkedSignal(() => this.fetchedRequests());
 
   private readonly requestList = computed(() => {
     const mine = this.myRequests();
@@ -94,29 +109,30 @@ export class VendorStore {
     this.refresh.update((n) => n + 1);
   }
 
-  /** Submits to the space's open round; resolves with the new request, or null when it failed (the notice says why). */
-  submit(space: SpaceSummary): Promise<StallRequest | null> {
+  /**
+   * Submits to the space's open round, then opens the new request on its own screen: what it is now and what
+   * happens next. The notice is set after the navigation, which clears the previous screen's.
+   */
+  submit(space: SpaceSummary): void {
     const round = space.openRound;
-    if (!round) return Promise.resolve(null);
+    if (!round) return;
     this.submitting.set(space.id);
     this.notice.set(null);
-    return new Promise((resolve) => {
-      this.api.submitStallRequest(round.id).subscribe({
-        next: (req) => {
-          this.submitting.set(null);
-          this.notice.set({
-            kind: 'ok',
-            text: `${STATUS_LABEL[req.status]} · ${req.spaceName} · กลุ่ม${CATEGORY_LABEL[req.category]} — ยังไม่ใช่การได้สิทธิ์ ผลจับฉลากประกาศหลังปิดรับคำขอ`,
-          });
-          this.reload();
-          resolve(req);
-        },
-        error: (err) => {
-          this.submitting.set(null);
-          this.notice.set({ kind: 'error', text: problemMessage(err) });
-          resolve(null);
-        },
-      });
+    this.api.submitStallRequest(round.id).subscribe({
+      next: async (req) => {
+        this.submitting.set(null);
+        this.myRequests.update((m) => (m?.state === 'ready' ? { state: 'ready', data: [...m.data, req] } : m));
+        this.reload();
+        await this.router.navigate(['/vendor/requests', req.id]);
+        this.notice.set({
+          kind: 'ok',
+          text: `${STATUS_LABEL[req.status]} · ${req.spaceName} · กลุ่ม${CATEGORY_LABEL[req.category]} — ยังไม่ใช่การได้สิทธิ์ ผลจับฉลากประกาศหลังปิดรับคำขอ`,
+        });
+      },
+      error: (err) => {
+        this.submitting.set(null);
+        this.notice.set({ kind: 'error', text: problemMessage(err) });
+      },
     });
   }
 
@@ -184,10 +200,13 @@ export class VendorStore {
   }
 }
 
-function loadState<T>(source: Observable<T>) {
-  return source.pipe(
+type Reload = { role: DemoRole; quiet: boolean };
+
+/** Loading, then the data or an error; a quiet refresh skips the loading state. */
+function loadState<T>(source: Observable<T>, quiet: boolean): Observable<Load<T>> {
+  const loaded = source.pipe(
     map((data) => ({ state: 'ready', data }) as Load<T>),
     catchError(() => of({ state: 'error' } as Load<T>)),
-    startWith({ state: 'loading' } as Load<T>),
   );
+  return quiet ? loaded : loaded.pipe(startWith({ state: 'loading' } as Load<T>));
 }

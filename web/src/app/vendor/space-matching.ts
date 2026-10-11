@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
@@ -96,8 +95,6 @@ export class SpaceMatching {
   private readonly api = inject(Api);
 
   private readonly store = inject(VendorStore);
-  private readonly router = inject(Router);
-
   /** Given a space id, the space the vendor can submit to now — or null (no open round, already requested, not a vendor). */
   protected readonly canSubmit = this.store.submittable;
   /** The vendor's request status in the space's open round, or null when they have none there. */
@@ -117,10 +114,8 @@ export class SpaceMatching {
   protected readonly results = signal<SpaceMatch[] | null>(null);
   protected readonly error = signal<string | null>(null);
 
-  /** A filed request opens on its own screen, as from the list of spaces. */
-  protected async submit(space: SpaceSummary): Promise<void> {
-    const req = await this.store.submit(space);
-    if (req) await this.router.navigate(['/vendor/requests', req.id]);
+  protected submit(space: SpaceSummary): void {
+    this.store.submit(space);
   }
 
   protected find(): void {

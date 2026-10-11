@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { Location } from '@angular/common';
 import { Message } from 'primeng/message';
@@ -66,8 +66,7 @@ const TABS = [
     @if (!screen().back) {
       <nav class="tabs" aria-label="เมนูหลัก">
         @for (tab of tabs; track tab.path) {
-          <!-- A tab is a fresh screen: the last screen's notice stays behind -->
-          <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="store.notice.set(null)">
+            <a [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               @switch (tab.path) {
                 @case ('requests') {
@@ -224,10 +223,12 @@ export class VendorShell {
   private readonly location = inject(Location);
 
   constructor() {
-    // The screens share one scroll container, which the router's scroll restoration (window only) never touches
-    this.router.events
-      .pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed())
-      .subscribe(() => this.scroller().nativeElement.scrollTo({ top: 0 }));
+    this.router.events.pipe(takeUntilDestroyed()).subscribe((e) => {
+      // Every screen is a fresh one: the last screen's notice stays behind (a submit sets its own after arriving)
+      if (e instanceof NavigationStart) this.store.notice.set(null);
+      // The screens share one scroll container, which the router's scroll restoration (window only) never touches
+      if (e instanceof NavigationEnd) this.scroller().nativeElement.scrollTo({ top: 0 });
+    });
   }
 
   /** The active screen's name for the app bar, and whether it is a sub-screen with ←, from the child route's data. */
@@ -244,9 +245,11 @@ export class VendorShell {
     { initialValue: { heading: '', back: false } },
   );
 
-  /** Back where the vendor came from inside the app; opened straight from a link, to the requests tab. */
+  /** Back where the vendor came from inside the vendor app; otherwise (a direct link, another area) to the requests tab. */
   protected back(): void {
-    if (this.router.lastSuccessfulNavigation()?.previousNavigation) this.location.back();
+    const previous = this.router.lastSuccessfulNavigation()?.previousNavigation;
+    const url = previous && this.router.serializeUrl(previous.finalUrl ?? previous.extractedUrl);
+    if (url?.startsWith('/vendor')) this.location.back();
     else void this.router.navigateByUrl('/vendor/requests');
   }
 }

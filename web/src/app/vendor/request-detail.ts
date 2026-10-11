@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
@@ -45,6 +45,18 @@ export class RequestDetail {
   protected readonly confirmingForfeit = signal(false);
   protected readonly reviewing = signal(false);
   protected readonly reviewReason = signal('');
+
+  constructor() {
+    // The component stays when only :id changes; a prompt or a half-typed reason belongs to the request it was for
+    effect(() => {
+      this.id();
+      untracked(() => {
+        this.confirmingForfeit.set(false);
+        this.reviewing.set(false);
+        this.reviewReason.set('');
+      });
+    });
+  }
 
   protected reload(): void {
     this.store.reload();

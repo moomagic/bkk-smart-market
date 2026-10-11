@@ -39,16 +39,16 @@
 <ng-template #requestCard let-r>
   @let req = asRequest(r);
   <a class="card" [routerLink]="[req.id]">
-    <span class="body">
-      <span class="head">
+    <div class="body">
+      <div class="head">
         <h3>{{ req.spaceName }}</h3>
         <app-status-tag [request]="req.status" />
-      </span>
+      </div>
       <span class="meta">รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}</span>
       @if (line(req); as text) {
         <span class="line" [class.urgent]="req.status === 'Won'">{{ text }}</span>
       }
-    </span>
+    </div>
     <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
   </a>
 </ng-template>
