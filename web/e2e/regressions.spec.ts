@@ -263,6 +263,19 @@ test('the spaces tab shows matches in place of the list, keeps them through a su
 
   await page.getByRole('button', { name: 'ดูพื้นที่ทั้งหมด' }).click();
   await expect(all).toContainText('ตลาดนัดเขตบางพลัด');
+  // The button pressed is gone with the matches; focus lands on the list it brought back
+  await expect(page.getByRole('heading', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })).toBeFocused();
   await expect(all.getByRole('listitem').filter({ hasText: 'ปากซอยจรัญฯ 79' })).toContainText('ยื่นคำขอแล้ว');
   await expect(match.getByRole('listitem')).toHaveCount(0);
+});
+
+test('a search with no match keeps the full list in view', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.route('**/api/spaces/match', (route) => route.fulfill({ json: [] }));
+  await page.goto('/vendor/spaces');
+  const match = page.getByRole('region', { name: 'หาพื้นที่ที่เหมาะกับร้าน' });
+  await match.getByLabel('ขายอะไร').fill('ของที่ไม่มีที่ไหนรับ');
+  await match.getByRole('button', { name: 'แนะนำพื้นที่' }).click();
+  await expect(match).toContainText('ไม่พบพื้นที่ที่รับสินค้านี้');
+  await expect(page.getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })).toContainText('ตลาดนัดเขตบางพลัด');
 });

@@ -114,8 +114,8 @@ const TABS = [
         box-shadow: 0 12px 40px rgb(23 32 29 / 0.14);
       }
     }
-    /* Finger-sized buttons on every vendor screen (link-styled ones stay inline with their text) */
-    :host ::ng-deep .p-button:not(.p-button-link) {
+    /* Finger-sized buttons on every vendor screen; link-styled and small ones (suggestion chips) keep their size */
+    :host ::ng-deep .p-button:not(.p-button-link):not(.p-button-sm) {
       min-height: 44px;
     }
     .appbar {

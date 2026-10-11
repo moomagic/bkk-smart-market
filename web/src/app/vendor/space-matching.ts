@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
 import { StatusTag } from '../shared/status-tag';
-import { Api, PreferredTime, SpaceSummary, problemMessage } from '../core/api';
+import { PreferredTime, SpaceSummary } from '../core/api';
 import { VendorStore } from './vendor-store';
 
 /** Space Matching: rule-based top 3 for the vendor's goods, area and hours — with the reason for every point. */
@@ -72,7 +72,7 @@ import { VendorStore } from './vendor-store';
           </ol>
         }
         <!-- The matches stand in for the full list on a phone; this brings the list back -->
-        <p-button class="show-all" link label="ดูพื้นที่ทั้งหมด" (onClick)="results.set(null)" />
+        <p-button class="show-all" link label="ดูพื้นที่ทั้งหมด" (onClick)="showAll()" />
       }
     </section>
   `,
@@ -95,8 +95,6 @@ import { VendorStore } from './vendor-store';
   `,
 })
 export class SpaceMatching {
-  private readonly api = inject(Api);
-
   private readonly store = inject(VendorStore);
   /** Given a space id, the space the vendor can submit to now — or null (no open round, already requested, not a vendor). */
   protected readonly canSubmit = this.store.submittable;
@@ -113,26 +111,22 @@ export class SpaceMatching {
     { label: 'เช้า', value: 'Morning' },
     { label: 'เย็น', value: 'Evening' },
   ];
-  protected readonly busy = signal(false);
+  protected readonly busy = this.store.match.busy;
   protected readonly results = this.store.match.results;
-  protected readonly error = signal<string | null>(null);
+  protected readonly error = this.store.match.error;
+  private readonly injector = inject(Injector);
 
   protected submit(space: SpaceSummary): void {
     this.store.submit(space);
   }
 
   protected find(): void {
-    this.busy.set(true);
-    this.error.set(null);
-    this.api.matchSpaces(this.product().trim(), this.area().trim(), this.time()).subscribe({
-      next: (r) => {
-        this.busy.set(false);
-        this.results.set(r);
-      },
-      error: (err) => {
-        this.busy.set(false);
-        this.error.set(problemMessage(err));
-      },
-    });
+    this.store.findMatches();
+  }
+
+  /** Back to the full list, and focus to its heading: the button pressed is gone with the matches. */
+  protected showAll(): void {
+    this.store.clearMatches();
+    afterNextRender(() => document.getElementById('spaces-heading')?.focus(), { injector: this.injector });
   }
 }

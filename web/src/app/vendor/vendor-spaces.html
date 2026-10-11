@@ -3,7 +3,7 @@
 <!-- Once there are matches, they are the list: one list to scroll on a phone, not two -->
 @if (!matching()) {
   <section aria-labelledby="spaces-heading">
-    <h2 id="spaces-heading">พื้นที่ค้าขายในเขตบางพลัด</h2>
+    <h2 id="spaces-heading" tabindex="-1">พื้นที่ค้าขายในเขตบางพลัด</h2>
     <p class="lead">
       พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ
       @if (closesAt(); as close) {

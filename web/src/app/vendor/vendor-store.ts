@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, linkedSignal, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Observable, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
+import { Observable, Subscription, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
 import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoRole, DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
@@ -131,7 +131,37 @@ export class VendorStore {
     area: signal(''),
     time: signal<PreferredTime | null>(null),
     results: signal<SpaceMatch[] | null>(null),
+    busy: signal(false),
+    error: signal<string | null>(null),
   };
+  /** Matches stand in for the full list only when there are some; "not found" keeps the list in view. */
+  readonly showingMatches = computed(() => (this.match.results()?.length ?? 0) > 0);
+  private matchCall?: Subscription;
+
+  /** Runs Space Matching on the current search; a newer search drops the one still in flight. */
+  findMatches(): void {
+    const m = this.match;
+    this.matchCall?.unsubscribe();
+    m.busy.set(true);
+    m.error.set(null);
+    this.matchCall = this.api.matchSpaces(m.product().trim(), m.area().trim(), m.time()).subscribe({
+      next: (r) => {
+        m.busy.set(false);
+        m.results.set(r);
+      },
+      error: (err) => {
+        m.busy.set(false);
+        // A failed search shows no matches, not the previous search's
+        m.results.set(null);
+        m.error.set(problemMessage(err));
+      },
+    });
+  }
+
+  /** Back to the full list; the search stays in the form. */
+  clearMatches(): void {
+    this.match.results.set(null);
+  }
 
   /** Space id with a submit in flight. */
   readonly submitting = signal<string | null>(null);
