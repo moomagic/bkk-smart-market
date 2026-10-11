@@ -14,6 +14,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<ListSpacesHandler>();
+        services.AddScoped<MatchSpacesHandler>();
         services.AddScoped<SubmitStallRequestHandler>();
         services.AddScoped<ListMyStallRequestsHandler>();
         services.AddScoped<ListRoundsHandler>();

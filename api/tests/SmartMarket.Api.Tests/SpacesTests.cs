@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using FluentAssertions;
+using SmartMarket.Infrastructure.Seed;
 
 namespace SmartMarket.Api.Tests;
 
@@ -11,7 +12,7 @@ public sealed class SpacesTests(ApiFactory api)
     [Fact]
     public async Task Lists_the_four_seeded_spaces_of_bang_phlat()
     {
-        var spaces = await api.CreateClient().GetFromJsonAsync<SpaceDto[]>("/api/spaces");
+        var spaces = await api.CreateClient().GetFromJsonAsync<SpaceDto[]>($"/api/spaces?districtId={SeedData.BangPhlat}");
 
         spaces.Should().BeEquivalentTo(
             [
@@ -25,7 +26,7 @@ public sealed class SpacesTests(ApiFactory api)
     [Fact]
     public async Task Filters_by_space_type()
     {
-        var spaces = await api.CreateClient().GetFromJsonAsync<SpaceDto[]>("/api/spaces?type=TrialArea");
+        var spaces = await api.CreateClient().GetFromJsonAsync<SpaceDto[]>($"/api/spaces?districtId={SeedData.BangPhlat}&type=TrialArea");
 
         spaces!.Select(s => s.Name).Should().Equal("ลานใต้สะพานพระราม 8");
     }

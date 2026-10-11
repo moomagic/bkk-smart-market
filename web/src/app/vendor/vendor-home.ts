@@ -4,6 +4,7 @@ import { Observable, catchError, combineLatest, map, of, startWith, switchMap } 
 import { Api, SpaceSummary, StallRequest, lockQr, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { AssistantChat } from './assistant-chat';
+import { SpaceMatching } from './space-matching';
 import {
   CATEGORY_LABEL,
   RUN_STATUS_LABEL,
@@ -18,7 +19,7 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
 @Component({
   selector: 'app-vendor-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AssistantChat],
+  imports: [AssistantChat, SpaceMatching],
   templateUrl: './vendor-home.html',
   styleUrl: './vendor-home.scss',
 })
@@ -57,6 +58,26 @@ export class VendorHome {
   protected readonly requestedRoundIds = computed(() => {
     const mine = this.myRequests();
     return new Set(mine?.state === 'ready' ? mine.data.map((r) => r.roundId) : []);
+  });
+
+  /** A matched space the vendor can submit to right now, for the "ยื่นคำขอที่นี่" button. */
+  protected readonly submittable = computed(() => {
+    const spaces = this.spaceList();
+    const requested = this.requestedRoundIds();
+    const isVendor = this.session.role() === 'vendor';
+    return (spaceId: string): SpaceSummary | null => {
+      const space = spaces.find((s) => s.id === spaceId);
+      return isVendor && space?.openRound && !requested.has(space.openRound.id) ? space : null;
+    };
+  });
+
+  protected readonly hasRequested = computed(() => {
+    const spaces = this.spaceList();
+    const requested = this.requestedRoundIds();
+    return (spaceId: string) => {
+      const round = spaces.find((s) => s.id === spaceId)?.openRound;
+      return !!round && requested.has(round.id);
+    };
   });
 
   protected readonly submitting = signal<string | null>(null);

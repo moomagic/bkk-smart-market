@@ -98,6 +98,13 @@
 
 <app-assistant-chat />
 
+<app-space-matching
+  [canSubmit]="submittable()"
+  [requested]="hasRequested()"
+  [submitting]="submitting() !== null"
+  (submit)="submit($event)"
+/>
+
 <section aria-labelledby="spaces-heading">
   <h1 id="spaces-heading">พื้นที่ค้าขายในเขตบางพลัด</h1>
   <p class="lead">พื้นที่ที่ กทม. อนุญาตแล้ว ยื่นคำขอเพื่อเข้าจับฉลากในแต่ละรอบ</p>

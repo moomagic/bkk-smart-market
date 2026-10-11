@@ -168,6 +168,16 @@ export interface AssistantAnswer {
   source: string;
 }
 
+export type PreferredTime = 'Morning' | 'Evening';
+
+export interface SpaceMatch {
+  spaceId: string;
+  name: string;
+  score: number;
+  parts: { product: number; freeLock: number; area: number; hours: number };
+  reasons: string[];
+}
+
 export interface Session {
   user: string;
   role: string;
@@ -223,6 +233,10 @@ export class Api {
 
   auditTrail(entityType: string, entityId: string) {
     return this.http.get<AuditEntry[]>('/api/audit', { params: { entityType, entityId } });
+  }
+
+  matchSpaces(productType: string, preferredArea: string, preferredTime: PreferredTime | null) {
+    return this.http.post<SpaceMatch[]>('/api/spaces/match', { productType, preferredArea, preferredTime });
   }
 
   askAssistant(question: string) {

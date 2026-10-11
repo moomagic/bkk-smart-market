@@ -162,3 +162,8 @@ button.danger {
   border: 1px solid var(--warn);
   color: var(--warn);
 }
+app-assistant-chat,
+app-space-matching {
+  display: block;
+  margin-top: 20px;
+}

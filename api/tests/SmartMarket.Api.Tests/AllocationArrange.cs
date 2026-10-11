@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.Common;
+using SmartMarket.Domain.Districts;
 using SmartMarket.Domain.Rounds;
 using SmartMarket.Domain.Spaces;
 using SmartMarket.Domain.StallRequests;
@@ -19,6 +20,12 @@ namespace SmartMarket.Api.Tests;
 /// </summary>
 internal static class AllocationArrange
 {
+    /// <summary>
+    /// Fresh spaces live in a district of their own, so listings and matching scoped to บางพลัด only ever see the
+    /// four seeded spaces, whatever order the test classes run in.
+    /// </summary>
+    public static readonly Guid TestDistrict = new("10000000-0000-0000-0000-0000000000ff");
+
     public static HttpClient Officer(this ApiFactory api) => api.ClientAs("officer", "officer-bangphlat");
 
     /// <summary>A fresh non-food space with 4 locks and an open round holding the given requests, eligibility already checked.</summary>
@@ -28,7 +35,9 @@ internal static class AllocationArrange
         await using (var scope = api.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-            var space = new Space(Guid.NewGuid(), SeedData.BangPhlat, $"ทดสอบจัดสรร {roundId:N}"[..20], SpaceType.Relaxation,
+            if (!await db.Districts.AnyAsync(d => d.Id == TestDistrict))
+                db.Districts.Add(new District(TestDistrict, "เขตทดสอบ"));
+            var space = new Space(Guid.NewGuid(), TestDistrict, $"ทดสอบจัดสรร {roundId:N}"[..20], SpaceType.Relaxation,
                 ["ทั่วไป"], "ทุกวัน", "docs/rules");
             db.Spaces.Add(space);
             db.Locks.AddRange(Enumerable.Range(1, 4).Select(i => new Lock(Guid.NewGuid(), space.Id, $"B{i}")));
