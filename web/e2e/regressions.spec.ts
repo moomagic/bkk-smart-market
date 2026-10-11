@@ -279,3 +279,27 @@ test('a search with no match keeps the full list in view', async ({ page }) => {
   await expect(match).toContainText('ไม่พบพื้นที่ที่รับสินค้านี้');
   await expect(page.getByRole('region', { name: 'พื้นที่ค้าขายในเขตบางพลัด' })).toContainText('ตลาดนัดเขตบางพลัด');
 });
+
+test('the assistant is a full-screen chat that keeps its history across tabs', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/vendor/assistant');
+  const chat = page.getByRole('region', { name: 'ถามผู้ช่วยเรื่องระเบียบ' });
+  const input = chat.getByRole('textbox', { name: 'คำถาม' });
+  const tabs = page.getByRole('navigation', { name: 'เมนูหลัก' });
+
+  // The question box sits right above the tabs, clear of them
+  const box = (await input.boundingBox())!;
+  const nav = (await tabs.boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
+  expect(nav.y - (box.y + box.height)).toBeLessThan(40);
+
+  await chat.getByRole('button', { name: 'ต้องใช้เอกสารอะไร' }).click();
+  await expect(chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' })).toContainText('documents.md');
+  // Suggestions are for an empty chat only
+  await expect(chat.getByRole('button', { name: 'จัดสรรล็อคยังไง' })).toHaveCount(0);
+
+  await vendorTab(page, 'คำขอ');
+  await vendorTab(page, 'ถามระเบียบ');
+  await expect(chat.getByRole('listitem').filter({ hasText: 'ต้องใช้เอกสารอะไร' })).toBeVisible();
+  await expect(chat.getByRole('listitem').filter({ hasText: 'อ้างอิง:' })).toContainText('documents.md');
+});

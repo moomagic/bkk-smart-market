@@ -2,7 +2,7 @@ import { Injectable, computed, inject, linkedSignal, signal } from '@angular/cor
 import { Router } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
-import { Api, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
+import { Api, AssistantSource, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoRole, DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
 
@@ -12,6 +12,7 @@ const CLOSED = new Set<StallRequestStatus>(['Ineligible', 'NotSelected', 'Forfei
 
 export type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
 export type Notice = { kind: 'ok' | 'warn' | 'error'; text: string };
+export type ChatMessage = { from: 'me' | 'assistant'; text: string; found?: boolean; source?: AssistantSource };
 
 /**
  * The vendor area's data and actions, shared by every screen in it: the spaces, the vendor's own requests, the
@@ -161,6 +162,36 @@ export class VendorStore {
   /** Back to the full list; the search stays in the form. */
   clearMatches(): void {
     this.match.results.set(null);
+  }
+
+  /**
+   * The Vendor Assistant conversation, kept for the life of the vendor app (memory only, so a demo reset or a
+   * reload starts clean), so leaving the chat for another tab and coming back finds it as it was.
+   */
+  readonly assistant = {
+    messages: signal<ChatMessage[]>([]),
+    draft: signal(''),
+    busy: signal(false),
+  };
+
+  /** Asks the Vendor Assistant; the answer, or why there is none, joins the conversation. */
+  ask(question: string): void {
+    const a = this.assistant;
+    const q = question.trim();
+    if (!q || a.busy()) return;
+    a.busy.set(true);
+    a.draft.set('');
+    a.messages.update((m) => [...m, { from: 'me', text: q }]);
+    this.api.askAssistant(q).subscribe({
+      next: (ans) => {
+        a.busy.set(false);
+        a.messages.update((m) => [...m, { from: 'assistant', text: ans.text, found: ans.found, source: ans.source }]);
+      },
+      error: (err) => {
+        a.busy.set(false);
+        a.messages.update((m) => [...m, { from: 'assistant', text: problemMessage(err), found: false }]);
+      },
+    });
   }
 
   /** Space id with a submit in flight. */
