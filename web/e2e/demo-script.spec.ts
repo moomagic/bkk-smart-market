@@ -118,7 +118,7 @@ test('demo script 1–6', async ({ page, request }) => {
 
     const detail = requestDetail(page);
     await expect(detail).toContainText('ได้ล็อค B2');
-    await expect(detail).toContainText(`เลขอ้างอิง ${ref}`);
+    await expect(detail.getByRole('definition').filter({ hasText: ref })).toBeVisible();
     await expect(detail).toContainText('ยืนยันสิทธิ์ภายใน');
 
     await page.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();

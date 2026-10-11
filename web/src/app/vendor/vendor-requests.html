@@ -69,7 +69,7 @@
         <h3>{{ req.spaceName }}</h3>
         <app-status-tag [request]="req.status" />
       </div>
-      <span class="meta">รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}</span>
+      <span class="meta">รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · {{ categoryLabel[req.category] }}</span>
       @if (line(req); as text) {
         <span class="line" [class.urgent]="req.status === 'Won'">{{ text }}</span>
       }

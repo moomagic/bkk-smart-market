@@ -11,36 +11,89 @@
   @case ('ready') {
     @if (request(); as req) {
       <section aria-label="รายละเอียดคำขอ">
+        <!-- The status says itself once, in the tag; everything below adds to it rather than repeating it -->
         <div class="head">
           <h2>{{ req.spaceName }}</h2>
           <app-status-tag [request]="req.status" />
         </div>
-        <p class="meta">
-          รอบ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }} · กลุ่ม{{ categoryLabel[req.category] }}
-        </p>
-        @if (next(req); as step) {
-          <!-- What happens next, in the vendor's words, for every state that is not a decision of their own -->
-          <p class="next">{{ step }}</p>
+
+        @if (req.status === 'Confirmed' && req.lockCode) {
+          <!-- The vendor's lock, and when it is theirs to trade from: the one thing this screen is for once confirmed -->
+          <div class="pass">
+            <p class="pass-lock">ล็อค <span class="mono">{{ req.lockCode }}</span></p>
+            <p class="pass-when">ขายได้ {{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }}</p>
+            @if (space()?.openHours; as hours) {
+              <p class="pass-hours">{{ hours }}</p>
+            }
+          </div>
+          @if (req.resultReason) {
+            <p class="reason">{{ req.resultReason }}</p>
+          }
+        } @else if (steps(); as list) {
+          <!-- Where a pending request stands, on the steps the district actually takes; the last one says the result can go any way -->
+          <ol class="steps" aria-label="ขั้นตอนของคำขอ">
+            @for (step of list; track step.label) {
+              <li [class]="step.state" [attr.aria-current]="step.state === 'current' ? 'step' : null">
+                <span class="marker" aria-hidden="true">
+                  @if (step.state === 'done') {
+                    <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9" /></svg>
+                  }
+                </span>
+                <span class="step-text">
+                  <span class="sr-only">{{ stepState[step.state] }}: </span>
+                  <span class="step-label">{{ step.label }}</span>
+                  @if (step.detail) {
+                    <span class="step-detail">{{ step.detail }}</span>
+                  }
+                </span>
+              </li>
+            }
+          </ol>
+        } @else {
+          @if (next(req); as step) {
+            <!-- What happens next, in the vendor's words, for every state that is not a decision of their own -->
+            <p class="next">{{ step }}</p>
+          }
+          @if (req.ineligibleReason) {
+            <p class="error">{{ req.ineligibleReason }}</p>
+          }
+          @if (req.status === 'Won' && req.lockCode) {
+            <p class="won">ได้ล็อค <span class="mono">{{ req.lockCode }}</span></p>
+          }
+          @if (req.resultReason) {
+            <p class="reason">{{ req.resultReason }}</p>
+          }
+          @if (req.confirmBy && req.status === 'Won') {
+            <p class="deadline">ยืนยันสิทธิ์ภายใน {{ dateTime(req.confirmBy) }}</p>
+            <p class="meta">ถ้าไม่ยืนยันภายในเวลานี้ ถือว่าสละสิทธิ์ และล็อคจะส่งต่อให้ผู้สำรอง</p>
+          }
         }
-        @if (req.ineligibleReason) {
-          <p class="error">{{ req.ineligibleReason }}</p>
-        }
-        @if ((req.status === 'Won' || req.status === 'Confirmed') && req.lockCode) {
-          <p class="won">ได้ล็อค <span class="mono">{{ req.lockCode }}</span></p>
-        }
-        @if (req.resultReason) {
-          <p class="reason">{{ req.resultReason }}</p>
-        }
-        @if (req.confirmBy && req.status === 'Won') {
-          <p class="deadline">ยืนยันสิทธิ์ภายใน {{ dateTime(req.confirmBy) }}</p>
-          <p class="meta">ถ้าไม่ยืนยันภายในเวลานี้ ถือว่าสละสิทธิ์ และล็อคจะส่งต่อให้ผู้สำรอง</p>
-        }
-        @if (req.status === 'Confirmed' && req.lastCheckInAt) {
-          <p class="meta">เช็คอินล่าสุด {{ dateTime(req.lastCheckInAt) }}</p>
-        }
-        @if (req.referenceNo) {
-          <p class="meta">เลขอ้างอิง <span class="mono">{{ req.referenceNo }}</span></p>
-        }
+
+        <!-- The request's facts in one panel; a row shows only when the data is there -->
+        <dl class="facts">
+          @if (space(); as sp) {
+            <div><dt>พื้นที่</dt><dd>{{ spaceType[sp.type] }} · <span class="mono">{{ sp.lockCount }}</span> ล็อค</dd></div>
+          }
+          @if (req.status !== 'Confirmed') {
+            <div><dt>รอบ</dt><dd>{{ date(req.roundStartsOn) }} – {{ date(req.roundEndsOn) }}</dd></div>
+            @if (space()?.openHours; as hours) {
+              <div><dt>เวลาขาย</dt><dd>{{ hours }}</dd></div>
+            }
+          }
+          <div><dt>กลุ่ม</dt><dd>{{ categoryLabel[req.category] }}</dd></div>
+          @if (steps()) {
+            @if (closesAt(); as close) {
+              <div><dt>ปิดรับคำขอ</dt><dd>{{ date(close) }}</dd></div>
+            }
+          }
+          @if (req.referenceNo) {
+            <div><dt>เลขอ้างอิง</dt><dd class="mono">{{ req.referenceNo }}</dd></div>
+          }
+          @if (req.status === 'Confirmed') {
+            <div><dt>เช็คอินล่าสุด</dt><dd>{{ req.lastCheckInAt ? dateTime(req.lastCheckInAt) : 'ยังไม่เคยเช็คอิน' }}</dd></div>
+          }
+        </dl>
+
         @if (req.review; as rv) {
           <div class="review">
             <p class="meta">ขอทบทวนผลเมื่อ {{ dateTime(rv.submittedAt) }} · "{{ rv.reason }}"</p>
