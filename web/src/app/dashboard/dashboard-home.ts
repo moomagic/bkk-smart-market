@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, from, map, of, startWith, switchMap } from 'rxjs';
 import { Chart, ChartData, ChartOptions } from 'chart.js';
 import annotationPlugin, { AnnotationOptions } from 'chartjs-plugin-annotation';
+import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -23,7 +24,7 @@ Chart.register(annotationPlugin);
 
 @Component({
   selector: 'app-dashboard-home',
-  imports: [Card, ChartModule, TableModule],
+  imports: [Button, Card, ChartModule, TableModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard-home.html',
   styleUrl: './dashboard-home.scss',
@@ -38,9 +39,13 @@ export class DashboardHome {
 
   protected readonly canRead = computed(() => this.session.role() !== 'vendor');
 
+  /** Bumped by "ลองอีกครั้ง" after a failed load. */
+  private readonly retry = signal(0);
+  private readonly loadKey = computed(() => ({ ok: this.canRead(), retry: this.retry() }));
+
   protected readonly kpis = toSignal(
-    toObservable(this.canRead).pipe(
-      switchMap((ok) =>
+    toObservable(this.loadKey).pipe(
+      switchMap(({ ok }) =>
         ok
           ? this.api.dashboard().pipe(
               map((data) => ({ state: 'ready', data }) as Load),
@@ -62,6 +67,10 @@ export class DashboardHome {
   protected readonly scaleMax = computed(() =>
     Math.max(1, ...(this.data()?.spaces ?? []).flatMap((s) => s.quota.flatMap((q) => [q.base, q.winners]))),
   );
+
+  protected reload(): void {
+    this.retry.update((n) => n + 1);
+  }
 
   protected pct(r: Ratio): string {
     return r.percent === null ? '–' : `${r.percent.toLocaleString('th-TH', { maximumFractionDigits: 1 })}%`;

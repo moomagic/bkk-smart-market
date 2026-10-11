@@ -8,7 +8,7 @@
       <p class="muted">กำลังโหลด…</p>
     }
     @case ('error') {
-      <p class="error">โหลดตัวชี้วัดไม่สำเร็จ</p>
+      <p class="error">โหลดตัวชี้วัดไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
     }
   }
 

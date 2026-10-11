@@ -14,7 +14,7 @@
         <p class="muted">กำลังโหลด…</p>
       }
       @case ('error') {
-        <p class="error">โหลดคำขอไม่สำเร็จ</p>
+        <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
       }
       @case ('ready') {
         @if (mine.data.length === 0) {
@@ -41,9 +41,14 @@
                 }
                 @if (req.confirmBy && req.status === 'Won') {
                   <p class="deadline">ยืนยันสิทธิ์ภายใน {{ dateTime(req.confirmBy) }}</p>
+                  <p class="meta">ถ้าไม่ยืนยันภายในเวลานี้ ถือว่าสละสิทธิ์ และล็อคจะส่งต่อให้ผู้สำรอง</p>
                   <div class="actions">
                     @if (confirmingForfeit() === req.id) {
-                      <span class="ask">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</span>
+                      <!-- Forfeiting is final: say so, and keep "ไม่สละ" as easy to reach as the forfeit itself -->
+                      <div class="ask" role="group" [attr.aria-labelledby]="'ask-' + req.id">
+                        <p [id]="'ask-' + req.id" class="ask-title">สละล็อค {{ req.lockCode }} ให้ผู้สำรอง?</p>
+                        <p class="ask-detail">ยกเลิกไม่ได้ ล็อค {{ req.lockCode }} จะส่งต่อให้ผู้สำรองกลุ่มเดียวกันทันที</p>
+                      </div>
                       <p-button severity="danger" fluid [label]="acting() === req.id ? 'กำลังสละ…' : 'ยืนยันการสละสิทธิ์'"
                         (onClick)="forfeit(req)" [disabled]="acting() !== null" />
                       <p-button variant="outlined" fluid label="ไม่สละ" (onClick)="confirmingForfeit.set(null)"
@@ -51,7 +56,7 @@
                     } @else {
                       <p-button fluid [label]="acting() === req.id ? 'กำลังยืนยัน…' : 'ยืนยันสิทธิ์'" (onClick)="confirm(req)"
                         [disabled]="acting() !== null" />
-                      <p-button variant="outlined" fluid label="สละสิทธิ์" (onClick)="confirmingForfeit.set(req.id)"
+                      <p-button text class="forfeit" label="สละสิทธิ์" (onClick)="confirmingForfeit.set(req.id)"
                         [disabled]="acting() !== null" />
                     }
                   </div>
@@ -141,7 +146,7 @@
       <p class="muted">กำลังโหลด…</p>
     }
     @case ('error') {
-      <p class="error">โหลดรายการพื้นที่ไม่สำเร็จ ลองใหม่อีกครั้ง</p>
+      <p class="error">โหลดรายการพื้นที่ไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
     }
     @case ('ready') {
       <ul class="list">

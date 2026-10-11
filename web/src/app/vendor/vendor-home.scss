@@ -104,7 +104,20 @@ dd {
 }
 .ask {
   flex-basis: 100%;
+}
+.ask p {
+  margin: 0;
+}
+.ask-title {
   font-weight: 600;
+}
+.ask-detail {
+  color: var(--warn);
+  font-size: 0.9rem;
+}
+/* Forfeit is the quiet way out, centred under the confirm button rather than a second full-width option */
+.forfeit {
+  margin: 0 auto;
 }
 .toggle {
   display: flex;

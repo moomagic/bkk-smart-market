@@ -169,48 +169,6 @@ tr.group > th {
   color: var(--ink);
   font-size: 0.85rem;
 }
-/* Where the round stands: done steps in the accent, the current one marked, the rest muted */
-.steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 0;
-  list-style: none;
-  margin: 4px 0 16px;
-  padding: 0;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.steps li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.steps li + li::before {
-  content: '';
-  order: -2;
-  width: 28px;
-  height: 1px;
-  margin: 0 8px;
-  background: var(--line);
-}
-.steps li[data-state='done'] {
-  color: var(--accent);
-}
-.steps li[data-state='done'] + li::before {
-  background: var(--accent);
-}
-.steps li[data-state='current'] {
-  color: var(--ink);
-  font-weight: 600;
-}
-.steps li[data-state='current']::after {
-  content: '';
-  order: -1;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-}
 .demo-clock {
   display: flex;
   flex-direction: column;
@@ -307,4 +265,25 @@ tr.group > th {
 }
 .insights > li[data-severity='Critical'] {
   border-left-color: var(--warn);
+}
+.decision {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: 16px;
+  padding: 12px 0;
+  background: var(--ground);
+  border-top: 1px solid var(--line);
+}
+.decision-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.decision-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }

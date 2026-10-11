@@ -37,7 +37,7 @@
         <p class="muted">กำลังโหลด…</p>
       }
       @case ('error') {
-        <p class="error">โหลดรายการรอบไม่สำเร็จ</p>
+        <p class="error">โหลดรายการรอบไม่สำเร็จ — ตรวจการเชื่อมต่อแล้ว <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
       }
       @case ('ready') {
         @if (currentRounds().length > 0) {
@@ -73,16 +73,7 @@
         </div>
       </div>
 
-      <ol class="steps" aria-label="ขั้นตอนของรอบ">
-        @for (s of steps(); track s.label) {
-          <li [attr.data-state]="s.state" [attr.aria-current]="s.state === 'current' ? 'step' : null">
-            {{ s.label }}
-            @if (s.state === 'done') {
-              <span class="sr-only">(เสร็จแล้ว)</span>
-            }
-          </li>
-        }
-      </ol>
+      <app-round-steps [steps]="steps()" />
 
       @if (uncheckedCount() > 0 && (round.status === 'Open' || round.status === 'Closed')) {
         <p class="muted small-note">มีคำขอที่ยังไม่ได้ตรวจสิทธิ {{ uncheckedCount() }} คำขอ ต้องตรวจสิทธิก่อนจึงรันจัดสรรได้</p>
@@ -110,7 +101,7 @@
               @if (requests()?.state === 'loading') {
                 <p class="muted">กำลังโหลด…</p>
               } @else if (requests()?.state === 'error') {
-                <p class="error">โหลดคำขอไม่สำเร็จ</p>
+                <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
               } @else {
                 <p-table class="frame" [value]="requestRows()" dataKey="requestId">
                   <ng-template #header>
@@ -153,36 +144,8 @@
                       <span class="muted small">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
                     }
                   </h3>
-                  @if (run.status === 'Draft') {
-                    <div class="actions">
-                      <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
-                        [disabled]="deciding() || rejecting() === run.id" />
-                      <p-button [label]="deciding() ? 'กำลังบันทึก…' : 'อนุมัติผล'" (onClick)="approve(run)" [disabled]="deciding()" />
-                    </div>
-                  }
                 </div>
 
-                @if (run.status === 'Draft' && rejecting() === run.id) {
-                  <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
-                    <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
-                    <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
-                      (input)="rejectReason.set($any($event.target).value)"></textarea>
-                    <p class="muted small-note">
-                      @if (round.rejectsLeft > 0) {
-                        ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-                      } @else if (isExecutive()) {
-                        ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว · ผู้บริหารปฏิเสธเพิ่มได้ และนับรวมในรอบนี้
-                      } @else {
-                        ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-                      }
-                    </p>
-                    <div class="actions">
-                      <p-button type="submit" severity="danger" label="ยืนยันการปฏิเสธ"
-                        [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
-                      <p-button link label="ยกเลิก" (onClick)="rejecting.set(null)" />
-                    </div>
-                  </form>
-                }
 
                 <!-- Summary first: who ran it, with which seed, against which quota -->
                 <div class="run-summary">
@@ -260,6 +223,41 @@
                     </tr>
                   </ng-template>
                 </p-table>
+
+                <!-- The decision comes after the evidence: the officer reads the result before approving or rejecting it -->
+                @if (run.status === 'Draft') {
+                  <div class="decision" role="group" aria-label="ตัดสินผลจัดสรร">
+                  @if (run.status === 'Draft' && rejecting() === run.id) {
+                    <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
+                      <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
+                      <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
+                        (input)="rejectReason.set($any($event.target).value)"></textarea>
+                      <p class="muted small-note">
+                        @if (round.rejectsLeft > 0) {
+                          ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
+                        } @else if (isExecutive()) {
+                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว · ผู้บริหารปฏิเสธเพิ่มได้ และนับรวมในรอบนี้
+                        } @else {
+                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
+                        }
+                      </p>
+                      <div class="actions">
+                        <p-button type="submit" severity="danger" label="ยืนยันการปฏิเสธ"
+                          [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
+                        <p-button link label="ยกเลิก" (onClick)="rejecting.set(null)" />
+                      </div>
+                    </form>
+                  }
+                    <div class="decision-bar">
+                      <p class="decision-note">ตรวจผลรายคนครบแล้ว อนุมัติเพื่อประกาศผล หรือปฏิเสธเพื่อจับฉลากใหม่ด้วย seed ใหม่</p>
+                      <div class="actions">
+                        <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
+                          [disabled]="deciding() || rejecting() === run.id" />
+                        <p-button label="อนุมัติผล" (onClick)="approving.set(run.id)" [disabled]="deciding()" />
+                      </div>
+                    </div>
+                  </div>
+                }
 
                 @if (runList().length > 1) {
                   <h4>รันก่อนหน้าของรอบนี้</h4>
@@ -355,6 +353,12 @@
         </p-tabpanels>
       </p-tabs>
     </section>
+  }
+
+  <!-- Approving publishes the result to every applicant and cannot be undone: the dialog restates what is approved -->
+  @if (latestRun(); as run) {
+    <app-approve-run-dialog [run]="run" [visible]="approving() === run.id" [deciding]="deciding()"
+      (cancel)="approving.set(null)" (confirm)="approve(run)" />
   }
 
   <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->

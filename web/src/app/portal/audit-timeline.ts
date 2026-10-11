@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, inject, input, output, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Button } from 'primeng/button';
 import { Timeline } from 'primeng/timeline';
@@ -26,7 +26,7 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
         <p class="muted">กำลังโหลด…</p>
       }
       @case ('error') {
-        <p class="error">โหลด audit trail ไม่สำเร็จ</p>
+        <p class="error">โหลด audit trail ไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="retry.update((n) => n + 1)" /></p>
       }
       @case ('ready') {
         @if (views().length === 0) {
@@ -147,7 +147,15 @@ export class AuditTimeline {
   protected readonly dateTime = formatThaiDateTime;
   protected readonly listSemantics = { root: { role: 'list' }, event: { role: 'listitem' } };
 
-  private readonly target = computed(() => ({ type: this.entityType(), id: this.entityId(), version: this.version() }));
+  /** Bumped by "ลองอีกครั้ง" after a failed load. */
+  protected readonly retry = signal(0);
+
+  private readonly target = computed(() => ({
+    type: this.entityType(),
+    id: this.entityId(),
+    version: this.version(),
+    retry: this.retry(),
+  }));
 
   protected readonly entries = toSignal(
     toObservable(this.target).pipe(

@@ -123,6 +123,11 @@ export class VendorHome {
     });
   }
 
+  /** Retry after a failed load. */
+  protected reload(): void {
+    this.refresh.update((n) => n + 1);
+  }
+
   protected confirm(req: StallRequest): void {
     this.act(req, this.api.confirmStallRequest(req.id), (r) => `ยืนยันสิทธิ์แล้ว · ${r.spaceName} ล็อค ${r.lockCode}`);
   }

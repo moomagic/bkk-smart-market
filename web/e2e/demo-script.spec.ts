@@ -80,7 +80,13 @@ test('demo script 1–6', async ({ page, request }) => {
     }
     await expect(run.getByRole('row').filter({ hasText: 'สมศรี ใ.' })).toContainText('B2');
 
+    // Approval publishes the result, so a dialog restates it before the officer commits
     await run.getByRole('button', { name: 'อนุมัติผล' }).click();
+    const confirm = page.getByRole('dialog', { name: 'อนุมัติผลจัดสรร' });
+    await expect(confirm).toContainText(ref);
+    await expect(confirm).toContainText('ผู้ค้า 10 คนจะเห็นผลนี้ทันที');
+    await confirm.getByRole('button', { name: 'ยืนยันอนุมัติผล' }).click();
+    await expect(confirm).toBeHidden();
     await expect(run).toContainText('อนุมัติแล้ว');
   });
 

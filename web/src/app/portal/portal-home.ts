@@ -15,6 +15,8 @@ import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { AllocationRun, Api, Category, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
+import { ApproveRunDialog } from './approve-run-dialog';
+import { RoundStep, RoundSteps } from './round-steps';
 import { AuditTimeline } from './audit-timeline';
 import { AuditNames } from './audit-view';
 import { StatusTag } from '../shared/status-tag';
@@ -54,6 +56,8 @@ type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; dat
     TableModule,
     Tag,
     Textarea,
+    ApproveRunDialog,
+    RoundSteps,
     AuditTimeline,
     StatusTag,
   ],
@@ -110,10 +114,9 @@ export class PortalHome {
           : this.requestRows().length === 0 ? 0
             : this.uncheckedCount() > 0 ? 1
               : 2;
-    return ['ยื่นคำขอ', 'ตรวจสิทธิ', 'จับฉลาก', 'อนุมัติผล'].map((label, i) => ({
-      label,
-      state: i < current || current === 4 ? 'done' : i === current ? 'current' : 'todo',
-    }));
+    return ['ยื่นคำขอ', 'ตรวจสิทธิ', 'จับฉลาก', 'อนุมัติผล'].map(
+      (label, i): RoundStep => ({ label, state: i < current || current === 4 ? 'done' : i === current ? 'current' : 'todo' }),
+    );
   });
 
   protected readonly requests = toSignal(
@@ -217,6 +220,11 @@ export class PortalHome {
     this.tabChoice.set(value as RoundTab);
   }
 
+  /** Retry after a failed load. */
+  protected reload(): void {
+    this.refresh.update((n) => n + 1);
+  }
+
   protected quotaOf(run: AllocationRun, category: Category): number {
     return run.quota.find((q) => q.category === category)?.base ?? 0;
   }
@@ -257,6 +265,8 @@ export class PortalHome {
   protected readonly refreshCount = this.refresh.asReadonly();
 
   protected readonly running = signal(false);
+  /** Run id whose approval is being confirmed in the dialog. */
+  protected readonly approving = signal<string | null>(null);
   protected readonly deciding = signal(false);
   /** Run id whose reject form is open, and the reason typed so far. */
   protected readonly rejecting = signal<string | null>(null);
@@ -378,6 +388,7 @@ export class PortalHome {
     this.api.approveAllocationRun(run.id).subscribe({
       next: (approved) => {
         this.deciding.set(false);
+        this.approving.set(null);
         this.notice.set({ kind: 'ok', text: `อนุมัติผลจัดสรร ${approved.referenceNo} แล้ว · ผู้ค้าเห็นผลและต้องยืนยันสิทธิ์ภายในกำหนด` });
         this.refresh.update((n) => n + 1);
       },
