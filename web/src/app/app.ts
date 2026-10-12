@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -18,6 +18,8 @@ import { RoleSwitcher } from './shared/role-switcher';
     .role-placeholder { min-width: 150px; min-height: 32px; font-size: var(--text-small); }
     main { max-width: 1280px; margin: 0 auto; padding: var(--space-4); }
     main.bare { max-width: none; padding: 0; }
+    /* The portal is a desk tool: on wide screens it takes the room for the rounds, the round and its audit side by side */
+    .bar-inner.wide, main.wide { max-width: 1600px; }
     /* One row: brand, the mock-data badge (Guardrail 5) and the role select, which also switches area */
     @media (max-width: 640px) {
       .bar-inner { flex-wrap: nowrap; gap: var(--space-2); padding: var(--space-2) var(--space-4); }
@@ -29,15 +31,26 @@ import { RoleSwitcher } from './shared/role-switcher';
 export class App {
   private readonly router = inject(Router);
 
-  /** Inside /vendor the phone app shell replaces the site header and page padding. */
-  protected readonly inVendor = toSignal(
+  private readonly url = toSignal(
     this.router.events.pipe(
       filter((e) => e instanceof NavigationEnd),
-      map((e) => isVendorUrl(e.urlAfterRedirects)),
+      map((e): string | null => e.urlAfterRedirects),
     ),
-    // Before the first navigation: everything but the portal and dashboard redirects into /vendor
-    { initialValue: !/^\/(portal|dashboard)(\/|$)/.test(location.pathname) },
+    { initialValue: null },
   );
+
+  /** Inside /vendor the phone app shell replaces the site header and page padding. */
+  protected readonly inVendor = computed(() => {
+    const url = this.url();
+    // Before the first navigation: everything but the portal and dashboard redirects into /vendor
+    return url == null ? !/^\/(portal|dashboard)(\/|$)/.test(location.pathname) : isVendorUrl(url);
+  });
+
+  /** The portal runs wider than the dashboard (1600px against 1280px). */
+  protected readonly inPortal = computed(() => {
+    const url = this.url() ?? location.pathname;
+    return url === '/portal' || url.startsWith('/portal/') || url.startsWith('/portal?');
+  });
 }
 
 function isVendorUrl(url: string): boolean {

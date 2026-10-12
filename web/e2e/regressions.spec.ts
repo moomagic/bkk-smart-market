@@ -28,7 +28,36 @@ test('running the allocation is blocked until every request has been checked', a
 
   await page.getByRole('button', { name: 'ตรวจสิทธิทั้งรอบ' }).click();
   await expect(page.getByRole('button', { name: 'รันจัดสรร' })).toBeEnabled();
+  // The pressed button is disabled while busy; the keyboard lands on the round instead of falling to the page
+  await expect(page.getByRole('heading', { level: 2, name: 'ปากซอยจรัญฯ 79' })).toBeFocused();
   await expect(page.getByText(/มีคำขอที่ยังไม่ได้ตรวจสิทธิ/)).toHaveCount(0);
+});
+
+test('the approve dialog returns the keyboard: to its button when left, to the run once approved', async ({
+  page,
+  request,
+}) => {
+  const api = new DemoApi(request);
+  await api.checkEligibility();
+  await api.runAllocation();
+
+  await page.goto('/vendor');
+  await switchRole(page, 'officer');
+  await openRound(page, 'ปากซอยจรัญฯ 79');
+  const approve = page.getByRole('button', { name: 'อนุมัติผล', exact: true });
+  await approve.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog', { name: 'อนุมัติผลจัดสรร' });
+  await expect(dialog.getByRole('button', { name: 'ปิด', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(approve).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await dialog.getByRole('button', { name: 'ยืนยันอนุมัติผล' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#run-heading')).toBeFocused();
+  await expect(page.locator('#run-heading')).toContainText('อนุมัติแล้ว');
 });
 
 test('a reject needs a reason, and past the limit only the executive may reject', async ({
@@ -53,6 +82,8 @@ test('a reject needs a reason, and past the limit only the executive may reject'
     page.getByText('ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ'),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'ยืนยันการปฏิเสธ' })).toBeDisabled();
+  // The reject dialog is modal: leave it before switching role in the header
+  await page.getByRole('button', { name: 'กลับไปตรวจผล' }).click();
 
   await switchRole(page, 'executive');
   await page.goto('/portal');

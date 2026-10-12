@@ -14,7 +14,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
   imports: [Button, Dialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" [modal]="true" [draggable]="false"
+    <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" (onHide)="closed.emit()" [modal]="true" [draggable]="false" closeAriaLabel="ปิด"
       [style]="{ width: 'min(32rem, calc(100vw - 32px))' }" header="อนุมัติผลจัดสรร">
       @let run = this.run();
       <p>อนุมัติผล <strong class="mono">{{ run.referenceNo }}</strong> · เลขตั้งต้นการสุ่ม <span class="mono">{{ run.seed }}</span></p>
@@ -32,7 +32,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
             <tr>
               <td>{{ category[q.category] }}</td>
               <!-- Above or below quota only through rollover; marked so the officer sees it before approving -->
-              <td class="num mono" [class.off]="count(q.category, 'Won') !== q.base">{{ count(q.category, 'Won') }}/{{ q.base }}</td>
+              <td class="num mono" [class.warn-text]="count(q.category, 'Won') !== q.base">{{ count(q.category, 'Won') }}/{{ q.base }}</td>
               <td class="num mono">{{ count(q.category, 'Waitlisted') }}</td>
             </tr>
           }
@@ -42,7 +42,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
         ได้สิทธิ์ {{ count(null, 'Won') }} คน · สำรอง {{ count(null, 'Waitlisted') }} คน ·
         ไม่ได้สิทธิ์ {{ count(null, 'NotSelected') }} คน
       </p>
-      <p class="consequence">
+      <p class="warn-text consequence">
         ผู้ค้าที่ผ่านการตรวจสิทธิ {{ run.outcomes.length }} คนจะเห็นผลนี้ทันที และผู้ได้สิทธิ์ต้องยืนยันสิทธิ์ภายในกำหนด ·
         อนุมัติแล้วปฏิเสธหรือจับฉลากใหม่ไม่ได้
       </p>
@@ -55,11 +55,11 @@ import { CATEGORY_LABEL } from '../shared/labels';
   styles: `
     p { margin: 0 0 var(--space-3); }
     table { width: 100%; border-collapse: collapse; margin-bottom: var(--space-3); }
-    th, td { text-align: left; padding: var(--space-2) var(--space-2); border-bottom: 1px solid var(--line); }
+    /* Same density as the portal's tables (preset datatable: 8px × 12px) */
+    th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); }
+    th.num, td.num { text-align: right; }
     th { color: var(--muted); font-size: var(--text-small); font-weight: 600; }
-    .num { text-align: right; }
-    .off { color: var(--warn); font-weight: 600; }
-    .consequence { color: var(--warn); font-weight: 600; margin-bottom: 0; }
+    .consequence { margin-bottom: 0; }
   `,
 })
 export class ApproveRunDialog {
@@ -68,6 +68,8 @@ export class ApproveRunDialog {
   readonly deciding = input(false);
   readonly cancel = output<void>();
   readonly confirm = output<void>();
+  /** Fired once the dialog has gone, however it closed: the page returns focus from here. */
+  readonly closed = output<void>();
 
   protected readonly category = CATEGORY_LABEL;
 

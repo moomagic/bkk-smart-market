@@ -1,5 +1,5 @@
 <div class="page-head">
-  <h1>พอร์ทัลเจ้าหน้าที่เขต</h1>
+  <h1>พอร์ทัลเจ้าหน้าที่ · เขตบางพลัด</h1>
   @if (clock(); as now) {
     <!-- Development only: the demo clock and reset sit behind one quiet trigger, apart from the officer's work -->
     <p-button text size="small" class="demo-trigger" [label]="'เวลา demo ' + dateTime(now)" ariaLabel="เครื่องมือ demo"
@@ -31,9 +31,10 @@
   <p class="muted">สลับบทบาทเป็นเจ้าหน้าที่เขตที่มุมขวาบนเพื่อใช้งาน</p>
 } @else {
   <!-- Two columns from 1024px: the rounds stay in view on the left while the selected round is worked on the right -->
-  <div class="workspace">
+  <div class="workspace" [class.with-audit]="auditTarget() !== null">
   <section class="rounds-pane" aria-labelledby="rounds-heading">
-    <h2 id="rounds-heading">รอบ</h2>
+    <!-- Named for assistive tech; on screen the group titles below say which rounds these are -->
+    <h2 id="rounds-heading" class="sr-only">รอบ</h2>
     @switch (rounds().state) {
       @case ('loading') {
         <p class="muted">กำลังโหลด…</p>
@@ -60,25 +61,28 @@
   @if (selected(); as round) {
     <section class="round" aria-labelledby="round-heading">
       <div class="section-head">
-        <h2 id="round-heading">
-          {{ round.spaceName }}
-          <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับ {{ date(round.applyClosesAt) }}</span>
-          <app-status-tag [round]="round.status" />
-        </h2>
+        <!-- The heading is the space alone; the period sits under it and the step strip carries the status -->
+        <div>
+          <h2 id="round-heading" tabindex="-1">{{ round.spaceName }}</h2>
+          <p class="muted text-small flush">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับคำขอ {{ date(round.applyClosesAt) }}</p>
+        </div>
         <!-- Only the actions for where the round stands; the step strip below already shows what is done -->
         <div class="actions">
           <p-button text label="ประวัติการดำเนินการ" (onClick)="showRoundAudit(round)" />
           @if (round.status === 'Open' || round.status === 'Closed') {
+            <!-- At most one filled button: checking while requests wait for it, running once the server would accept it -->
             <p-button
-              variant="outlined"
+              [variant]="uncheckedCount() > 0 ? undefined : 'outlined'"
               [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
               (onClick)="checkEligibility(round)"
               [disabled]="checking() || running()"
             />
-            <p-button [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
+            <p-button [variant]="canRun() ? undefined : 'outlined'"
+              [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
               [disabled]="running() || checking() || !canRun()" [attr.aria-describedby]="canRun() ? null : 'run-blocked'" />
-          } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft') {
-            <p-button label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
+          } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft' && tab() !== 'run') {
+            <!-- From another tab, the way back to the decision; on the run tab its bar is already on screen -->
+            <p-button text label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
           }
         </div>
       </div>
@@ -95,6 +99,15 @@
         }
       }
 
+      <!-- Reviews carry a 7-day deadline and insights flag problems: their tabs only appear with data, so a failed load
+           is said here instead of the tab silently missing -->
+      @if (reviews()?.state === 'error' || insights()?.state === 'error') {
+        <p class="error small-note" role="alert">
+          โหลด{{ reviews()?.state === 'error' ? 'คำขอทบทวน' : '' }}{{ reviews()?.state === 'error' && insights()?.state === 'error' ? 'และ' : '' }}{{ insights()?.state === 'error' ? 'ข้อสังเกต' : '' }}ของรอบนี้ไม่สำเร็จ —
+          <p-button link label="ลองอีกครั้ง" (onClick)="reload()" />
+        </p>
+      }
+
       <p-tabs [value]="tab()" (valueChange)="pickTab($event)">
         <p-tablist>
           <p-tab value="requests">คำขอ <p-badge [value]="requestRows().length" severity="secondary" /></p-tab>
@@ -108,7 +121,7 @@
             </p-tab>
           }
           @if (insightList().length > 0) {
-            <p-tab value="insight">ข้อสังเกต <p-badge [value]="insightList().length" severity="secondary" /></p-tab>
+            <p-tab value="insight">ข้อสังเกต <p-badge [value]="insightList().length" [severity]="insightWarns() ? 'warn' : 'secondary'" /></p-tab>
           }
         </p-tablist>
         <p-tabpanels>
@@ -119,15 +132,15 @@
               } @else if (requests()?.state === 'error') {
                 <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
               } @else {
-                <p-table class="frame" [value]="requestRows()" dataKey="requestId">
+                <p-table class="frame requests" [value]="requestRows()" dataKey="requestId">
                   <ng-template #header>
                     <tr>
                       <th scope="col">ผู้ค้า</th>
                       <th scope="col">กลุ่ม</th>
                       <th scope="col">สถานะ</th>
                       <th scope="col" class="num">น้ำหนัก</th>
-                      <th scope="col">เหตุผล</th>
-                      <th scope="col"><span class="sr-only">ประวัติ</span></th>
+                      <th scope="col" class="wrap">เหตุผล</th>
+                      <th scope="col" class="row-action"><span class="sr-only">ประวัติ</span></th>
                     </tr>
                   </ng-template>
                   <ng-template #body let-r>
@@ -137,8 +150,8 @@
                       <td>{{ category[row.category] }}</td>
                       <td><app-status-tag [request]="row.status" /></td>
                       <td class="num mono">×{{ row.carryOverWeight }}</td>
-                      <td>{{ row.ineligibleReason ?? '' }}</td>
-                      <td><p-button link label="ประวัติ" [ariaLabel]="'ประวัติคำขอของ ' + row.vendorName" (onClick)="showRequestAudit(row)" /></td>
+                      <td class="wrap">{{ row.ineligibleReason ?? '' }}</td>
+                      <td class="row-action"><p-button link label="ประวัติ" [ariaLabel]="'ประวัติคำขอของ ' + row.vendorName" (onClick)="showRequestAudit(row)" /></td>
                     </tr>
                   </ng-template>
                   <ng-template #emptymessage>
@@ -153,51 +166,22 @@
             @if (latestRun(); as run) {
               <section aria-labelledby="run-heading">
                 <div class="section-head">
-                  <h3 id="run-heading">
-                    ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
+                  <!-- The tab already says "ผลจัดสรร"; it stays in the heading's name so the section is announced as the run -->
+                  <h3 id="run-heading" tabindex="-1">
+                    <span class="sr-only">ผลจัดสรร · </span><span class="mono">{{ run.referenceNo }}</span>
                     <app-status-tag [run]="run.status" />
-                    @if (run.status === 'Draft') {
-                      <span class="muted small">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
-                    }
                   </h3>
                 </div>
 
-
-                <!-- Summary first: who ran it, with which seed, against which quota -->
-                <div class="run-summary">
-                  <dl class="run-meta">
-                    <div><dt>เลขตั้งต้นการสุ่ม (seed)</dt><dd class="mono">{{ run.seed }}</dd></div>
-                    <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
-                    @if (run.decidedAt) {
-                      <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
-                    }
-                  </dl>
-                  <div class="quota-block">
-                    <h4>โควตา</h4>
-                    <p-table class="quota" [value]="run.quota" dataKey="category">
-                      <ng-template #header>
-                        <tr>
-                          <th scope="col">กลุ่ม</th>
-                          <th scope="col" class="num">โควตา</th>
-                          <th scope="col" class="num">ได้สิทธิ์จริง</th>
-                        </tr>
-                      </ng-template>
-                      <ng-template #body let-r>
-                        @let q = asQuota(r);
-                        <tr>
-                          <td>{{ category[q.category] }}</td>
-                          <td class="num mono">{{ q.base }}</td>
-                          <td class="num mono" [class.warn]="q.allocated !== q.base">{{ q.allocated }}</td>
-                        </tr>
-                      </ng-template>
-                    </p-table>
-                    @if (run.pooledDraw) {
-                      <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
-                    } @else if (offQuota(run)) {
-                      <p class="muted small-note">ตัวเลขที่ต่างจากโควตามาจากการโอนโควตาของกลุ่มที่ผู้สมัครไม่พอให้กลุ่มถัดไป</p>
-                    }
-                  </div>
-                  <details class="disclosure evidence">
+                <!-- Where the result came from, on one row; the quota sits on each group of the table below -->
+                <dl class="run-meta">
+                  <div><dt>เลขตั้งต้นการสุ่ม (seed)</dt><dd class="mono">{{ run.seed }}</dd></div>
+                  <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
+                  @if (run.decidedAt) {
+                    <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
+                  }
+                </dl>
+                <details class="disclosure evidence">
                     <summary>หลักฐานการสุ่ม</summary>
                     <p class="muted small-note">รันซ้ำด้วยเลขตั้งต้นการสุ่มและข้อมูลนำเข้าชุดเดิมจะได้ผลเดิมทุกครั้ง ค่าแฮชยืนยันว่าข้อมูลนำเข้าไม่ถูกเปลี่ยน</p>
                     <dl>
@@ -208,14 +192,20 @@
                       </div>
                     </dl>
                   </details>
-                </div>
 
                 <h4>ผลรายคน</h4>
-                <p-table class="frame" [value]="outcomeRows()" dataKey="vendorId" rowGroupMode="subheader" groupRowsBy="category">
+                @if (run.pooledDraw) {
+                  <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
+                } @else if (offQuota(run)) {
+                  <p class="muted small-note">กลุ่มที่ได้สิทธิ์ต่างจากโควตา มาจากการโอนโควตาของกลุ่มที่ผู้สมัครไม่พอให้กลุ่มถัดไป</p>
+                }
+                <p-table class="frame" [value]="outcomeRows()" dataKey="vendorId" rowGroupMode="subheader" groupRowsBy="group">
                   <ng-template #header>
                     <tr>
                       <th scope="col">ผู้ค้า</th>
-                      <th scope="col" class="num">น้ำหนัก</th>
+                      @if (weighted(run)) {
+                        <th scope="col" class="num">น้ำหนัก</th>
+                      }
                       <th scope="col">ผล</th>
                       <th scope="col">ล็อค</th>
                       <th scope="col">เหตุผล</th>
@@ -223,59 +213,42 @@
                   </ng-template>
                   <ng-template #groupheader let-r>
                     @let g = asOutcome(r);
+                    @let q = quotaOf(run, g.category);
                     <tr class="group">
-                      <th scope="colgroup" colspan="5">
+                      <th scope="colgroup" [attr.colspan]="weighted(run) ? 5 : 4">
                         {{ category[g.category] }}
-                        <span class="muted">· โควตา {{ quotaOf(run, g.category) }}</span>
+                        <!-- Trailing and leading spaces sit inside the spans: whitespace-only text between elements is dropped -->
+                        <span class="muted">· โควตา <span class="mono">{{ q.base }}</span> · ได้สิทธิ์ </span>
+                        <!-- Warn only while the run waits on a decision; on a decided run the rollover is just a fact -->
+                        @let mark = run.status === 'Draft' && q.allocated !== q.base;
+                        <span class="mono" [class.warn-text]="mark">{{ q.allocated }}</span>
+                        @if (q.allocated > q.base) {
+                          <span [class.warn-text]="mark" [class.muted]="!mark"> (รับโอนโควตา +{{ q.allocated - q.base }})</span>
+                        } @else if (q.allocated < q.base) {
+                          <span [class.warn-text]="mark" [class.muted]="!mark"> (โอนโควตาออก {{ q.base - q.allocated }})</span>
+                        }
                       </th>
                     </tr>
                   </ng-template>
                   <ng-template #body let-r>
                     @let o = asOutcome(r);
-                    <tr>
-                      <td>{{ o.vendorName }}</td>
-                      <td class="num mono">×{{ o.weight }}</td>
-                      <td><app-status-tag [outcome]="o.kind" /></td>
-                      <td class="mono">{{ o.lockCode ?? '' }}</td>
-                      <td>{{ o.reason }}</td>
-                    </tr>
+                    @if (o.empty) {
+                      <tr>
+                        <td class="muted" [attr.colspan]="weighted(run) ? 5 : 4">ไม่มีผู้สมัครในกลุ่มนี้ · โควตาโอนให้กลุ่มถัดไป</td>
+                      </tr>
+                    } @else {
+                      <tr>
+                        <td>{{ o.vendorName }}</td>
+                        @if (weighted(run)) {
+                          <td class="num mono">{{ o.weight > 1 ? '×' + o.weight : '' }}</td>
+                        }
+                        <td><app-status-tag [outcome]="o.kind" /></td>
+                        <td class="mono">{{ o.lockCode ?? '' }}</td>
+                        <td>{{ o.reason }}</td>
+                      </tr>
+                    }
                   </ng-template>
                 </p-table>
-
-                <!-- The decision comes after the evidence: the officer reads the result before approving or rejecting it -->
-                @if (run.status === 'Draft') {
-                  <div id="decision" class="decision" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
-                  @if (run.status === 'Draft' && rejecting() === run.id) {
-                    <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
-                      <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
-                      <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
-                        (input)="rejectReason.set($any($event.target).value)"></textarea>
-                      <p class="muted small-note">
-                        @if (round.rejectsLeft > 0) {
-                          ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-                        } @else if (isExecutive()) {
-                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว · ผู้บริหารปฏิเสธเพิ่มได้ และนับรวมในรอบนี้
-                        } @else {
-                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-                        }
-                      </p>
-                      <div class="actions">
-                        <p-button type="submit" severity="danger" label="ยืนยันการปฏิเสธ"
-                          [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
-                        <p-button link label="ยกเลิก" (onClick)="rejecting.set(null)" />
-                      </div>
-                    </form>
-                  }
-                    <div class="decision-bar">
-                      <p class="muted text-small flush">ตรวจผลรายคนครบแล้ว อนุมัติเพื่อประกาศผล หรือปฏิเสธเพื่อจับฉลากใหม่ด้วย seed ใหม่</p>
-                      <div class="actions">
-                        <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
-                          [disabled]="deciding() || rejecting() === run.id" />
-                        <p-button label="อนุมัติผล" (onClick)="approving.set(run.id)" [disabled]="deciding()" />
-                      </div>
-                    </div>
-                  </div>
-                }
 
                 @if (runList().length > 1) {
                   <h4>รันก่อนหน้าของรอบนี้</h4>
@@ -290,7 +263,24 @@
                     }
                   </ul>
                 }
+
+                <!-- The decision closes the evidence, and its bar stays on screen while the officer reads the table above -->
+                @if (run.status === 'Draft') {
+                  <div id="decision" class="decision-bar" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
+                    <p class="text-small flush">
+                      ได้สิทธิ์ <span class="mono">{{ countOf(run, 'Won') }}</span> จาก <span class="mono">{{ lockCount(run) }}</span> ล็อค ·
+                      สำรอง <span class="mono">{{ countOf(run, 'Waitlisted') }}</span> คน ·
+                      <span class="muted">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
+                    </p>
+                    <div class="actions">
+                      <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="startReject(run)" [disabled]="deciding()" />
+                      <p-button label="อนุมัติผล" (onClick)="startApprove(run)" [disabled]="deciding()" />
+                    </div>
+                  </div>
+                }
               </section>
+            } @else if (runs()?.state === 'ready') {
+              <p class="muted">ไม่มีผลจัดสรรของรอบนี้ในระบบ</p>
             } @else if (runs()?.state === 'error') {
               <p class="error">โหลดผลจัดสรรไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
             } @else {
@@ -308,7 +298,7 @@
                         <strong>{{ rv.vendorName }}</strong>
                         <span class="muted">· {{ category[rv.category] }} · {{ status[rv.requestStatus] }}</span>
                         @if (rv.outcome) {
-                          <p-tag [value]="reviewOutcome[rv.outcome]" severity="secondary" />
+                          <app-status-tag [reviewOutcome]="rv.outcome" />
                         } @else {
                           <p-tag [value]="'ตอบภายใน ' + date(rv.respondBy)" severity="warn" />
                         }
@@ -316,7 +306,7 @@
                       @if (rv.ineligibleReason) {
                         <p class="muted small-note">ผลตรวจสิทธิ: {{ rv.ineligibleReason }}</p>
                       }
-                      <p>เหตุผลของผู้ค้า: "{{ rv.reason }}" <span class="muted small">{{ dateTime(rv.submittedAt) }}</span></p>
+                      <p>เหตุผลของผู้ค้า: "{{ rv.reason }}" <span class="muted text-small">{{ dateTime(rv.submittedAt) }}</span></p>
                       @if (rv.outcome) {
                         <p class="muted">คำตอบ: {{ rv.response }}</p>
                       } @else if (answering()?.id === rv.id) {
@@ -363,8 +353,8 @@
                 <ul class="insights">
                   @for (f of insightList(); track $index) {
                     <li [attr.data-severity]="f.severity">
-                      <p-tag [value]="insightKind[f.kind]" [severity]="f.severity !== 'Info' ? 'warn' : 'secondary'" />
-                      <strong>{{ f.vendorName }}</strong> <span class="mono muted">{{ f.lockCode }}</span>
+                      <app-status-tag [insight]="f" />
+                      <strong>{{ f.vendorName }}</strong><span class="mono muted"> {{ f.lockCode }}</span>
                       <div>{{ f.message }}</div>
                     </li>
                   }
@@ -385,15 +375,29 @@
   <!-- Approving publishes the result to every applicant and cannot be undone: the dialog restates what is approved -->
   @if (latestRun(); as run) {
     <app-approve-run-dialog [run]="run" [visible]="approving() === run.id" [deciding]="deciding()"
-      (cancel)="approving.set(null)" (confirm)="approve(run)" />
+      (cancel)="approving.set(null)" (confirm)="approve(run)" (closed)="returnFromDialog()" />
+    <!-- Rejecting is as deliberate: the reason reaches every applicant and the round is drawn again -->
+    @if (selected(); as round) {
+      <app-reject-run-dialog [run]="run" [visible]="rejecting() === run.id" [deciding]="deciding()"
+        [rejectsLeft]="round.rejectsLeft" [isExecutive]="isExecutive()"
+        (cancel)="rejecting.set(null)" (confirm)="reject(run, $event)" (closed)="returnFromDialog()" />
+    }
   }
 
   <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->
+  <!-- Below the site header; beside the round from 1440px, over it below that with the decision bar kept clear
+       (portal-home.scss › .with-audit) -->
   <p-drawer [visible]="auditTarget() !== null" (visibleChange)="$event || auditTarget.set(null)" position="right"
-    [modal]="false" [style]="{ width: 'min(36rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ">
+    [modal]="false" styleClass="audit-drawer" [style]="{ width: 'min(28rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ"
+    [pt]="{ root: { 'aria-labelledby': 'audit-heading' } }" (onShow)="focusAudit()" (onHide)="returnFromAudit()">
     <ng-template #header>
       @if (auditTarget(); as t) {
-        <h2 id="audit-heading" class="audit-heading">ประวัติการดำเนินการ · {{ t.label }}</h2>
+        <div class="audit-head">
+          @if (auditTrail().at(-1); as back) {
+            <p-button link size="small" [label]="'← ' + back.label" [ariaLabel]="'กลับไปประวัติ' + back.label" (onClick)="backAudit()" />
+          }
+          <h2 id="audit-heading" class="audit-heading" tabindex="-1">ประวัติการดำเนินการ · {{ t.label }}</h2>
+        </div>
       }
     </ng-template>
     @if (auditTarget(); as t) {
@@ -404,7 +408,7 @@
           [entityId]="t.id"
           [version]="refreshCount()"
           [names]="auditNames()"
-          (openEntity)="auditTarget.set($event)"
+          (openEntity)="followAudit($event)"
         />
       </section>
     }

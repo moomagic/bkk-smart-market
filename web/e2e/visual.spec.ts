@@ -86,7 +86,9 @@ test('portal draft run at 1280px', async ({ page, request }) => {
   await api.submit(SOMSRI);
   await api.checkEligibility();
   await api.runAllocation();
-  await page.setViewportSize(DESKTOP);
+  // Tall enough for the whole run: the decision bar sticks to the viewport bottom, and a full-page shot taken at
+  // 800px would freeze it over the middle of the table
+  await page.setViewportSize({ width: DESKTOP.width, height: 1200 });
   await as(page, 'officer');
   await page.goto('/portal');
   await openRound(page, 'ปากซอยจรัญฯ 79');

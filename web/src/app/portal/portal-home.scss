@@ -30,18 +30,9 @@ h2 {
 .section-head h2 {
   margin: 0;
 }
-.warn {
-  color: var(--warn);
-  font-weight: 600;
-}
 /* p-message is display: grid (its enter/leave animation collapses the rows), so only spacing here */
 .notice {
   margin: 0 0 var(--space-3);
-}
-.small {
-  font-size: var(--text-small);
-  font-weight: 400;
-  margin-left: var(--space-2);
 }
 .actions {
   display: flex;
@@ -54,6 +45,7 @@ h3 {
   margin: 0;
 }
 h4 {
+  font-family: var(--font-heading);
   font-size: var(--text-body);
   margin: var(--space-5) 0 var(--space-2);
 }
@@ -61,49 +53,27 @@ h4 {
   font-size: var(--text-small);
   margin: 0 0 var(--space-3);
 }
-h2 app-status-tag,
 h3 app-status-tag {
   margin-left: var(--space-2);
   vertical-align: middle;
 }
-/* Run summary: provenance, quota beside it, evidence folded below */
-.run-summary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
-  gap: var(--space-3) var(--space-6);
-  padding: var(--space-4) var(--space-4);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-@media (max-width: 760px) {
-  .run-summary {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
+/* Where the run came from: label over value, side by side on one row */
 .run-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  align-content: start;
-  gap: var(--space-3) var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-small);
+}
+.run-meta dt,
+.evidence dt {
+  color: var(--muted);
+}
+.run-meta dd,
+.evidence dd {
   margin: 0;
 }
-.run-summary dt {
-  color: var(--muted);
-  font-size: var(--text-small);
-}
-.run-summary dd {
-  margin: 2px 0 0;
-}
-.quota-block h4 {
-  margin: 0 0 var(--space-1);
-  font-size: var(--text-small);
-  color: var(--muted);
-}
 .evidence {
-  grid-column: 1 / -1;
-  border-top: 1px solid var(--line);
-  padding-top: var(--space-3);
   font-size: var(--text-small);
 }
 .evidence dl {
@@ -116,12 +86,15 @@ h3 app-status-tag {
   font-size: var(--text-small);
 }
 .group-title {
-  margin: var(--space-4) 0 var(--space-2);
+  margin: 0 0 var(--space-2);
   font-size: var(--text-small);
   color: var(--muted);
 }
-.group-title:first-of-type {
-  margin-top: 0;
+/* The row's history link stays at the table's right edge when a narrow table scrolls sideways (audit panel open) */
+.row-action {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
 }
 /* Group rows sit in the body, outside the preset's header-cell padding */
 tr.group > th {
@@ -141,20 +114,43 @@ tr.group > th {
   font-size: var(--text-h3);
   margin: 0;
 }
+.audit-heading:focus,
+#run-heading:focus,
+#round-heading:focus {
+  outline: none;
+}
+.audit-head {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+/* The audit panel starts under the site header (--audit-top follows its bottom edge as the page scrolls).
+   From 1440px it sits beside the work: the workspace stops short of it (28rem + a gap; main is centred at 1600px with
+   16px padding, so the room already right of it is subtracted). Below that it lies over the work, and only the
+   decision bar draws in so approve and reject stay clear of it. */
+@media (min-width: 1024px) {
+  ::ng-deep .p-drawer.audit-drawer {
+    top: var(--audit-top, 60px);
+    height: calc(100% - var(--audit-top, 60px));
+  }
+}
+@media (min-width: 1440px) {
+  .workspace.with-audit {
+    padding-right: max(0px, calc(28rem + var(--space-5) - max(var(--space-4), (100vw - 1600px) / 2 + var(--space-4))));
+  }
+}
+@media (min-width: 1024px) and (max-width: 1439.98px) {
+  /* Everything the officer can act on stays clear of the panel: the round's actions, the requests and their links */
+  .with-audit .decision-bar,
+  .with-audit .round > .section-head,
+  .with-audit p-table.requests {
+    margin-right: 28rem;
+  }
+}
 .earlier-runs {
   margin: 0;
   padding-left: var(--space-4);
   color: var(--muted);
-}
-.reject-form {
-  background: var(--surface);
-  border: 1px solid var(--warn);
-  border-radius: 8px;
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
 }
 .reviews {
   list-style: none;
@@ -162,7 +158,7 @@ tr.group > th {
   padding: 0;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 }
 .reviews > li {
   padding: var(--space-3) var(--space-4);
@@ -203,33 +199,35 @@ tr.group > th {
   padding: 0;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 }
 .insights > li {
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--line);
-  border-left: 3px solid transparent;
 }
-.insights p-tag {
+.insights app-status-tag {
   margin-right: var(--space-2);
 }
 .insights > li:last-child {
   border-bottom: 0;
 }
-.insights > li[data-severity='Critical'] {
-  border-left-color: var(--warn);
-}
-.decision {
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--line);
-}
+/* The decision bar sticks to the bottom of the screen while the run's evidence scrolls past (as the vendor's action bar) */
 .decision-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  /* Lifted off the rows it covers while stuck, so it reads as a bar over the table rather than its last row */
+  box-shadow: 0 -4px 12px -6px color-mix(in srgb, var(--ink) 18%, transparent);
 }
 /* Workspace: one column on narrow screens; from 1024px the rounds sit left and stay in view */
 @media (min-width: 1024px) {
