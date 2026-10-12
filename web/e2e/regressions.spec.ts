@@ -53,6 +53,8 @@ test('a reject needs a reason, and past the limit only the executive may reject'
     page.getByText('ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ'),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'ยืนยันการปฏิเสธ' })).toBeDisabled();
+  // The reject dialog is modal: leave it before switching role in the header
+  await page.getByRole('button', { name: 'กลับไปตรวจผล' }).click();
 
   await switchRole(page, 'executive');
   await page.goto('/portal');

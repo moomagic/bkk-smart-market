@@ -257,27 +257,6 @@
 
                 <!-- The decision closes the evidence, and its bar stays on screen while the officer reads the table above -->
                 @if (run.status === 'Draft') {
-                  @if (rejecting() === run.id) {
-                    <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)" (keydown.escape)="cancelReject()">
-                      <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
-                      <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
-                        (input)="rejectReason.set($any($event.target).value)"></textarea>
-                      <p class="muted small-note">
-                        @if (round.rejectsLeft > 0) {
-                          ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-                        } @else if (isExecutive()) {
-                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว · ผู้บริหารปฏิเสธเพิ่มได้ และนับรวมในรอบนี้
-                        } @else {
-                          ครบจำนวนที่เจ้าหน้าที่ปฏิเสธได้แล้ว ต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
-                        }
-                      </p>
-                      <div class="actions">
-                        <p-button type="submit" severity="danger" variant="outlined" label="ยืนยันการปฏิเสธ"
-                          [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
-                        <p-button link label="ยกเลิก" (onClick)="cancelReject()" />
-                      </div>
-                    </form>
-                  }
                   <div id="decision" class="decision-bar" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
                     <p class="text-small flush">
                       ได้สิทธิ์ <span class="mono">{{ countOf(run, 'Won') }}</span> จาก <span class="mono">{{ lockCount(run) }}</span> ล็อค ·
@@ -285,9 +264,8 @@
                       <span class="muted">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
                     </p>
                     <div class="actions">
-                      <p-button variant="outlined" class="reject-button" label="ปฏิเสธผล" (onClick)="startReject(run)"
-                        [disabled]="deciding() || rejecting() === run.id" />
-                      <p-button label="อนุมัติผล" (onClick)="startApprove(run)" [disabled]="deciding() || rejecting() === run.id" />
+                      <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="startReject(run)" [disabled]="deciding()" />
+                      <p-button label="อนุมัติผล" (onClick)="startApprove(run)" [disabled]="deciding()" />
                     </div>
                   </div>
                 }
@@ -388,7 +366,13 @@
   <!-- Approving publishes the result to every applicant and cannot be undone: the dialog restates what is approved -->
   @if (latestRun(); as run) {
     <app-approve-run-dialog [run]="run" [visible]="approving() === run.id" [deciding]="deciding()"
-      (cancel)="approving.set(null)" (confirm)="approve(run)" (closed)="returnFromApprove()" />
+      (cancel)="approving.set(null)" (confirm)="approve(run)" (closed)="returnFromDialog()" />
+    <!-- Rejecting is as deliberate: the reason reaches every applicant and the round is drawn again -->
+    @if (selected(); as round) {
+      <app-reject-run-dialog [run]="run" [visible]="rejecting() === run.id" [deciding]="deciding()"
+        [rejectsLeft]="round.rejectsLeft" [isExecutive]="isExecutive()"
+        (cancel)="rejecting.set(null)" (confirm)="reject(run, $event)" (closed)="returnFromDialog()" />
+    }
   }
 
   <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->

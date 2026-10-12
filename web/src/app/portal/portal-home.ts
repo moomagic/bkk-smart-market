@@ -15,6 +15,7 @@ import { Observable, catchError, combineLatest, map, of, startWith, switchMap } 
 import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, RunOutcome, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
+import { RejectRunDialog } from './reject-run-dialog';
 import { RoundList } from './round-list';
 import { RoundStep, RoundSteps } from './round-steps';
 import { AuditTimeline } from './audit-timeline';
@@ -58,6 +59,7 @@ type OutcomeRow = RunOutcome & { group: string; empty?: true };
     Tag,
     Textarea,
     ApproveRunDialog,
+    RejectRunDialog,
     RoundList,
     RoundSteps,
     AuditTimeline,
@@ -297,30 +299,6 @@ export class PortalHome {
     );
   }
 
-  /**
-   * Opens the reject form. It sits where the table ends, which may be below the screen while the decision bar is stuck
-   * to the bottom, so bring it into view and put the cursor in the reason.
-   */
-  protected startReject(run: AllocationRun): void {
-    this.rejecting.set(run.id);
-    afterNextRender(
-      () => {
-        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        document.querySelector('.reject-form')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-        document.getElementById('reject-reason')?.focus({ preventScroll: true });
-      },
-      { injector: this.injector },
-    );
-  }
-
-  /** Leaves the reject form (cancel or Esc) and puts the keyboard back on "ปฏิเสธผล". */
-  protected cancelReject(): void {
-    this.rejecting.set(null);
-    afterNextRender(() => document.querySelector<HTMLElement>('#decision .reject-button button')?.focus(), {
-      injector: this.injector,
-    });
-  }
-
   protected pickTab(value: string | number | undefined): void {
     this.tabChoice.set(value as RoundTab);
   }
@@ -393,9 +371,8 @@ export class PortalHome {
   /** Run id whose approval is being confirmed in the dialog. */
   protected readonly approving = signal<string | null>(null);
   protected readonly deciding = signal(false);
-  /** Run id whose reject form is open, and the reason typed so far. */
+  /** Run id whose reject dialog is open. */
   protected readonly rejecting = signal<string | null>(null);
-  protected readonly rejectReason = signal('');
   protected readonly checking = signal(false);
   /** p-table hands rows to its templates untyped; these restore the type for the template checker. */
   protected asRound(row: RoundSummary): RoundSummary {
@@ -464,8 +441,7 @@ export class PortalHome {
     });
   }
 
-  protected reject(run: AllocationRun): void {
-    const reason = this.rejectReason().trim();
+  protected reject(run: AllocationRun, reason: string): void {
     if (!reason) return;
     this.deciding.set(true);
     this.notice.set(null);
@@ -473,7 +449,6 @@ export class PortalHome {
       next: (r) => {
         this.deciding.set(false);
         this.rejecting.set(null);
-        this.rejectReason.set('');
         this.notice.set({ kind: 'ok', text: `ปฏิเสธผล ${r.referenceNo} แล้ว · ตรวจสิทธิใหม่ได้แล้วรันจัดสรรอีกครั้ง (seed ใหม่)` });
         this.refresh.update((n) => n + 1);
       },
@@ -567,20 +542,25 @@ export class PortalHome {
     this.openAudit({ type: 'StallRequest', id: row.requestId, label: `คำขอของ ${row.vendorName}` });
   }
 
-  /** The approve button, so leaving the dialog puts the keyboard back on it (or on the run, once approved). */
-  private approveOpener: HTMLElement | null = null;
+  /** The button that opened the approve or reject dialog, so leaving it puts the keyboard back there. */
+  private dialogOpener: HTMLElement | null = null;
 
   protected startApprove(run: AllocationRun): void {
-    this.approveOpener = document.activeElement as HTMLElement | null;
+    this.dialogOpener = document.activeElement as HTMLElement | null;
     this.approving.set(run.id);
   }
 
-  protected returnFromApprove(): void {
-    const opener = this.approveOpener;
-    this.approveOpener = null;
+  protected startReject(run: AllocationRun): void {
+    this.dialogOpener = document.activeElement as HTMLElement | null;
+    this.rejecting.set(run.id);
+  }
+
+  protected returnFromDialog(): void {
+    const opener = this.dialogOpener;
+    this.dialogOpener = null;
     afterNextRender(
       () => {
-        // Approving removes the decision bar, so the run heading takes focus instead
+        // A decision removes the decision bar, so the run heading takes focus instead
         const target = opener?.isConnected ? opener : document.getElementById('run-heading');
         target?.focus({ preventScroll: true });
       },
