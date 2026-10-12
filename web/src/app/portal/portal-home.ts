@@ -522,6 +522,27 @@ export class PortalHome {
     this.openAudit({ type: 'StallRequest', id: row.requestId, label: `คำขอของ ${row.vendorName}` });
   }
 
+  /** The approve button, so leaving the dialog puts the keyboard back on it (or on the run, once approved). */
+  private approveOpener: HTMLElement | null = null;
+
+  protected startApprove(run: AllocationRun): void {
+    this.approveOpener = document.activeElement as HTMLElement | null;
+    this.approving.set(run.id);
+  }
+
+  protected returnFromApprove(): void {
+    const opener = this.approveOpener;
+    this.approveOpener = null;
+    afterNextRender(
+      () => {
+        // Approving removes the decision bar, so the run heading takes focus instead
+        const target = opener?.isConnected ? opener : document.getElementById('run-heading');
+        target?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
+  }
+
   /** The control that opened the audit panel, so closing it puts the keyboard back where the officer was. */
   private auditOpener: HTMLElement | null = null;
 

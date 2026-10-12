@@ -114,11 +114,28 @@ tr.group > th {
 .audit-heading:focus {
   outline: none;
 }
-/* With the audit open on a wide screen, the workspace stops short of the panel (28rem + a gap) instead of under it.
-   Main is centred at 1600px with 16px padding, so the room already right of it is subtracted. */
-@media (min-width: 1440px) {
+#run-heading:focus {
+  outline: none;
+}
+/* With the audit open, the workspace stops short of the panel (28rem + a gap) instead of under it. Main is centred at
+   1600px with 16px padding, so the room already right of it is subtracted. Under 1440px there is not room for three
+   columns: the rounds list steps aside until the audit closes. The panel itself starts under the site header. */
+@media (min-width: 1024px) {
   .workspace.with-audit {
     padding-right: max(0px, calc(28rem + var(--space-5) - max(var(--space-4), (100vw - 1600px) / 2 + var(--space-4))));
+  }
+  /* The site header is one 60px row from this width (app.ts) */
+  ::ng-deep .p-drawer.audit-drawer {
+    top: 60px;
+    height: calc(100% - 60px);
+  }
+}
+@media (min-width: 1024px) and (max-width: 1439.98px) {
+  .workspace.with-audit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace.with-audit > .rounds-pane {
+    display: none;
   }
 }
 .earlier-runs {

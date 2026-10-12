@@ -14,7 +14,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
   imports: [Button, Dialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" [modal]="true" [draggable]="false"
+    <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" (onHide)="closed.emit()" [modal]="true" [draggable]="false"
       [style]="{ width: 'min(32rem, calc(100vw - 32px))' }" header="อนุมัติผลจัดสรร">
       @let run = this.run();
       <p>อนุมัติผล <strong class="mono">{{ run.referenceNo }}</strong> · เลขตั้งต้นการสุ่ม <span class="mono">{{ run.seed }}</span></p>
@@ -57,6 +57,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
     table { width: 100%; border-collapse: collapse; margin-bottom: var(--space-3); }
     /* Same density as the portal's tables (preset datatable: 8px × 12px) */
     th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); }
+    th.num, td.num { text-align: right; }
     th { color: var(--muted); font-size: var(--text-small); font-weight: 600; }
     .consequence { margin-bottom: 0; }
   `,
@@ -67,6 +68,8 @@ export class ApproveRunDialog {
   readonly deciding = input(false);
   readonly cancel = output<void>();
   readonly confirm = output<void>();
+  /** Fired once the dialog has gone, however it closed: the page returns focus from here. */
+  readonly closed = output<void>();
 
   protected readonly category = CATEGORY_LABEL;
 

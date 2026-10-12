@@ -158,7 +158,7 @@
               <section aria-labelledby="run-heading">
                 <div class="section-head">
                   <!-- The tab already says "ผลจัดสรร"; it stays in the heading's name so the section is announced as the run -->
-                  <h3 id="run-heading">
+                  <h3 id="run-heading" tabindex="-1">
                     <span class="sr-only">ผลจัดสรร · </span><span class="mono">{{ run.referenceNo }}</span>
                     <app-status-tag [run]="run.status" />
                   </h3>
@@ -279,7 +279,7 @@
                     <div class="actions">
                       <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="startReject(run)"
                         [disabled]="deciding() || rejecting() === run.id" />
-                      <p-button label="อนุมัติผล" (onClick)="approving.set(run.id)" [disabled]="deciding()" />
+                      <p-button label="อนุมัติผล" (onClick)="startApprove(run)" [disabled]="deciding() || rejecting() === run.id" />
                     </div>
                   </div>
                 }
@@ -380,13 +380,14 @@
   <!-- Approving publishes the result to every applicant and cannot be undone: the dialog restates what is approved -->
   @if (latestRun(); as run) {
     <app-approve-run-dialog [run]="run" [visible]="approving() === run.id" [deciding]="deciding()"
-      (cancel)="approving.set(null)" (confirm)="approve(run)" />
+      (cancel)="approving.set(null)" (confirm)="approve(run)" (closed)="returnFromApprove()" />
   }
 
   <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->
-  <!-- From 1440px the workspace makes room for it (portal-home.scss › .with-audit), so it sits beside the round -->
+  <!-- From 1024px the workspace makes room for it (portal-home.scss › .with-audit), so it sits beside the round and
+       below the site header instead of over either -->
   <p-drawer [visible]="auditTarget() !== null" (visibleChange)="$event || auditTarget.set(null)" position="right"
-    [modal]="false" [style]="{ width: 'min(28rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ"
+    [modal]="false" styleClass="audit-drawer" [style]="{ width: 'min(28rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ"
     [pt]="{ root: { 'aria-labelledby': 'audit-heading' } }" (onShow)="focusAudit()" (onHide)="returnFromAudit()">
     <ng-template #header>
       @if (auditTarget(); as t) {
