@@ -1,6 +1,6 @@
-# Netlify: the Angular app as a static site; /api, /docs and /openapi are proxied to the API on Render,
+# Netlify: the Angular app as a static site; /api and /openapi are proxied to the API on Render (/docs redirects there),
 # doing what web/nginx.conf does under docker compose. The request headers (X-Demo-Role, X-Demo-User) pass through.
-# If Render gave the service another address, replace https://bkk-smart-market-api.onrender.com below.
+# If Render gave the service another address, replace https://bkk-smart-market-api.onrender.com below (4 places).
 [build]
   base = "web"
   command = "npx ng build"
@@ -15,16 +15,18 @@
   status = 200
   force = true
 
+# The API reference is sent to Render itself rather than proxied: its page loads scalar.js relative to /docs/,
+# and Netlify's proxy drops that trailing slash, so the page's own redirect would loop to /docs/docs/
 [[redirects]]
   from = "/docs"
-  to = "https://bkk-smart-market-api.onrender.com/docs"
-  status = 200
+  to = "https://bkk-smart-market-api.onrender.com/docs/"
+  status = 302
   force = true
 
 [[redirects]]
   from = "/docs/*"
   to = "https://bkk-smart-market-api.onrender.com/docs/:splat"
-  status = 200
+  status = 302
   force = true
 
 [[redirects]]
