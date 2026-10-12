@@ -8,8 +8,8 @@ import {
   input,
 } from '@angular/core';
 import { Tag } from 'primeng/tag';
-import { AllocationRunStatus, OutcomeKind, RoundStatus, StallRequestStatus } from '../core/api';
-import { OUTCOME_LABEL, ROUND_STATUS_LABEL, RUN_STATUS_LABEL, STATUS_LABEL } from './labels';
+import { AllocationRunStatus, InsightFlag, OutcomeKind, ReviewOutcome, RoundStatus, StallRequestStatus } from '../core/api';
+import { INSIGHT_KIND_LABEL, OUTCOME_LABEL, REVIEW_OUTCOME_LABEL, ROUND_STATUS_LABEL, RUN_STATUS_LABEL, STATUS_LABEL } from './labels';
 
 /**
  * Tag role (theme preset › tag): success = a good, standing result · info = in progress, nothing to do yet ·
@@ -52,8 +52,21 @@ const OUTCOME_SEVERITY: Record<OutcomeKind, Severity> = {
   Forfeited: 'secondary',
 };
 
+/** An answered review is over and done, whichever way it went. */
+const REVIEW_OUTCOME_SEVERITY: Record<ReviewOutcome, Severity> = {
+  Upheld: 'secondary',
+  Corrected: 'secondary',
+};
+
+/** An insight is only a note to check; warnings and critical ones ask the officer to look. */
+const INSIGHT_SEVERITY: Record<InsightFlag['severity'], Severity> = {
+  Info: 'secondary',
+  Warning: 'warn',
+  Critical: 'warn',
+};
+
 /**
- * A request, round, allocation-run or draw-outcome status as a tag. The text always comes from the shared Thai label maps,
+ * A request, round, allocation-run, draw-outcome, review-answer or insight status as a tag. The text always comes from the shared Thai label maps,
  * so a submitted request reads "ยื่นคำขอแล้ว" and never anything that sounds like a booking (Guardrail 4).
  * Pass exactly one of the inputs.
  */
@@ -72,6 +85,8 @@ export class StatusTag {
   readonly round = input<RoundStatus>();
   readonly run = input<AllocationRunStatus>();
   readonly outcome = input<OutcomeKind>();
+  readonly reviewOutcome = input<ReviewOutcome>();
+  readonly insight = input<Pick<InsightFlag, 'kind' | 'severity'>>();
 
   protected readonly view = computed(() => {
     const request = this.request();
@@ -82,6 +97,10 @@ export class StatusTag {
     if (run) return { label: RUN_STATUS_LABEL[run], severity: RUN_SEVERITY[run] };
     const outcome = this.outcome();
     if (outcome) return { label: OUTCOME_LABEL[outcome], severity: OUTCOME_SEVERITY[outcome] };
+    const reviewOutcome = this.reviewOutcome();
+    if (reviewOutcome) return { label: REVIEW_OUTCOME_LABEL[reviewOutcome], severity: REVIEW_OUTCOME_SEVERITY[reviewOutcome] };
+    const insight = this.insight();
+    if (insight) return { label: INSIGHT_KIND_LABEL[insight.kind], severity: INSIGHT_SEVERITY[insight.severity] };
     return null;
   });
 

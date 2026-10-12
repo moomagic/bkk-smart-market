@@ -302,7 +302,7 @@
                         <strong>{{ rv.vendorName }}</strong>
                         <span class="muted">· {{ category[rv.category] }} · {{ status[rv.requestStatus] }}</span>
                         @if (rv.outcome) {
-                          <p-tag [value]="reviewOutcome[rv.outcome]" severity="secondary" />
+                          <app-status-tag [reviewOutcome]="rv.outcome" />
                         } @else {
                           <p-tag [value]="'ตอบภายใน ' + date(rv.respondBy)" severity="warn" />
                         }
@@ -357,7 +357,7 @@
                 <ul class="insights">
                   @for (f of insightList(); track $index) {
                     <li [attr.data-severity]="f.severity">
-                      <p-tag [value]="insightKind[f.kind]" [severity]="f.severity !== 'Info' ? 'warn' : 'secondary'" />
+                      <app-status-tag [insight]="f" />
                       <strong>{{ f.vendorName }}</strong> <span class="mono muted">{{ f.lockCode }}</span>
                       <div>{{ f.message }}</div>
                     </li>

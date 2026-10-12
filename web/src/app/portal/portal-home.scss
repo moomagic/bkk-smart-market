@@ -188,16 +188,12 @@ tr.group > th {
 .insights > li {
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--line);
-  border-left: 3px solid transparent;
 }
-.insights p-tag {
+.insights app-status-tag {
   margin-right: var(--space-2);
 }
 .insights > li:last-child {
   border-bottom: 0;
-}
-.insights > li[data-severity='Critical'] {
-  border-left-color: var(--warn);
 }
 /* The decision bar sticks to the bottom of the screen while the run's evidence scrolls past (as the vendor's action bar) */
 .decision-bar {

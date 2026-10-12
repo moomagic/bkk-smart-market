@@ -72,7 +72,6 @@ export class PortalHome {
   protected readonly category = CATEGORY_LABEL;
   protected readonly dateTime = formatThaiDateTime;
   protected readonly runStatus = RUN_STATUS_LABEL;
-  protected readonly reviewOutcome = REVIEW_OUTCOME_LABEL;
 
   protected readonly isOfficer = computed(() => this.session.role() !== 'vendor');
   /** Past the round's reject limit only an executive may reject (ADR-0002). */
@@ -163,14 +162,6 @@ export class PortalHome {
     const r = this.insights();
     return r?.state === 'ready' ? r.data : [];
   });
-
-  protected readonly insightKind: Record<InsightFlag['kind'], string> = {
-    OutsideGeofence: 'เช็คอินนอกพื้นที่',
-    Absent: 'ขาดเช็คอิน',
-    LowCheckIn: 'เช็คอินต่ำกว่าเกณฑ์',
-    SharedSurname: 'นามสกุลซ้ำ',
-    SharedPhone: 'เบอร์โทรซ้ำ',
-  };
 
   protected readonly reviews = toSignal(
     combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(

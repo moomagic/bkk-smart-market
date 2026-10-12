@@ -1,4 +1,4 @@
-import { AllocationRunStatus, Category, OutcomeKind, ReviewOutcome, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
+import { AllocationRunStatus, Category, InsightKind, OutcomeKind, ReviewOutcome, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
 
 export const SPACE_TYPE_LABEL: Record<SpaceType, string> = {
   Relaxation: 'จุดผ่อนผัน',
@@ -47,6 +47,15 @@ export const OUTCOME_LABEL: Record<OutcomeKind, string> = {
 export const REVIEW_OUTCOME_LABEL: Record<ReviewOutcome, string> = {
   Upheld: 'ยืนตามเดิม',
   Corrected: 'แก้ไขแล้ว',
+};
+
+/** Allocation Insight flag kinds (read-only checks for the officer). */
+export const INSIGHT_KIND_LABEL: Record<InsightKind, string> = {
+  OutsideGeofence: 'เช็คอินนอกพื้นที่',
+  Absent: 'ขาดเช็คอิน',
+  LowCheckIn: 'เช็คอินต่ำกว่าเกณฑ์',
+  SharedSurname: 'นามสกุลซ้ำ',
+  SharedPhone: 'เบอร์โทรซ้ำ',
 };
 
 /** Audit Action (use-case name) → what the officer reads on the timeline. */
