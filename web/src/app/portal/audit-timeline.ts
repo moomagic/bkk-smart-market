@@ -35,12 +35,12 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
           <!-- Entries keep their list semantics (the old markup was an <ol>) -->
           <p-timeline class="panel" [value]="views()" align="left" [pt]="listSemantics">
             <ng-template #opposite let-entry>
-              <span class="when mono">{{ dateTime(asView(entry).at) }}</span>
+              <span class="when">{{ dateTime(asView(entry).at) }}</span>
             </ng-template>
             <ng-template #content let-entry>
               @let e = asView(entry);
               <div class="what">
-                <span class="when when-inline mono">{{ dateTime(e.at) }}</span>
+                <span class="when when-inline">{{ dateTime(e.at) }}</span>
                 <div class="head">
                   <strong>{{ e.action }}</strong>
                   <span class="actor">โดย {{ e.actor }}</span>
@@ -108,9 +108,10 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
   styles: `
     /* The timeline sits in the drawer's own surface: no second bordered box inside it */
     app-audit-timeline .panel { display: block; padding-top: var(--space-2); }
-    app-audit-timeline .p-timeline-left .p-timeline-event-opposite { flex: 0 0 150px; padding: 1px var(--space-3) 0 0; text-align: left; white-space: nowrap; }
+    app-audit-timeline .p-timeline-left .p-timeline-event-opposite { flex: 0 0 9.5rem; padding: 1px var(--space-3) 0 0; text-align: left; white-space: nowrap; }
     app-audit-timeline .what { padding-bottom: var(--space-4); }
-    app-audit-timeline .when { font-size: var(--text-small); color: var(--muted); }
+    /* Thai month names: body face with even-width figures (the mono face has no Thai glyphs) */
+    app-audit-timeline .when { font-size: var(--text-small); color: var(--muted); font-variant-numeric: tabular-nums; }
     app-audit-timeline .when-inline { display: none; }
     app-audit-timeline .head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-2); }
     app-audit-timeline .actor { font-size: var(--text-small); color: var(--muted); }

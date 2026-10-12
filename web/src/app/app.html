@@ -1,7 +1,7 @@
 <!-- The vendor app brings its own app bar (mock badge and a demo menu with the role switcher) -->
 @if (!inVendor()) {
   <header class="bar">
-    <div class="bar-inner">
+    <div class="bar-inner" [class.wide]="inPortal()">
       <a class="brand" routerLink="/">BKK Smart Market</a>
       <app-mock-badge />
       <!-- Deferred: PrimeNG Select would otherwise put ~190 kB into the initial bundle of every page.
@@ -16,6 +16,6 @@
     </div>
   </header>
 }
-<main [class.bare]="inVendor()">
+<main [class.bare]="inVendor()" [class.wide]="inPortal()">
   <router-outlet />
 </main>

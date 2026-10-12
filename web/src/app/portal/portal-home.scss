@@ -111,6 +111,16 @@ tr.group > th {
   font-size: var(--text-h3);
   margin: 0;
 }
+.audit-heading:focus {
+  outline: none;
+}
+/* With the audit open on a wide screen, the workspace stops short of the panel (28rem + a gap) instead of under it.
+   Main is centred at 1600px with 16px padding, so the room already right of it is subtracted. */
+@media (min-width: 1440px) {
+  .workspace.with-audit {
+    padding-right: max(0px, calc(28rem + var(--space-5) - max(var(--space-4), (100vw - 1600px) / 2 + var(--space-4))));
+  }
+}
 .earlier-runs {
   margin: 0;
   padding-left: var(--space-4);

@@ -31,7 +31,7 @@
   <p class="muted">สลับบทบาทเป็นเจ้าหน้าที่เขตที่มุมขวาบนเพื่อใช้งาน</p>
 } @else {
   <!-- Two columns from 1024px: the rounds stay in view on the left while the selected round is worked on the right -->
-  <div class="workspace">
+  <div class="workspace" [class.with-audit]="auditTarget() !== null">
   <section class="rounds-pane" aria-labelledby="rounds-heading">
     <!-- Named for assistive tech; on screen the group titles below say which rounds these are -->
     <h2 id="rounds-heading" class="sr-only">รอบ</h2>
@@ -383,11 +383,13 @@
   }
 
   <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->
+  <!-- From 1440px the workspace makes room for it (portal-home.scss › .with-audit), so it sits beside the round -->
   <p-drawer [visible]="auditTarget() !== null" (visibleChange)="$event || auditTarget.set(null)" position="right"
-    [modal]="false" [style]="{ width: 'min(36rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ">
+    [modal]="false" [style]="{ width: 'min(28rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ"
+    [pt]="{ root: { 'aria-labelledby': 'audit-heading' } }" (onShow)="focusAudit()" (onHide)="returnFromAudit()">
     <ng-template #header>
       @if (auditTarget(); as t) {
-        <h2 id="audit-heading" class="audit-heading">ประวัติการดำเนินการ · {{ t.label }}</h2>
+        <h2 id="audit-heading" class="audit-heading" tabindex="-1">ประวัติการดำเนินการ · {{ t.label }}</h2>
       }
     </ng-template>
     @if (auditTarget(); as t) {

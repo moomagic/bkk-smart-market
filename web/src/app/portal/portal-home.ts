@@ -508,11 +508,30 @@ export class PortalHome {
   }
 
   protected showRoundAudit(round: RoundSummary): void {
-    this.auditTarget.set({ type: 'Round', id: round.id, label: `รอบ ${round.spaceName}` });
+    this.openAudit({ type: 'Round', id: round.id, label: `รอบ ${round.spaceName}` });
   }
 
   protected showRequestAudit(row: RoundRequestRow): void {
-    this.auditTarget.set({ type: 'StallRequest', id: row.requestId, label: `คำขอของ ${row.vendorName}` });
+    this.openAudit({ type: 'StallRequest', id: row.requestId, label: `คำขอของ ${row.vendorName}` });
+  }
+
+  /** The control that opened the audit panel, so closing it puts the keyboard back where the officer was. */
+  private auditOpener: HTMLElement | null = null;
+
+  private openAudit(target: { type: string; id: string; label: string }): void {
+    if (this.auditTarget() === null) this.auditOpener = document.activeElement as HTMLElement | null;
+    this.auditTarget.set(target);
+  }
+
+  protected focusAudit(): void {
+    afterNextRender(() => document.getElementById('audit-heading')?.focus({ preventScroll: true }), {
+      injector: this.injector,
+    });
+  }
+
+  protected returnFromAudit(): void {
+    this.auditOpener?.focus({ preventScroll: true });
+    this.auditOpener = null;
   }
 }
 
