@@ -70,14 +70,14 @@
         <div class="actions">
           <p-button text label="ประวัติการดำเนินการ" (onClick)="showRoundAudit(round)" />
           @if (round.status === 'Open' || round.status === 'Closed') {
-            <!-- One filled button: checking while requests wait for it, running once they are all checked -->
+            <!-- At most one filled button: checking while requests wait for it, running once the server would accept it -->
             <p-button
               [variant]="uncheckedCount() > 0 ? undefined : 'outlined'"
               [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
               (onClick)="checkEligibility(round)"
               [disabled]="checking() || running()"
             />
-            <p-button [variant]="uncheckedCount() > 0 ? 'outlined' : undefined"
+            <p-button [variant]="canRun() ? undefined : 'outlined'"
               [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
               [disabled]="running() || checking() || !canRun()" [attr.aria-describedby]="canRun() ? null : 'run-blocked'" />
           } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft') {
