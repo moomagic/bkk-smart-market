@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 export interface RoundStep {
   label: string;
-  state: 'done' | 'current' | 'todo';
+  /** missing: the step happened (the round is past it) but nothing of it is on record */
+  state: 'done' | 'current' | 'todo' | 'missing';
+  note?: string;
 }
 
 /**
@@ -19,6 +21,9 @@ export interface RoundStep {
           {{ s.label }}
           @if (s.state === 'done') {
             <span class="sr-only">(เสร็จแล้ว)</span>
+          }
+          @if (s.note) {
+            <span class="note">· {{ s.note }}</span>
           }
         </li>
       }
@@ -67,6 +72,16 @@ export interface RoundStep {
     }
     .steps li[data-state='done'] + li::before {
       background: var(--accent);
+    }
+    .steps li[data-state='missing']::after {
+      border-style: dashed;
+      border-color: var(--muted);
+    }
+    .steps li[data-state='missing'] + li::before {
+      background: var(--accent);
+    }
+    .steps .note {
+      color: var(--muted);
     }
     .steps li[data-state='current'] {
       color: var(--accent);

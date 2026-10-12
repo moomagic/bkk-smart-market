@@ -123,9 +123,19 @@ export class PortalHome {
           : this.requestRows().length === 0 ? 0
             : this.uncheckedCount() > 0 ? 1
               : 2;
-    return ['ยื่นคำขอ', 'ตรวจสิทธิ', 'จับฉลาก', 'อนุมัติผล'].map(
+    const steps = ['ยื่นคำขอ', 'ตรวจสิทธิ', 'จับฉลาก', 'อนุมัติผล'].map(
       (label, i): RoundStep => ({ label, state: i < current || current === 4 ? 'done' : i === current ? 'current' : 'todo' }),
     );
+    // An approved round whose draw is not in the system (seeded history): the draw step says so instead of a tick
+    if (this.noRunOnRecord()) steps[2] = { label: 'จับฉลาก', state: 'missing', note: 'ไม่มีข้อมูลการจับฉลากในระบบ' };
+    return steps;
+  });
+
+  /** The runs have loaded and there are none, though the round is past its draw. */
+  protected readonly noRunOnRecord = computed(() => {
+    const runs = this.runs();
+    const status = this.selected()?.status;
+    return runs?.state === 'ready' && runs.data.length === 0 && (status === 'Drawn' || status === 'Approved');
   });
 
   protected readonly requests = toSignal(
@@ -235,7 +245,7 @@ export class PortalHome {
     const status = this.selected()?.status;
     // Decided from the round's status, not from the run arriving: the tab is right on first paint instead of
     // jumping across once the runs load
-    if (status === 'Drawn' || status === 'Approved') return 'run';
+    if ((status === 'Drawn' || status === 'Approved') && !this.noRunOnRecord()) return 'run';
     return 'requests';
   });
 
@@ -265,10 +275,10 @@ export class PortalHome {
     });
   }
 
-  /** The round has a run to show, or will once the runs load (a drawn or approved round always has one). */
+  /** The round has a run to show, or will once the runs load (a drawn or approved round should have one). */
   protected readonly hasRun = computed(() => {
     const status = this.selected()?.status;
-    return !!this.latestRun() || status === 'Drawn' || status === 'Approved';
+    return !!this.latestRun() || ((status === 'Drawn' || status === 'Approved') && !this.noRunOnRecord());
   });
 
   private readonly injector = inject(Injector);
@@ -301,6 +311,14 @@ export class PortalHome {
       },
       { injector: this.injector },
     );
+  }
+
+  /** Leaves the reject form (cancel or Esc) and puts the keyboard back on "ปฏิเสธผล". */
+  protected cancelReject(): void {
+    this.rejecting.set(null);
+    afterNextRender(() => document.querySelector<HTMLElement>('#decision .reject-button button')?.focus(), {
+      injector: this.injector,
+    });
   }
 
   protected pickTab(value: string | number | undefined): void {
@@ -573,9 +591,30 @@ export class PortalHome {
   /** The control that opened the audit panel, so closing it puts the keyboard back where the officer was. */
   private auditOpener: HTMLElement | null = null;
 
+  /** Trails the officer stepped through inside the panel (a request from the round, say), to step back to. */
+  protected readonly auditTrail = signal<{ type: string; id: string; label: string }[]>([]);
+
   private openAudit(target: { type: string; id: string; label: string }): void {
     if (this.auditTarget() === null) this.auditOpener = document.activeElement as HTMLElement | null;
+    this.auditTrail.set([]);
     this.auditTarget.set(target);
+  }
+
+  /** A change line in the panel names another entity: show its trail, remembering where the officer came from. */
+  protected followAudit(target: { type: string; id: string; label: string }): void {
+    const current = this.auditTarget();
+    if (current) this.auditTrail.update((t) => [...t, current]);
+    this.auditTarget.set(target);
+    this.focusAudit();
+  }
+
+  protected backAudit(): void {
+    const trail = this.auditTrail();
+    const previous = trail.at(-1);
+    if (!previous) return;
+    this.auditTrail.set(trail.slice(0, -1));
+    this.auditTarget.set(previous);
+    this.focusAudit();
   }
 
   protected focusAudit(): void {
@@ -585,9 +624,29 @@ export class PortalHome {
   }
 
   protected returnFromAudit(): void {
+    this.auditTrail.set([]);
     this.auditOpener?.focus({ preventScroll: true });
     this.auditOpener = null;
   }
+
+  /**
+   * The panel is fixed to the screen but the site header scrolls away, so its top follows the header's bottom edge
+   * (60px at the top of the page, 0 once the header has gone) instead of leaving a band of page above it.
+   */
+  private readonly keepAuditUnderHeader = effect((onCleanup) => {
+    if (this.auditTarget() === null) return;
+    const root = document.documentElement;
+    const place = () => {
+      const bottom = document.querySelector('header.bar')?.getBoundingClientRect().bottom ?? 0;
+      root.style.setProperty('--audit-top', `${Math.max(0, Math.round(bottom))}px`);
+    };
+    place();
+    window.addEventListener('scroll', place, { passive: true });
+    onCleanup(() => {
+      window.removeEventListener('scroll', place);
+      root.style.removeProperty('--audit-top');
+    });
+  });
 }
 
 /** 0 a draw waits on approval · 1 requests wait on a check · 2 closed for requests · 3 still open. */

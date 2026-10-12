@@ -86,12 +86,9 @@ h3 app-status-tag {
   font-size: var(--text-small);
 }
 .group-title {
-  margin: var(--space-4) 0 var(--space-2);
+  margin: 0 0 var(--space-2);
   font-size: var(--text-small);
   color: var(--muted);
-}
-.group-title:first-of-type {
-  margin-top: 0;
 }
 /* Group rows sit in the body, outside the preset's header-cell padding */
 tr.group > th {
@@ -111,11 +108,14 @@ tr.group > th {
   font-size: var(--text-h3);
   margin: 0;
 }
-.audit-heading:focus {
-  outline: none;
-}
+.audit-heading:focus,
 #run-heading:focus {
   outline: none;
+}
+.audit-head {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
 }
 /* With the audit open, the workspace stops short of the panel (28rem + a gap) instead of under it. Main is centred at
    1600px with 16px padding, so the room already right of it is subtracted. Under 1440px there is not room for three
@@ -124,10 +124,10 @@ tr.group > th {
   .workspace.with-audit {
     padding-right: max(0px, calc(28rem + var(--space-5) - max(var(--space-4), (100vw - 1600px) / 2 + var(--space-4))));
   }
-  /* The site header is one 60px row from this width (app.ts) */
+  /* Under the site header: --audit-top follows its bottom edge as the page scrolls (portal-home.ts) */
   ::ng-deep .p-drawer.audit-drawer {
-    top: 60px;
-    height: calc(100% - 60px);
+    top: var(--audit-top, 60px);
+    height: calc(100% - var(--audit-top, 60px));
   }
 }
 @media (min-width: 1024px) and (max-width: 1439.98px) {

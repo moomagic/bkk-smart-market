@@ -258,7 +258,7 @@
                 <!-- The decision closes the evidence, and its bar stays on screen while the officer reads the table above -->
                 @if (run.status === 'Draft') {
                   @if (rejecting() === run.id) {
-                    <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
+                    <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)" (keydown.escape)="cancelReject()">
                       <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
                       <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
                         (input)="rejectReason.set($any($event.target).value)"></textarea>
@@ -274,7 +274,7 @@
                       <div class="actions">
                         <p-button type="submit" severity="danger" variant="outlined" label="ยืนยันการปฏิเสธ"
                           [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
-                        <p-button link label="ยกเลิก" (onClick)="rejecting.set(null)" />
+                        <p-button link label="ยกเลิก" (onClick)="cancelReject()" />
                       </div>
                     </form>
                   }
@@ -285,7 +285,7 @@
                       <span class="muted">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
                     </p>
                     <div class="actions">
-                      <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="startReject(run)"
+                      <p-button variant="outlined" class="reject-button" label="ปฏิเสธผล" (onClick)="startReject(run)"
                         [disabled]="deciding() || rejecting() === run.id" />
                       <p-button label="อนุมัติผล" (onClick)="startApprove(run)" [disabled]="deciding() || rejecting() === run.id" />
                     </div>
@@ -399,7 +399,12 @@
     [pt]="{ root: { 'aria-labelledby': 'audit-heading' } }" (onShow)="focusAudit()" (onHide)="returnFromAudit()">
     <ng-template #header>
       @if (auditTarget(); as t) {
-        <h2 id="audit-heading" class="audit-heading" tabindex="-1">ประวัติการดำเนินการ · {{ t.label }}</h2>
+        <div class="audit-head">
+          @if (auditTrail().at(-1); as back) {
+            <p-button link size="small" [label]="'← ' + back.label" [ariaLabel]="'กลับไปประวัติ' + back.label" (onClick)="backAudit()" />
+          }
+          <h2 id="audit-heading" class="audit-heading" tabindex="-1">ประวัติการดำเนินการ · {{ t.label }}</h2>
+        </div>
       }
     </ng-template>
     @if (auditTarget(); as t) {
@@ -410,7 +415,7 @@
           [entityId]="t.id"
           [version]="refreshCount()"
           [names]="auditNames()"
-          (openEntity)="auditTarget.set($event)"
+          (openEntity)="followAudit($event)"
         />
       </section>
     }
