@@ -12,7 +12,7 @@ import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
 import { RoundList } from './round-list';
@@ -293,8 +293,13 @@ export class PortalHome {
     return this.countOf(run, 'Won') + run.unassignedLockCodes.length;
   }
 
-  protected quotaOf(run: AllocationRun, category: Category): number {
-    return run.quota.find((q) => q.category === category)?.base ?? 0;
+  protected quotaOf(run: AllocationRun, category: Category): QuotaLine {
+    return run.quota.find((q) => q.category === category) ?? { category, base: 0, allocated: 0 };
+  }
+
+  /** The weight column only earns its place when someone carries ×2 from the round before. */
+  protected weighted(run: AllocationRun): boolean {
+    return run.outcomes.some((o) => o.weight > 1);
   }
 
   protected pct(share: number): string {
@@ -346,10 +351,6 @@ export class PortalHome {
   }
 
   protected asRequestRow(row: RoundRequestRow): RoundRequestRow {
-    return row;
-  }
-
-  protected asQuota(row: AllocationRun['quota'][number]): AllocationRun['quota'][number] {
     return row;
   }
 

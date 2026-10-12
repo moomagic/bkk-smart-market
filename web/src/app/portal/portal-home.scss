@@ -34,11 +34,6 @@ h2 {
 .notice {
   margin: 0 0 var(--space-3);
 }
-.small {
-  font-size: var(--text-small);
-  font-weight: 400;
-  margin-left: var(--space-2);
-}
 .actions {
   display: flex;
   align-items: center;
@@ -50,6 +45,7 @@ h3 {
   margin: 0;
 }
 h4 {
+  font-family: var(--font-heading);
   font-size: var(--text-body);
   margin: var(--space-5) 0 var(--space-2);
 }
@@ -57,49 +53,27 @@ h4 {
   font-size: var(--text-small);
   margin: 0 0 var(--space-3);
 }
-h2 app-status-tag,
 h3 app-status-tag {
   margin-left: var(--space-2);
   vertical-align: middle;
 }
-/* Run summary: provenance, quota beside it, evidence folded below */
-.run-summary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
-  gap: var(--space-3) var(--space-6);
-  padding: var(--space-4) var(--space-4);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-}
-@media (max-width: 760px) {
-  .run-summary {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
+/* Where the run came from: label over value, side by side on one row */
 .run-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  align-content: start;
-  gap: var(--space-3) var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-small);
+}
+.run-meta dt,
+.evidence dt {
+  color: var(--muted);
+}
+.run-meta dd,
+.evidence dd {
   margin: 0;
 }
-.run-summary dt {
-  color: var(--muted);
-  font-size: var(--text-small);
-}
-.run-summary dd {
-  margin: var(--space-1) 0 0;
-}
-.quota-block h4 {
-  margin: 0 0 var(--space-1);
-  font-size: var(--text-small);
-  color: var(--muted);
-}
 .evidence {
-  grid-column: 1 / -1;
-  border-top: 1px solid var(--line);
-  padding-top: var(--space-3);
   font-size: var(--text-small);
 }
 .evidence dl {

@@ -83,15 +83,13 @@ test('demo script 1–6', async ({ page, request }) => {
     // The input hash sits in the folded evidence, one click away
     await run.getByText('หลักฐานการสุ่ม').click();
     await expect(run.getByText('ค่าแฮชข้อมูลนำเข้า (SHA-256)')).toBeVisible();
-    for (const [group, quota] of [
-      ['ผู้ค้าเดิม', '2'],
-      ['กลุ่มเปราะบาง', '1'],
-      ['ผู้ค้าใหม่', '1'],
-    ]) {
-      await expect(
-        run.getByRole('row').filter({ hasText: group }).first().getByRole('cell').nth(1),
-      ).toHaveText(quota);
-    }
+    // Each group of the result carries its quota and seats won, in quota order
+    const groups = run.getByRole('columnheader').filter({ hasText: 'โควตา' });
+    await expect(groups).toHaveText([
+      /^ผู้ค้าเดิม · โควตา 2 · ได้สิทธิ์ 2/,
+      /^กลุ่มเปราะบาง · โควตา 1 · ได้สิทธิ์ 1/,
+      /^ผู้ค้าใหม่ · โควตา 1 · ได้สิทธิ์ 1/,
+    ]);
     await expect(run.getByRole('row').filter({ hasText: 'สมศรี ใ.' })).toContainText('B2');
 
     // Approval publishes the result, so a dialog restates it before the officer commits

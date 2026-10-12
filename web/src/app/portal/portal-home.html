@@ -1,5 +1,5 @@
 <div class="page-head">
-  <h1>พอร์ทัลเจ้าหน้าที่เขต</h1>
+  <h1>พอร์ทัลเจ้าหน้าที่ · เขตบางพลัด</h1>
   @if (clock(); as now) {
     <!-- Development only: the demo clock and reset sit behind one quiet trigger, apart from the officer's work -->
     <p-button text size="small" class="demo-trigger" [label]="'เวลา demo ' + dateTime(now)" ariaLabel="เครื่องมือ demo"
@@ -33,7 +33,8 @@
   <!-- Two columns from 1024px: the rounds stay in view on the left while the selected round is worked on the right -->
   <div class="workspace">
   <section class="rounds-pane" aria-labelledby="rounds-heading">
-    <h2 id="rounds-heading">รอบ</h2>
+    <!-- Named for assistive tech; on screen the group titles below say which rounds these are -->
+    <h2 id="rounds-heading" class="sr-only">รอบ</h2>
     @switch (rounds().state) {
       @case ('loading') {
         <p class="muted">กำลังโหลด…</p>
@@ -60,11 +61,11 @@
   @if (selected(); as round) {
     <section class="round" aria-labelledby="round-heading">
       <div class="section-head">
-        <h2 id="round-heading">
-          {{ round.spaceName }}
-          <span class="muted small">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับ {{ date(round.applyClosesAt) }}</span>
-          <app-status-tag [round]="round.status" />
-        </h2>
+        <!-- The heading is the space alone; the period sits under it and the step strip carries the status -->
+        <div>
+          <h2 id="round-heading">{{ round.spaceName }}</h2>
+          <p class="muted text-small flush">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับคำขอ {{ date(round.applyClosesAt) }}</p>
+        </div>
         <!-- Only the actions for where the round stands; the step strip below already shows what is done -->
         <div class="actions">
           <p-button text label="ประวัติการดำเนินการ" (onClick)="showRoundAudit(round)" />
@@ -156,48 +157,22 @@
             @if (latestRun(); as run) {
               <section aria-labelledby="run-heading">
                 <div class="section-head">
+                  <!-- The tab already says "ผลจัดสรร"; it stays in the heading's name so the section is announced as the run -->
                   <h3 id="run-heading">
-                    ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
+                    <span class="sr-only">ผลจัดสรร · </span><span class="mono">{{ run.referenceNo }}</span>
                     <app-status-tag [run]="run.status" />
                   </h3>
                 </div>
 
-
-                <!-- Summary first: who ran it, with which seed, against which quota -->
-                <div class="run-summary">
-                  <dl class="run-meta">
-                    <div><dt>เลขตั้งต้นการสุ่ม (seed)</dt><dd class="mono">{{ run.seed }}</dd></div>
-                    <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
-                    @if (run.decidedAt) {
-                      <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
-                    }
-                  </dl>
-                  <div class="quota-block">
-                    <h4>โควตา</h4>
-                    <p-table class="quota" [value]="run.quota" dataKey="category">
-                      <ng-template #header>
-                        <tr>
-                          <th scope="col">กลุ่ม</th>
-                          <th scope="col" class="num">โควตา</th>
-                          <th scope="col" class="num">ได้สิทธิ์จริง</th>
-                        </tr>
-                      </ng-template>
-                      <ng-template #body let-r>
-                        @let q = asQuota(r);
-                        <tr>
-                          <td>{{ category[q.category] }}</td>
-                          <td class="num mono">{{ q.base }}</td>
-                          <td class="num mono" [class.warn-text]="q.allocated !== q.base">{{ q.allocated }}</td>
-                        </tr>
-                      </ng-template>
-                    </p-table>
-                    @if (run.pooledDraw) {
-                      <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
-                    } @else if (offQuota(run)) {
-                      <p class="muted small-note">ตัวเลขที่ต่างจากโควตามาจากการโอนโควตาของกลุ่มที่ผู้สมัครไม่พอให้กลุ่มถัดไป</p>
-                    }
-                  </div>
-                  <details class="disclosure evidence">
+                <!-- Where the result came from, on one row; the quota sits on each group of the table below -->
+                <dl class="run-meta">
+                  <div><dt>เลขตั้งต้นการสุ่ม (seed)</dt><dd class="mono">{{ run.seed }}</dd></div>
+                  <div><dt>รันเมื่อ</dt><dd>{{ dateTime(run.ranAt) }} · {{ run.ranBy }}</dd></div>
+                  @if (run.decidedAt) {
+                    <div><dt>{{ runStatus[run.status] }}เมื่อ</dt><dd>{{ dateTime(run.decidedAt) }} · {{ run.decidedBy }}</dd></div>
+                  }
+                </dl>
+                <details class="disclosure evidence">
                     <summary>หลักฐานการสุ่ม</summary>
                     <p class="muted small-note">รันซ้ำด้วยเลขตั้งต้นการสุ่มและข้อมูลนำเข้าชุดเดิมจะได้ผลเดิมทุกครั้ง ค่าแฮชยืนยันว่าข้อมูลนำเข้าไม่ถูกเปลี่ยน</p>
                     <dl>
@@ -208,14 +183,20 @@
                       </div>
                     </dl>
                   </details>
-                </div>
 
                 <h4>ผลรายคน</h4>
+                @if (run.pooledDraw) {
+                  <p class="muted small-note">มี 1 ล็อค จึงจับรวมทุกกลุ่ม</p>
+                } @else if (offQuota(run)) {
+                  <p class="muted small-note">กลุ่มที่ได้สิทธิ์ต่างจากโควตา มาจากการโอนโควตาของกลุ่มที่ผู้สมัครไม่พอให้กลุ่มถัดไป</p>
+                }
                 <p-table class="frame" [value]="outcomeRows()" dataKey="vendorId" rowGroupMode="subheader" groupRowsBy="group">
                   <ng-template #header>
                     <tr>
                       <th scope="col">ผู้ค้า</th>
-                      <th scope="col" class="num">น้ำหนัก</th>
+                      @if (weighted(run)) {
+                        <th scope="col" class="num">น้ำหนัก</th>
+                      }
                       <th scope="col">ผล</th>
                       <th scope="col">ล็อค</th>
                       <th scope="col">เหตุผล</th>
@@ -223,10 +204,17 @@
                   </ng-template>
                   <ng-template #groupheader let-r>
                     @let g = asOutcome(r);
+                    @let q = quotaOf(run, g.category);
                     <tr class="group">
-                      <th scope="colgroup" colspan="5">
+                      <th scope="colgroup" [attr.colspan]="weighted(run) ? 5 : 4">
                         {{ category[g.category] }}
-                        <span class="muted">· โควตา {{ quotaOf(run, g.category) }}</span>
+                        <span class="muted">· โควตา <span class="mono">{{ q.base }}</span> · ได้สิทธิ์</span>
+                        <span class="mono" [class.warn-text]="q.allocated !== q.base">{{ q.allocated }}</span>
+                        @if (q.allocated > q.base) {
+                          <span class="warn-text">(รับโอนโควตา +{{ q.allocated - q.base }})</span>
+                        } @else if (q.allocated < q.base) {
+                          <span class="warn-text">(โอนโควตาออก {{ q.base - q.allocated }})</span>
+                        }
                       </th>
                     </tr>
                   </ng-template>
@@ -234,7 +222,9 @@
                     @let o = asOutcome(r);
                     <tr>
                       <td>{{ o.vendorName }}</td>
-                      <td class="num mono">×{{ o.weight }}</td>
+                      @if (weighted(run)) {
+                        <td class="num mono">{{ o.weight > 1 ? '×' + o.weight : '' }}</td>
+                      }
                       <td><app-status-tag [outcome]="o.kind" /></td>
                       <td class="mono">{{ o.lockCode ?? '' }}</td>
                       <td>{{ o.reason }}</td>
@@ -320,7 +310,7 @@
                       @if (rv.ineligibleReason) {
                         <p class="muted small-note">ผลตรวจสิทธิ: {{ rv.ineligibleReason }}</p>
                       }
-                      <p>เหตุผลของผู้ค้า: "{{ rv.reason }}" <span class="muted small">{{ dateTime(rv.submittedAt) }}</span></p>
+                      <p>เหตุผลของผู้ค้า: "{{ rv.reason }}" <span class="muted text-small">{{ dateTime(rv.submittedAt) }}</span></p>
                       @if (rv.outcome) {
                         <p class="muted">คำตอบ: {{ rv.response }}</p>
                       } @else if (answering()?.id === rv.id) {

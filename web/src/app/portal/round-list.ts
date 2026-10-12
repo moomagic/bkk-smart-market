@@ -1,9 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RoundSummary } from '../core/api';
 import { StatusTag } from '../shared/status-tag';
-import { formatThaiDate } from '../shared/labels';
+import { ROUND_STATUS_LABEL, formatThaiDate } from '../shared/labels';
 
-/** The portal's round picker: one button per round (name, status, period, request count), the open one marked. */
+/**
+ * The portal's round picker: one button per round (name, period, request count), the open one marked. A tag shows only
+ * where the round waits on the district (closed, drawn); open and approved rounds say their status to assistive tech.
+ */
 @Component({
   selector: 'app-round-list',
   imports: [StatusTag],
@@ -16,7 +19,11 @@ import { formatThaiDate } from '../shared/labels';
             (click)="pick.emit(round)">
             <span class="round-line">
               <span class="round-name">{{ round.spaceName }}</span>
-              <app-status-tag [round]="round.status" />
+              @if (round.status === 'Closed' || round.status === 'Drawn') {
+                <app-status-tag [round]="round.status" />
+              } @else {
+                <span class="sr-only">{{ roundStatus[round.status] }}</span>
+              }
             </span>
             <span class="round-meta">
               {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · คำขอ <span class="mono">{{ round.requestCount }}</span>
@@ -50,6 +57,9 @@ import { formatThaiDate } from '../shared/labels';
       text-align: left;
       cursor: pointer;
     }
+    .round-pick {
+      transition: background-color var(--motion-fast) var(--ease-standard);
+    }
     .round-pick:hover {
       background: var(--ground);
     }
@@ -69,6 +79,8 @@ import { formatThaiDate } from '../shared/labels';
     }
     .round-name {
       font-weight: 600;
+    }
+    .rounds > li.selected .round-name {
       color: var(--accent);
     }
     .round-meta {
@@ -84,4 +96,5 @@ export class RoundList {
   readonly pick = output<RoundSummary>();
 
   protected readonly date = formatThaiDate;
+  protected readonly roundStatus = ROUND_STATUS_LABEL;
 }
