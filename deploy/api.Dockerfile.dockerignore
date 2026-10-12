@@ -1,0 +1,10 @@
+# Build context is the repository root: send only what the API image needs (never .env, web/node_modules, docs PDFs)
+*
+!api/global.json
+!api/Directory.Build.props
+!api/BannedSymbols.txt
+!api/SmartMarket.slnx
+!api/src/
+!docs/rules/
+**/bin/
+**/obj/
