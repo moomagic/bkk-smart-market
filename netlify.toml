@@ -1,0 +1,46 @@
+# Netlify: the Angular app as a static site; /api, /docs and /openapi are proxied to the API on Render,
+# doing what web/nginx.conf does under docker compose. The request headers (X-Demo-Role, X-Demo-User) pass through.
+# If Render gave the service another address, replace https://bkk-smart-market-api.onrender.com below.
+[build]
+  base = "web"
+  command = "npx ng build"
+  publish = "dist/web/browser"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://bkk-smart-market-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/docs"
+  to = "https://bkk-smart-market-api.onrender.com/docs"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/docs/*"
+  to = "https://bkk-smart-market-api.onrender.com/docs/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/openapi/*"
+  to = "https://bkk-smart-market-api.onrender.com/openapi/:splat"
+  status = 200
+  force = true
+
+# SPA: deep links like /vendor serve index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# The page is revalidated on every load so a new deploy is picked up at once; hashed bundles never change
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"

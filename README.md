@@ -18,6 +18,8 @@ docker compose up --build
 
 ครั้งแรก API สร้างฐานข้อมูล, seed ข้อมูลจำลอง และประวัติรอบก่อน (จับฉลากด้วย engine จริง) ให้เอง
 
+ขึ้นเว็บให้ทีมลองเล่นฟรี (Neon · Render · Netlify): ดู [`docs/deploy.md`](docs/deploy.md)
+
 ### Environment (ไม่บังคับ)
 
 ใส่ในไฟล์ `.env` ที่ root (git-ignored — ห้าม commit) แล้ว `docker compose up` จะอ่านเอง

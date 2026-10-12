@@ -1,0 +1,27 @@
+# Render Blueprint: the API as one free Docker web service in Singapore.
+# Render › New › Blueprint › this repository. It asks for the values marked sync: false.
+services:
+  - type: web
+    name: bkk-smart-market-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./deploy/api.Dockerfile
+    dockerContext: .
+    # Reads the seeded spaces, so it passes only once migrations and seed data are in the database
+    healthCheckPath: /api/spaces
+    envVars:
+      # The port the API listens on (ASPNETCORE_URLS in the image); Render routes traffic to it
+      - key: PORT
+        value: "8080"
+      # Development keeps the demo endpoints (/api/demo/reset, /api/demo/clock) the portal's demo tools need
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Development
+      # Neon connection string, e.g. Host=…neon.tech;Database=neondb;Username=…;Password=…;SSL Mode=Require
+      - key: ConnectionStrings__SmartMarket
+        sync: false
+      # Optional: with a key the Vendor Assistant answers through Claude; empty = keyword matching
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        sync: false
