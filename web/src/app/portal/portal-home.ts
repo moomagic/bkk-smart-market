@@ -11,7 +11,7 @@ import { Tag } from 'primeng/tag';
 import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
-import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
+import { Observable, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
 import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, RunOutcome, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
@@ -85,8 +85,8 @@ export class PortalHome {
   protected readonly selectedId = signal<string | null>(null);
 
   protected readonly rounds = toSignal(
-    combineLatest([toObservable(this.isOfficer), toObservable(this.refresh)]).pipe(
-      switchMap(([officer]) => (officer ? load(this.api.rounds()) : of({ state: 'ready', data: [] } as Load<RoundSummary[]>))),
+    loadKeyed(toObservable(this.isOfficer), toObservable(this.refresh), (officer) =>
+      officer ? load(this.api.rounds()) : of({ state: 'ready', data: [] } as Load<RoundSummary[]>),
     ),
     { initialValue: { state: 'loading' } as Load<RoundSummary[]> },
   );
@@ -141,9 +141,7 @@ export class PortalHome {
   });
 
   protected readonly requests = toSignal(
-    combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
-      switchMap(([id]) => (id ? load(this.api.roundRequests(id)) : of(null))),
-    ),
+    loadKeyed(toObservable(this.selectedId), toObservable(this.refresh), (id) => (id ? load(this.api.roundRequests(id)) : of(null))),
     { initialValue: null as Load<RoundRequestRow[]> | null },
   );
 
@@ -163,9 +161,7 @@ export class PortalHome {
 
   /** Every run of the selected round, newest first (rejected ones stay visible). */
   protected readonly runs = toSignal(
-    combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
-      switchMap(([id]) => (id ? load(this.api.allocationRuns(id)) : of(null))),
-    ),
+    loadKeyed(toObservable(this.selectedId), toObservable(this.refresh), (id) => (id ? load(this.api.allocationRuns(id)) : of(null))),
     { initialValue: null as Load<AllocationRun[]> | null },
   );
 
@@ -176,9 +172,7 @@ export class PortalHome {
 
   /** Allocation Insight flags of the selected round (read-only). */
   protected readonly insights = toSignal(
-    combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
-      switchMap(([id]) => (id ? load(this.api.roundInsights(id)) : of(null))),
-    ),
+    loadKeyed(toObservable(this.selectedId), toObservable(this.refresh), (id) => (id ? load(this.api.roundInsights(id)) : of(null))),
     { initialValue: null as Load<InsightFlag[]> | null },
   );
 
@@ -191,9 +185,7 @@ export class PortalHome {
   protected readonly insightWarns = computed(() => this.insightList().some((f) => f.severity !== 'Info'));
 
   protected readonly reviews = toSignal(
-    combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
-      switchMap(([id]) => (id ? load(this.api.roundReviews(id)) : of(null))),
-    ),
+    loadKeyed(toObservable(this.selectedId), toObservable(this.refresh), (id) => (id ? load(this.api.roundReviews(id)) : of(null))),
     { initialValue: null as Load<RoundReview[]> | null },
   );
 
@@ -264,6 +256,18 @@ export class PortalHome {
         list.find((r) => r.status === 'Drawn') ??
         list.find((r) => (r.status === 'Open' || r.status === 'Closed') && r.requestCount > r.eligibleCount + r.ineligibleCount);
       if (next) untracked(() => this.selectedId.set(next.id));
+    });
+    // After a command, put the keyboard on what now carries the round (its heading, or the run's) once it is rendered;
+    // the button that was pressed is disabled while busy, or gone once the round moves on
+    afterRenderEffect(() => {
+      const id = this.pendingFocus();
+      this.runList();
+      this.requestRows();
+      if (!id) return;
+      const target = document.getElementById(id);
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      untracked(() => this.pendingFocus.set(null));
     });
     // PrimeNG places the active-tab bar when the selected tab changes, not when a tab's width does. The counts on
     // the tabs arrive after the round opens and widen them, so re-place the bar once they have rendered.
@@ -415,6 +419,7 @@ export class PortalHome {
         const failed = rows.filter((r) => r.status === 'Ineligible').length;
         this.notice.set({ kind: 'ok', text: `ตรวจสิทธิแล้ว ${rows.length} คำขอ · ไม่ผ่าน ${failed}` });
         this.tabChoice.set('requests');
+        this.pendingFocus.set('round-heading');
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {
@@ -432,6 +437,7 @@ export class PortalHome {
         this.running.set(false);
         this.notice.set({ kind: 'ok', text: `รันจัดสรรแล้ว · ${run.referenceNo} · ร่างรออนุมัติ` });
         this.tabChoice.set('run');
+        this.pendingFocus.set('run-heading');
         this.refresh.update((n) => n + 1);
       },
       error: (err) => {
@@ -448,6 +454,7 @@ export class PortalHome {
     this.api.rejectAllocationRun(run.id, reason).subscribe({
       next: (r) => {
         this.deciding.set(false);
+        this.decided = true;
         this.rejecting.set(null);
         this.notice.set({ kind: 'ok', text: `ปฏิเสธผล ${r.referenceNo} แล้ว · ตรวจสิทธิใหม่ได้แล้วรันจัดสรรอีกครั้ง (seed ใหม่)` });
         this.refresh.update((n) => n + 1);
@@ -490,6 +497,7 @@ export class PortalHome {
     this.api.approveAllocationRun(run.id).subscribe({
       next: (approved) => {
         this.deciding.set(false);
+        this.decided = true;
         this.approving.set(null);
         this.notice.set({ kind: 'ok', text: `อนุมัติผลจัดสรร ${approved.referenceNo} แล้ว · ผู้ค้าเห็นผลและต้องยืนยันสิทธิ์ภายในกำหนด` });
         this.refresh.update((n) => n + 1);
@@ -542,6 +550,9 @@ export class PortalHome {
     this.openAudit({ type: 'StallRequest', id: row.requestId, label: `คำขอของ ${row.vendorName}` });
   }
 
+  /** Element id to focus once it is rendered (see the constructor). */
+  private readonly pendingFocus = signal<string | null>(null);
+
   /** The button that opened the approve or reject dialog, so leaving it puts the keyboard back there. */
   private dialogOpener: HTMLElement | null = null;
 
@@ -555,17 +566,23 @@ export class PortalHome {
     this.rejecting.set(run.id);
   }
 
+  /** The dialog closed on a decision rather than a cancel. */
+  private decided = false;
+
+  /**
+   * Once the dialog has gone: after a decision the run's heading takes focus (the decision bar is gone or changing);
+   * left without deciding, the button that opened it does. Waiting for the close keeps the dialog's focus trap from
+   * pulling focus back as it leaves.
+   */
   protected returnFromDialog(): void {
     const opener = this.dialogOpener;
     this.dialogOpener = null;
-    afterNextRender(
-      () => {
-        // A decision removes the decision bar, so the run heading takes focus instead
-        const target = opener?.isConnected ? opener : document.getElementById('run-heading');
-        target?.focus({ preventScroll: true });
-      },
-      { injector: this.injector },
-    );
+    if (this.decided) {
+      this.decided = false;
+      this.pendingFocus.set('run-heading');
+      return;
+    }
+    if (opener) afterNextRender(() => opener.focus({ preventScroll: true }), { injector: this.injector });
   }
 
   /** The control that opened the audit panel, so closing it puts the keyboard back where the officer was. */
@@ -634,6 +651,25 @@ function urgency(r: RoundSummary): number {
   if (r.status === 'Drawn') return 0;
   if (r.requestCount > r.eligibleCount + r.ineligibleCount) return 1;
   return r.status === 'Closed' ? 2 : 3;
+}
+
+/**
+ * Loads for a key (the selected round, or the role) and again on every refresh. A refresh of the same key keeps the
+ * data it has on screen until the new data arrives: the page does not flash "กำลังโหลด…" after a command, and what
+ * holds the keyboard focus is not torn down underneath it. A new key, or a retry after an error, shows loading.
+ */
+function loadKeyed<K, L extends { state: string } | null>(
+  key$: Observable<K>,
+  refresh$: Observable<number>,
+  fetch: (key: K) => Observable<L>,
+): Observable<L> {
+  return combineLatest([key$, refresh$]).pipe(
+    switchMap(([key]) => fetch(key).pipe(map((value) => ({ key, value })))),
+    scan((shown: { key: K; value: L } | null, next) =>
+      shown && shown.key === next.key && shown.value?.state === 'ready' && next.value?.state === 'loading' ? shown : next,
+    null),
+    map((s) => s!.value),
+  );
 }
 
 function load<T>(source: Observable<T>) {

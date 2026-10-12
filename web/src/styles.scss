@@ -101,7 +101,8 @@ h1 {
   white-space: nowrap;
 }
 
-.frame td:last-child {
+.frame td:last-child,
+.frame .wrap {
   white-space: normal;
 }
 

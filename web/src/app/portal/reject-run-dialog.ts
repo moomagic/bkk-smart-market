@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, effect, input, output, signal, untracked, viewChild } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { Textarea } from 'primeng/textarea';
@@ -15,7 +15,7 @@ import { AllocationRun } from '../core/api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" (onShow)="opened()" (onHide)="closed.emit()"
-      [modal]="true" [draggable]="false" [focusOnShow]="false"
+      [modal]="true" [draggable]="false" closeAriaLabel="ปิด" [focusOnShow]="false"
       [style]="{ width: 'min(32rem, calc(100vw - 32px))' }" header="ปฏิเสธผลจัดสรร">
       @let run = this.run();
       <div class="body">
@@ -66,9 +66,16 @@ export class RejectRunDialog {
     return !this.deciding() && this.text().trim().length > 0 && (this.rejectsLeft() > 0 || this.isExecutive());
   }
 
-  /** Each opening starts from an empty reason, with the cursor in it. */
+  constructor() {
+    // Each opening starts from an empty reason, cleared as it opens (not once its animation ends, which would wipe
+    // anything typed meanwhile)
+    effect(() => {
+      if (this.visible()) untracked(() => this.text.set(''));
+    });
+  }
+
+  /** The cursor goes into the reason once the dialog is shown. */
   protected opened(): void {
-    this.text.set('');
     this.reason()?.nativeElement.focus();
   }
 

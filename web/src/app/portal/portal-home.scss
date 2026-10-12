@@ -90,6 +90,12 @@ h3 app-status-tag {
   font-size: var(--text-small);
   color: var(--muted);
 }
+/* The row's history link stays at the table's right edge when a narrow table scrolls sideways (audit panel open) */
+.row-action {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+}
 /* Group rows sit in the body, outside the preset's header-cell padding */
 tr.group > th {
   padding: var(--space-2) var(--space-3);
@@ -109,7 +115,8 @@ tr.group > th {
   margin: 0;
 }
 .audit-heading:focus,
-#run-heading:focus {
+#run-heading:focus,
+#round-heading:focus {
   outline: none;
 }
 .audit-head {
@@ -133,7 +140,10 @@ tr.group > th {
   }
 }
 @media (min-width: 1024px) and (max-width: 1439.98px) {
-  .with-audit .decision-bar {
+  /* Everything the officer can act on stays clear of the panel: the round's actions, the requests and their links */
+  .with-audit .decision-bar,
+  .with-audit .round > .section-head,
+  .with-audit p-table.requests {
     margin-right: 28rem;
   }
 }

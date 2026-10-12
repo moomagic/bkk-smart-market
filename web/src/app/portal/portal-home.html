@@ -63,7 +63,7 @@
       <div class="section-head">
         <!-- The heading is the space alone; the period sits under it and the step strip carries the status -->
         <div>
-          <h2 id="round-heading">{{ round.spaceName }}</h2>
+          <h2 id="round-heading" tabindex="-1">{{ round.spaceName }}</h2>
           <p class="muted text-small flush">รอบ {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · ปิดรับคำขอ {{ date(round.applyClosesAt) }}</p>
         </div>
         <!-- Only the actions for where the round stands; the step strip below already shows what is done -->
@@ -99,6 +99,15 @@
         }
       }
 
+      <!-- Reviews carry a 7-day deadline and insights flag problems: their tabs only appear with data, so a failed load
+           is said here instead of the tab silently missing -->
+      @if (reviews()?.state === 'error' || insights()?.state === 'error') {
+        <p class="error small-note" role="alert">
+          โหลด{{ reviews()?.state === 'error' ? 'คำขอทบทวน' : '' }}{{ reviews()?.state === 'error' && insights()?.state === 'error' ? 'และ' : '' }}{{ insights()?.state === 'error' ? 'ข้อสังเกต' : '' }}ของรอบนี้ไม่สำเร็จ —
+          <p-button link label="ลองอีกครั้ง" (onClick)="reload()" />
+        </p>
+      }
+
       <p-tabs [value]="tab()" (valueChange)="pickTab($event)">
         <p-tablist>
           <p-tab value="requests">คำขอ <p-badge [value]="requestRows().length" severity="secondary" /></p-tab>
@@ -123,15 +132,15 @@
               } @else if (requests()?.state === 'error') {
                 <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
               } @else {
-                <p-table class="frame" [value]="requestRows()" dataKey="requestId">
+                <p-table class="frame requests" [value]="requestRows()" dataKey="requestId">
                   <ng-template #header>
                     <tr>
                       <th scope="col">ผู้ค้า</th>
                       <th scope="col">กลุ่ม</th>
                       <th scope="col">สถานะ</th>
                       <th scope="col" class="num">น้ำหนัก</th>
-                      <th scope="col">เหตุผล</th>
-                      <th scope="col"><span class="sr-only">ประวัติ</span></th>
+                      <th scope="col" class="wrap">เหตุผล</th>
+                      <th scope="col" class="row-action"><span class="sr-only">ประวัติ</span></th>
                     </tr>
                   </ng-template>
                   <ng-template #body let-r>
@@ -141,8 +150,8 @@
                       <td>{{ category[row.category] }}</td>
                       <td><app-status-tag [request]="row.status" /></td>
                       <td class="num mono">×{{ row.carryOverWeight }}</td>
-                      <td>{{ row.ineligibleReason ?? '' }}</td>
-                      <td><p-button link label="ประวัติ" [ariaLabel]="'ประวัติคำขอของ ' + row.vendorName" (onClick)="showRequestAudit(row)" /></td>
+                      <td class="wrap">{{ row.ineligibleReason ?? '' }}</td>
+                      <td class="row-action"><p-button link label="ประวัติ" [ariaLabel]="'ประวัติคำขอของ ' + row.vendorName" (onClick)="showRequestAudit(row)" /></td>
                     </tr>
                   </ng-template>
                   <ng-template #emptymessage>
