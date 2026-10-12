@@ -12,7 +12,7 @@ import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, Category, InsightFlag, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
 import { RoundList } from './round-list';
@@ -191,11 +191,16 @@ export class PortalHome {
 
   protected readonly pendingReviews = computed(() => this.reviewList().filter((r) => !r.outcome).length);
 
-  /** The latest run's outcomes in quota-group order (the table groups rows by category). */
+  /**
+   * The latest run's outcomes in quota-group order. p-table sorts subheader groups by their group field, so the field
+   * is a key that sorts in that order ("1-Legacy", "2-Vulnerable", "3-New"); rows keep the draw order inside a group.
+   */
   protected readonly outcomeRows = computed(() => {
     const run = this.latestRun();
     if (!run) return [];
-    return [...run.outcomes].sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category));
+    return run.outcomes
+      .map((o) => ({ ...o, group: `${CATEGORY_ORDER.indexOf(o.category) + 1}-${o.category}` }))
+      .sort((a, b) => a.group.localeCompare(b.group));
   });
 
   /** The tab the officer picked for this round; null follows what the round needs next. */
@@ -250,13 +255,14 @@ export class PortalHome {
 
   private readonly injector = inject(Injector);
 
-  /** "ตรวจผลและอนุมัติ": open the run tab, then bring the decision bar (after the evidence) into view. */
+  /** "ตรวจผลและอนุมัติ": open the run tab and move focus to the decision bar, which stays on screen beside the table. */
   protected goToDecision(): void {
     this.tabChoice.set('run');
     afterNextRender(
       () => {
         const decision = document.getElementById('decision');
-        decision?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        decision?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
         decision?.focus({ preventScroll: true });
       },
       { injector: this.injector },
@@ -275,6 +281,16 @@ export class PortalHome {
   /** Some group won more or fewer seats than its quota (rollover). */
   protected offQuota(run: AllocationRun): boolean {
     return run.quota.some((q) => q.allocated !== q.base);
+  }
+
+  /** Outcomes of one kind in the run (the decision bar's tally). */
+  protected countOf(run: AllocationRun, kind: OutcomeKind): number {
+    return run.outcomes.filter((o) => o.kind === kind).length;
+  }
+
+  /** Locks in the draw: the ones won plus the ones left without a winner. */
+  protected lockCount(run: AllocationRun): number {
+    return this.countOf(run, 'Won') + run.unassignedLockCodes.length;
   }
 
   protected quotaOf(run: AllocationRun, category: Category): number {

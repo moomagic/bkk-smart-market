@@ -69,16 +69,19 @@
         <div class="actions">
           <p-button text label="ประวัติการดำเนินการ" (onClick)="showRoundAudit(round)" />
           @if (round.status === 'Open' || round.status === 'Closed') {
+            <!-- One filled button: checking while requests wait for it, running once they are all checked -->
             <p-button
-              variant="outlined"
+              [variant]="uncheckedCount() > 0 ? undefined : 'outlined'"
               [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
               (onClick)="checkEligibility(round)"
               [disabled]="checking() || running()"
             />
-            <p-button [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
+            <p-button [variant]="uncheckedCount() > 0 ? 'outlined' : undefined"
+              [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
               [disabled]="running() || checking() || !canRun()" [attr.aria-describedby]="canRun() ? null : 'run-blocked'" />
           } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft') {
-            <p-button label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
+            <!-- A way to the decision bar; approving itself is the one filled button, on that bar -->
+            <p-button variant="outlined" label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
           }
         </div>
       </div>
@@ -156,9 +159,6 @@
                   <h3 id="run-heading">
                     ผลจัดสรร · <span class="mono">{{ run.referenceNo }}</span>
                     <app-status-tag [run]="run.status" />
-                    @if (run.status === 'Draft') {
-                      <span class="muted small">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
-                    }
                   </h3>
                 </div>
 
@@ -211,7 +211,7 @@
                 </div>
 
                 <h4>ผลรายคน</h4>
-                <p-table class="frame" [value]="outcomeRows()" dataKey="vendorId" rowGroupMode="subheader" groupRowsBy="category">
+                <p-table class="frame" [value]="outcomeRows()" dataKey="vendorId" rowGroupMode="subheader" groupRowsBy="group">
                   <ng-template #header>
                     <tr>
                       <th scope="col">ผู้ค้า</th>
@@ -242,10 +242,23 @@
                   </ng-template>
                 </p-table>
 
-                <!-- The decision comes after the evidence: the officer reads the result before approving or rejecting it -->
+                @if (runList().length > 1) {
+                  <h4>รันก่อนหน้าของรอบนี้</h4>
+                  <ul class="earlier-runs">
+                    @for (r of runList().slice(1); track r.id) {
+                      <li>
+                        <span class="mono">{{ r.referenceNo }}</span> · {{ runStatus[r.status] }} · {{ dateTime(r.ranAt) }}
+                        @if (r.rejectReason) {
+                          · เหตุผล: {{ r.rejectReason }}{{ r.rejectCountsTowardLimit ? '' : ' (ไม่นับลิมิต)' }}
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+
+                <!-- The decision closes the evidence, and its bar stays on screen while the officer reads the table above -->
                 @if (run.status === 'Draft') {
-                  <div id="decision" class="decision" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
-                  @if (run.status === 'Draft' && rejecting() === run.id) {
+                  @if (rejecting() === run.id) {
                     <form ngNoForm class="reject-form" (submit)="$event.preventDefault(); reject(run)">
                       <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
                       <textarea pTextarea id="reject-reason" rows="2" maxlength="500" [value]="rejectReason()"
@@ -266,31 +279,22 @@
                       </div>
                     </form>
                   }
-                    <div class="decision-bar">
-                      <p class="muted text-small flush">ตรวจผลรายคนครบแล้ว อนุมัติเพื่อประกาศผล หรือปฏิเสธเพื่อจับฉลากใหม่ด้วย seed ใหม่</p>
-                      <div class="actions">
-                        <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
-                          [disabled]="deciding() || rejecting() === run.id" />
-                        <p-button label="อนุมัติผล" (onClick)="approving.set(run.id)" [disabled]="deciding()" />
-                      </div>
+                  <div id="decision" class="decision-bar" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
+                    <p class="tally text-small flush">
+                      <span>ได้สิทธิ์ <span class="mono">{{ countOf(run, 'Won') }}</span> จาก <span class="mono">{{ lockCount(run) }}</span> ล็อค</span>
+                      <span>สำรอง <span class="mono">{{ countOf(run, 'Waitlisted') }}</span> คน</span>
+                      <span class="muted">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
+                    </p>
+                    <div class="actions">
+                      <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
+                        [disabled]="deciding() || rejecting() === run.id" />
+                      <p-button label="อนุมัติผล" (onClick)="approving.set(run.id)" [disabled]="deciding()" />
                     </div>
                   </div>
                 }
-
-                @if (runList().length > 1) {
-                  <h4>รันก่อนหน้าของรอบนี้</h4>
-                  <ul class="earlier-runs">
-                    @for (r of runList().slice(1); track r.id) {
-                      <li>
-                        <span class="mono">{{ r.referenceNo }}</span> · {{ runStatus[r.status] }} · {{ dateTime(r.ranAt) }}
-                        @if (r.rejectReason) {
-                          · เหตุผล: {{ r.rejectReason }}{{ r.rejectCountsTowardLimit ? '' : ' (ไม่นับลิมิต)' }}
-                        }
-                      </li>
-                    }
-                  </ul>
-                }
               </section>
+            } @else if (runs()?.state === 'ready') {
+              <p class="muted">ไม่มีผลจัดสรรของรอบนี้ในระบบ</p>
             } @else if (runs()?.state === 'error') {
               <p class="error">โหลดผลจัดสรรไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
             } @else {

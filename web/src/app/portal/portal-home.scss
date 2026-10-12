@@ -147,7 +147,7 @@ tr.group > th {
   border: 1px solid var(--warn);
   border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-3);
+  margin-top: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -215,17 +215,26 @@ tr.group > th {
 .insights > li[data-severity='Critical'] {
   border-left-color: var(--warn);
 }
-.decision {
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--line);
-}
+/* The decision bar sticks to the bottom of the screen while the run's evidence scrolls past (as the vendor's action bar) */
 .decision-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
 }
 /* Workspace: one column on narrow screens; from 1024px the rounds sit left and stay in view */
 @media (min-width: 1024px) {
