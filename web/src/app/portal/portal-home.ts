@@ -96,8 +96,17 @@ export class PortalHome {
 
   protected readonly selected = computed(() => this.roundList().find((r) => r.id === this.selectedId()) ?? null);
 
-  /** Rounds still waiting on the district lead; approved ones (nothing left to decide) follow, newest first. */
-  protected readonly currentRounds = computed(() => this.roundList().filter((r) => r.status !== 'Approved'));
+  /**
+   * Rounds still waiting on the district, the most pressing first: a draw to decide, then requests to check, then the
+   * rest by start date. Approved ones (nothing left to decide) follow, newest first.
+   */
+  protected readonly currentRounds = computed(() =>
+    this.roundList()
+      .filter((r) => r.status !== 'Approved')
+      .map((r, i) => ({ r, i, rank: urgency(r) }))
+      .sort((a, b) => a.rank - b.rank || a.i - b.i)
+      .map(({ r }) => r),
+  );
   protected readonly pastRounds = computed(() =>
     this.roundList()
       .filter((r) => r.status === 'Approved')
@@ -165,6 +174,9 @@ export class PortalHome {
     const r = this.insights();
     return r?.state === 'ready' ? r.data : [];
   });
+
+  /** Some flag is more than a note, so the tab's count asks to be looked at. */
+  protected readonly insightWarns = computed(() => this.insightList().some((f) => f.severity !== 'Info'));
 
   protected readonly reviews = toSignal(
     combineLatest([toObservable(this.selectedId), toObservable(this.refresh)]).pipe(
@@ -576,6 +588,13 @@ export class PortalHome {
     this.auditOpener?.focus({ preventScroll: true });
     this.auditOpener = null;
   }
+}
+
+/** 0 a draw waits on approval · 1 requests wait on a check · 2 closed for requests · 3 still open. */
+function urgency(r: RoundSummary): number {
+  if (r.status === 'Drawn') return 0;
+  if (r.requestCount > r.eligibleCount + r.ineligibleCount) return 1;
+  return r.status === 'Closed' ? 2 : 3;
 }
 
 function load<T>(source: Observable<T>) {

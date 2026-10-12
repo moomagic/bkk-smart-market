@@ -74,10 +74,10 @@ test('demo script 1–6', async ({ page, request }) => {
     await expect(statusCell(requests, 'สมศรี ใ.', 'ผ่านการตรวจสิทธิ')).toBeVisible();
 
     await page.getByRole('button', { name: 'รันจัดสรร' }).click();
-    // Once drawn, the header offers only the next step; running or checking again is no longer on screen
-    await expect(page.getByRole('button', { name: 'ตรวจผลและอนุมัติ' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'รันจัดสรร' })).toHaveCount(0);
+    // Once drawn, the run tab opens with its decision bar; running or checking again is no longer on screen
     const run = page.getByRole('region', { name: new RegExp(`ผลจัดสรร · ${ref}`) });
+    await expect(run.getByRole('group', { name: 'ตัดสินผลจัดสรร' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'รันจัดสรร' })).toHaveCount(0);
     await expect(run).toContainText('ร่าง รออนุมัติ');
     await expect(run.getByText('เลขตั้งต้นการสุ่ม (seed)')).toBeVisible();
     // The input hash sits in the folded evidence, one click away

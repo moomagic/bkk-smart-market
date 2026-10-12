@@ -227,6 +227,8 @@ tr.group > th {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
+  /* Lifted off the rows it covers while stuck, so it reads as a bar over the table rather than its last row */
+  box-shadow: 0 -4px 12px -6px color-mix(in srgb, var(--ink) 18%, transparent);
 }
 /* Workspace: one column on narrow screens; from 1024px the rounds sit left and stay in view */
 @media (min-width: 1024px) {

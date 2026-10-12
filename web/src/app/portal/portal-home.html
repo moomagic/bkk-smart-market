@@ -80,9 +80,9 @@
             <p-button [variant]="canRun() ? undefined : 'outlined'"
               [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
               [disabled]="running() || checking() || !canRun()" [attr.aria-describedby]="canRun() ? null : 'run-blocked'" />
-          } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft') {
-            <!-- A way to the decision bar; approving itself is the one filled button, on that bar -->
-            <p-button variant="outlined" label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
+          } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft' && tab() !== 'run') {
+            <!-- From another tab, the way back to the decision; on the run tab its bar is already on screen -->
+            <p-button text label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
           }
         </div>
       </div>
@@ -112,7 +112,7 @@
             </p-tab>
           }
           @if (insightList().length > 0) {
-            <p-tab value="insight">ข้อสังเกต <p-badge [value]="insightList().length" severity="secondary" /></p-tab>
+            <p-tab value="insight">ข้อสังเกต <p-badge [value]="insightList().length" [severity]="insightWarns() ? 'warn' : 'secondary'" /></p-tab>
           }
         </p-tablist>
         <p-tabpanels>
@@ -210,11 +210,13 @@
                         {{ category[g.category] }}
                         <!-- Trailing and leading spaces sit inside the spans: whitespace-only text between elements is dropped -->
                         <span class="muted">· โควตา <span class="mono">{{ q.base }}</span> · ได้สิทธิ์ </span>
-                        <span class="mono" [class.warn-text]="q.allocated !== q.base">{{ q.allocated }}</span>
+                        <!-- Warn only while the run waits on a decision; on a decided run the rollover is just a fact -->
+                        @let mark = run.status === 'Draft' && q.allocated !== q.base;
+                        <span class="mono" [class.warn-text]="mark">{{ q.allocated }}</span>
                         @if (q.allocated > q.base) {
-                          <span class="warn-text"> (รับโอนโควตา +{{ q.allocated - q.base }})</span>
+                          <span [class.warn-text]="mark" [class.muted]="!mark"> (รับโอนโควตา +{{ q.allocated - q.base }})</span>
                         } @else if (q.allocated < q.base) {
-                          <span class="warn-text"> (โอนโควตาออก {{ q.base - q.allocated }})</span>
+                          <span [class.warn-text]="mark" [class.muted]="!mark"> (โอนโควตาออก {{ q.base - q.allocated }})</span>
                         }
                       </th>
                     </tr>
@@ -270,7 +272,7 @@
                         }
                       </p>
                       <div class="actions">
-                        <p-button type="submit" severity="danger" label="ยืนยันการปฏิเสธ"
+                        <p-button type="submit" severity="danger" variant="outlined" label="ยืนยันการปฏิเสธ"
                           [disabled]="deciding() || rejectReason().trim().length === 0 || (round.rejectsLeft === 0 && !isExecutive())" />
                         <p-button link label="ยกเลิก" (onClick)="rejecting.set(null)" />
                       </div>
@@ -365,7 +367,7 @@
                   @for (f of insightList(); track $index) {
                     <li [attr.data-severity]="f.severity">
                       <app-status-tag [insight]="f" />
-                      <strong>{{ f.vendorName }}</strong> <span class="mono muted">{{ f.lockCode }}</span>
+                      <strong>{{ f.vendorName }}</strong><span class="mono muted"> {{ f.lockCode }}</span>
                       <div>{{ f.message }}</div>
                     </li>
                   }

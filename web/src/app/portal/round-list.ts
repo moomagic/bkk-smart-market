@@ -18,13 +18,14 @@ import { ROUND_STATUS_LABEL, formatThaiDate } from '../shared/labels';
           <button type="button" class="round-pick" [attr.aria-current]="round.id === selectedId() ? 'true' : null"
             (click)="pick.emit(round)">
             <span class="round-line">
-              <span class="round-name">{{ round.spaceName }}</span>
+              <span class="round-name">{{ round.spaceName }}</span><span class="sr-only"> · </span>
               @if (round.status === 'Closed' || round.status === 'Drawn') {
                 <app-status-tag [round]="round.status" />
               } @else {
                 <span class="sr-only">{{ roundStatus[round.status] }}</span>
               }
             </span>
+            <span class="sr-only"> · </span>
             <span class="round-meta">
               {{ date(round.startsOn) }} – {{ date(round.endsOn) }} · คำขอ <span class="mono">{{ round.requestCount }}</span>
             </span>
@@ -59,6 +60,10 @@ import { ROUND_STATUS_LABEL, formatThaiDate } from '../shared/labels';
     }
     .round-pick {
       transition: background-color var(--motion-fast) var(--ease-standard);
+    }
+    /* Inside the scrolling rail an outer ring would be clipped; draw it inside the button */
+    .round-pick:focus-visible {
+      outline-offset: -2px;
     }
     .round-pick:hover {
       background: var(--ground);
