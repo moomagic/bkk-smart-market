@@ -2,7 +2,7 @@
   <h1>พอร์ทัลเจ้าหน้าที่ · เขตบางพลัด</h1>
   @if (clock(); as now) {
     <!-- Development only: the demo clock and reset sit behind one quiet trigger, apart from the officer's work -->
-    <p-button text size="small" class="demo-trigger" [label]="'เวลา demo ' + dateTime(now)" ariaLabel="เครื่องมือ demo"
+    <p-button text size="small" class="demo-trigger" [label]="'เวลา demo ' + dateTime(now)" [ariaLabel]="'เวลา demo ' + dateTime(now) + ' · เครื่องมือ demo'"
       (onClick)="demoTools.toggle($event)" />
     <p-popover #demoTools (onHide)="confirmReset.set(false)">
       <div class="demo-clock" role="group" aria-label="เครื่องมือ demo">
@@ -40,7 +40,7 @@
         <p class="muted">กำลังโหลด…</p>
       }
       @case ('error') {
-        <p class="error">โหลดรายการรอบไม่สำเร็จ — ตรวจการเชื่อมต่อแล้ว <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+        <p class="error" role="alert">โหลดรายการรอบไม่สำเร็จ — ตรวจการเชื่อมต่อแล้ว <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
       }
       @case ('ready') {
         @if (currentRounds().length > 0) {
@@ -75,7 +75,8 @@
               [variant]="uncheckedCount() > 0 ? undefined : 'outlined'"
               [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
               (onClick)="checkEligibility(round)"
-              [disabled]="checking() || running()"
+              [disabled]="checking() || running() || (requests()?.state === 'ready' && requestRows().length === 0)"
+              [attr.aria-describedby]="requestRows().length === 0 ? 'run-blocked' : null"
             />
             <p-button [variant]="canRun() ? undefined : 'outlined'"
               [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
@@ -108,10 +109,18 @@
         </p>
       }
 
+      <span id="run-tab-why" class="sr-only">ยังไม่ได้รันจัดสรร</span>
       <p-tabs [value]="tab()" (valueChange)="pickTab($event)">
         <p-tablist>
-          <p-tab value="requests">คำขอ <p-badge [value]="requestRows().length" severity="secondary" /></p-tab>
-          <p-tab value="run" [disabled]="!hasRun()">ผลจัดสรร</p-tab>
+          <p-tab value="requests">
+            คำขอ
+            <!-- Only a loaded count: a failed load is not "0 requests" -->
+            @if (requests()?.state === 'ready') {
+              <p-badge [value]="requestRows().length" severity="secondary" />
+            }
+          </p-tab>
+          <p-tab value="run" [disabled]="!hasRun()" [attr.aria-describedby]="hasRun() ? null : 'run-tab-why'"
+            [attr.title]="hasRun() ? null : 'ยังไม่ได้รันจัดสรร'">ผลจัดสรร</p-tab>
           @if (reviewList().length > 0) {
             <p-tab value="reviews">
               คำขอทบทวน
@@ -130,7 +139,7 @@
               @if (requests()?.state === 'loading') {
                 <p class="muted">กำลังโหลด…</p>
               } @else if (requests()?.state === 'error') {
-                <p class="error">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+                <p class="error" role="alert">โหลดคำขอไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
               } @else {
                 <p-table class="frame requests" [value]="requestRows()" dataKey="requestId">
                   <ng-template #header>
@@ -270,7 +279,7 @@
                     <p class="text-small flush">
                       ได้สิทธิ์ <span class="mono">{{ countOf(run, 'Won') }}</span> จาก <span class="mono">{{ lockCount(run) }}</span> ล็อค ·
                       สำรอง <span class="mono">{{ countOf(run, 'Waitlisted') }}</span> คน ·
-                      <span class="muted">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
+                      <span [class.muted]="round.rejectsLeft > 0 || isExecutive()" [class.warn-text]="round.rejectsLeft === 0 && !isExecutive()">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
                     </p>
                     <div class="actions">
                       <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="startReject(run)" [disabled]="deciding()" />
@@ -282,7 +291,7 @@
             } @else if (runs()?.state === 'ready') {
               <p class="muted">ไม่มีผลจัดสรรของรอบนี้ในระบบ</p>
             } @else if (runs()?.state === 'error') {
-              <p class="error">โหลดผลจัดสรรไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+              <p class="error" role="alert">โหลดผลจัดสรรไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
             } @else {
               <p class="muted">กำลังโหลด…</p>
             }
@@ -409,6 +418,7 @@
           [version]="refreshCount()"
           [names]="auditNames()"
           (openEntity)="followAudit($event)"
+          (loaded)="auditLoaded()"
         />
       </section>
     }

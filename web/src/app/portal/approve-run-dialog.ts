@@ -14,7 +14,7 @@ import { CATEGORY_LABEL } from '../shared/labels';
   imports: [Button, Dialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" (onHide)="closed.emit()" [modal]="true" [draggable]="false" closeAriaLabel="ปิด"
+    <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" (onHide)="closed.emit()" [modal]="true" [draggable]="false" closeAriaLabel="ปิด" styleClass="portal-dialog"
       [style]="{ width: 'min(32rem, calc(100vw - 32px))' }" header="อนุมัติผลจัดสรร">
       @let run = this.run();
       <p>อนุมัติผล <strong class="mono">{{ run.referenceNo }}</strong> · เลขตั้งต้นการสุ่ม <span class="mono">{{ run.seed }}</span></p>

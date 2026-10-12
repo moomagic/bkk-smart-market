@@ -158,6 +158,11 @@ h1 {
   color: var(--muted);
 }
 
+/* Portal dialogs title in the heading face, like every other title on the page */
+.portal-dialog .p-dialog-title {
+  font-family: var(--font-heading);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -231,5 +236,10 @@ main:not(.bare) > router-outlet + *,
     --motion-stagger: 0ms;
     --motion-normal: 120ms;
     --motion-slow: 160ms;
+  }
+
+  /* PrimeNG's tab bar slides on its own fixed timing; it jumps instead */
+  .p-tablist .p-tablist-active-bar {
+    transition: none;
   }
 }

@@ -5,6 +5,13 @@ section {
 p-tabpanel section {
   margin-top: 0;
 }
+/* Room for Thai stacked marks (vowel above + tone mark) when a heading wraps; the portal's own headings only */
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.4;
+}
 .page-head {
   display: flex;
   flex-wrap: wrap;
