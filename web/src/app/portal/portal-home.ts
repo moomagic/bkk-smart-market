@@ -260,6 +260,22 @@ export class PortalHome {
     );
   }
 
+  /**
+   * Opens the reject form. It sits where the table ends, which may be below the screen while the decision bar is stuck
+   * to the bottom, so bring it into view and put the cursor in the reason.
+   */
+  protected startReject(run: AllocationRun): void {
+    this.rejecting.set(run.id);
+    afterNextRender(
+      () => {
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        document.querySelector('.reject-form')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        document.getElementById('reject-reason')?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
+  }
+
   protected pickTab(value: string | number | undefined): void {
     this.tabChoice.set(value as RoundTab);
   }

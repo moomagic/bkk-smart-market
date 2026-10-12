@@ -277,7 +277,7 @@
                       <span class="muted">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
                     </p>
                     <div class="actions">
-                      <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="rejecting.set(run.id)"
+                      <p-button variant="outlined" label="ปฏิเสธผล" (onClick)="startReject(run)"
                         [disabled]="deciding() || rejecting() === run.id" />
                       <p-button label="อนุมัติผล" (onClick)="approving.set(run.id)" [disabled]="deciding()" />
                     </div>
