@@ -53,14 +53,14 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
                   </ul>
                 }
                 @if (e.fold) {
-                  <details class="fold">
+                  <details class="disclosure fold">
                     <summary>ดูทั้ง {{ e.changes.length }} รายการ</summary>
                     <ng-container *ngTemplateOutlet="changeList; context: { $implicit: e.changes }" />
                   </details>
                 } @else {
                   <ng-container *ngTemplateOutlet="changeList; context: { $implicit: e.changes }" />
                 }
-                <details class="fold technical">
+                <details class="disclosure fold technical">
                   <summary>รายละเอียดทางเทคนิค</summary>
                   <ul>
                     @for (line of e.technical; track $index) {
@@ -118,12 +118,10 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
     app-audit-timeline .changes { margin: var(--space-2) 0 0; padding: 0; list-style: none; font-size: var(--text-small); display: grid; gap: var(--space-2); }
     app-audit-timeline .subject { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-2); }
     app-audit-timeline .state { color: var(--muted); }
-    app-audit-timeline .fields { display: flex; flex-wrap: wrap; column-gap: var(--space-4); row-gap: 2px; overflow-wrap: anywhere; }
+    app-audit-timeline .fields { display: flex; flex-wrap: wrap; column-gap: var(--space-4); row-gap: var(--space-1); overflow-wrap: anywhere; }
     app-audit-timeline .key { color: var(--muted); margin-right: var(--space-1); }
     app-audit-timeline .from { color: var(--muted); }
     app-audit-timeline .fold { margin-top: var(--space-2); font-size: var(--text-small); }
-    app-audit-timeline .fold > summary { cursor: pointer; width: fit-content; color: var(--accent); font-weight: 600; }
-    app-audit-timeline .fold > summary::marker { color: var(--muted); }
     app-audit-timeline .technical > summary { color: var(--muted); font-weight: 400; }
     app-audit-timeline .technical ul { margin: var(--space-1) 0 0; padding-left: var(--space-4); color: var(--muted); font-size: var(--text-small); overflow-wrap: anywhere; }
     /* Narrow: one column — the time moves into the entry and the opposite column goes */

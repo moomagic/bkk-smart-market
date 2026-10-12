@@ -33,14 +33,14 @@ import { formatThaiDate } from '../shared/labels';
       padding: 0;
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius-lg);
     }
     .rounds > li + li {
       border-top: 1px solid var(--line);
     }
     .round-pick {
       display: grid;
-      gap: 2px;
+      gap: var(--space-1);
       width: 100%;
       padding: var(--space-2) var(--space-3);
       border: 0;

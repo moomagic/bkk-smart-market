@@ -187,7 +187,7 @@
                         <tr>
                           <td>{{ category[q.category] }}</td>
                           <td class="num mono">{{ q.base }}</td>
-                          <td class="num mono" [class.warn]="q.allocated !== q.base">{{ q.allocated }}</td>
+                          <td class="num mono" [class.warn-text]="q.allocated !== q.base">{{ q.allocated }}</td>
                         </tr>
                       </ng-template>
                     </p-table>

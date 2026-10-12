@@ -30,10 +30,6 @@ h2 {
 .section-head h2 {
   margin: 0;
 }
-.warn {
-  color: var(--warn);
-  font-weight: 600;
-}
 /* p-message is display: grid (its enter/leave animation collapses the rows), so only spacing here */
 .notice {
   margin: 0 0 var(--space-3);
@@ -74,7 +70,7 @@ h3 app-status-tag {
   padding: var(--space-4) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 }
 @media (max-width: 760px) {
   .run-summary {
@@ -93,7 +89,7 @@ h3 app-status-tag {
   font-size: var(--text-small);
 }
 .run-summary dd {
-  margin: 2px 0 0;
+  margin: var(--space-1) 0 0;
 }
 .quota-block h4 {
   margin: 0 0 var(--space-1);
@@ -149,7 +145,7 @@ tr.group > th {
 .reject-form {
   background: var(--surface);
   border: 1px solid var(--warn);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-3);
   display: flex;
@@ -162,7 +158,7 @@ tr.group > th {
   padding: 0;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 }
 .reviews > li {
   padding: var(--space-3) var(--space-4);
@@ -203,7 +199,7 @@ tr.group > th {
   padding: 0;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 }
 .insights > li {
   padding: var(--space-3) var(--space-4);

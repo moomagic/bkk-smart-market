@@ -31,6 +31,11 @@
   --space-5: 24px;
   --space-6: 32px;
 
+  /* Corners: the preset's borderRadius (sm 4 · md 6 · lg 8) for hand-drawn panels, so they match the components */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
   --font-body: 'IBM Plex Sans Thai', system-ui, sans-serif;
   --font-heading: 'Bai Jamjuree', 'IBM Plex Sans Thai', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -86,7 +91,7 @@ h1 {
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-size: var(--text-small);
 }
 
@@ -122,6 +127,12 @@ h1 {
 
 .error {
   color: var(--warn);
+}
+
+/* A figure or line someone has to look at: off quota, an irreversible consequence */
+.warn-text {
+  color: var(--warn);
+  font-weight: 600;
 }
 
 /* A note in a flex row or a popover: small text, no paragraph margin */
