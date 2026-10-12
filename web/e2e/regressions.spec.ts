@@ -347,3 +347,25 @@ test('the assistant is a full-screen chat that keeps its history across tabs', a
   // Back on the tab, the conversation opens at its newest answer
   await expect(newest).toBeInViewport();
 });
+
+test('the dashboard states rollover as a fact, and its district totals are the occupancy tile', async ({
+  page,
+  request,
+}) => {
+  const occupancy = await new DemoApi(request).occupancy();
+  await page.goto('/vendor');
+  await switchRole(page, 'executive');
+
+  const table = page.getByRole('group', { name: /ตารางรายพื้นที่/ });
+  // An approved run's rollover is within the rules: the portal's words, muted, never the warn colour
+  await expect(table.getByText('โอนออก 2').first()).toHaveClass(/muted/);
+  await expect(table.locator('.warn-text')).toHaveCount(0);
+  await expect(page.getByText(/ขาด|เกิน/)).toHaveCount(0);
+
+  const total = table.getByRole('row').filter({ hasText: 'รวมทั้งเขต' });
+  await expect(total.getByRole('cell').nth(1)).toHaveText(String(occupancy.of));
+  await expect(total.getByRole('cell').nth(3)).toHaveText(String(occupancy.count));
+
+  // The table scrolls sideways on a narrow screen, so the keyboard can reach it
+  await expect(table).toHaveAttribute('tabindex', '0');
+});

@@ -1,23 +1,40 @@
+/* Thai stacks vowel and tone marks above the line: headings get the portal's extra leading */
+h1,
+h2,
+h3 {
+  line-height: 1.4;
+}
 h2 {
   font-size: var(--text-h2);
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-3);
 }
 section {
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
 }
-.kpis {
+.page-head h1 {
+  margin-bottom: 0;
+}
+.scope {
+  margin: 0;
+  font-size: var(--text-small);
+}
+
+/* ---- KPI tiles: one size, one rhythm; the label names it, the figure carries it, one line backs it up ---- */
+.tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 .tile p-card {
   display: block;
   height: 100%;
 }
-.tile h2 {
+.tile h3 {
   font-size: var(--text-small);
   color: var(--muted);
   font-weight: 600;
+  margin: 0;
 }
 .value {
   font-family: var(--font-heading);
@@ -25,7 +42,7 @@ section {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
-  margin: var(--space-1) 0;
+  margin: var(--space-2) 0 var(--space-1);
   color: var(--ink);
 }
 /* The unit reads with the figure but does not compete with it */
@@ -40,9 +57,51 @@ section {
   font-size: var(--text-small);
   color: var(--muted);
 }
+/* The tiles land after the page has risen into place: they only fade, one after another */
+.tile.appear {
+  animation-delay: calc(min(var(--i, 0), 3) * var(--motion-stagger));
+}
+
+.definitions {
+  margin-top: var(--space-3);
+}
+.definitions dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-small);
+}
+.definitions dt {
+  font-weight: 600;
+}
+.definitions dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ---- Notes: statements read straight off the data, set as text, not as alerts ---- */
+.notes ul {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-small);
+}
+.notes li + li {
+  margin-top: var(--space-1);
+}
+
+/* ---- Quota chart ---- */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-5);
+}
 .legend {
   display: flex;
-  gap: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
   list-style: none;
   padding: 0;
   margin: 0 0 var(--space-3);
@@ -56,7 +115,7 @@ section {
 .swatch {
   width: 12px;
   height: 12px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 /* Legend swatches; the chart reads the same --series-* tokens */
 [data-category='Legacy'] {
@@ -68,45 +127,55 @@ section {
 [data-category='New'] {
   background: var(--series-3);
 }
+/* The quota mark as the chart draws it: a short upright ink rule */
+.quota-mark {
+  width: 3px;
+  height: 14px;
+  background: var(--ink);
+}
+.small {
+  font-size: var(--text-small);
+  margin: 0 0 var(--space-3);
+}
 .chart {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-4) var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-5);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: var(--space-4) var(--space-4);
-}
-.space-name {
-  font-weight: 600;
-  margin-bottom: var(--space-2);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-2);
-  align-items: baseline;
-}
-.space-name span {
-  font-weight: 400;
-  font-size: var(--text-small);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
 }
 .space {
   min-width: 0;
 }
-.small {
-  font-size: var(--text-small);
+.space-name {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 600;
   margin: 0 0 var(--space-2);
 }
-/* Off quota is allowed (rollover) but worth a look: weight and the warn colour, explained above the table */
-.off-quota {
-  color: var(--warn);
-  font-weight: 600;
+.space-name span {
+  font-weight: 400;
+  font-size: var(--text-small);
+  white-space: nowrap;
 }
-.off-word {
-  font-family: var(--font-body);
+
+/* ---- Table ---- */
+.group-head {
+  text-align: center !important;
+}
+/* Rollover sits under its figure as a quiet fact, in the portal's words */
+.shift {
+  display: block;
   font-size: var(--text-caption);
-  margin-left: 2px;
 }
-/* The page has just risen into place; the figures that land after it only fade in, one after another */
-.tile.arrive {
-  animation-name: appear;
+/* The district sums: the same counts the KPI tiles divide, ruled off from the spaces above */
+.total td {
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+}
+
+:host ::ng-deep .panel-placeholder {
+  margin-top: var(--space-5);
 }

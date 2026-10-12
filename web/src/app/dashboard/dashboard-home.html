@@ -1,124 +1,179 @@
-<h1>ภาพรวมผู้บริหาร · เขตบางพลัด</h1>
+<header class="page-head">
+  <h1>ภาพรวม · เขตบางพลัด</h1>
+  @if (scope(); as s) {
+    <p class="muted scope">รอบล่าสุดที่อนุมัติของแต่ละพื้นที่ · {{ date(s.from) }} – {{ date(s.to) }}</p>
+  }
+</header>
 
 @if (!canRead()) {
   <p class="muted">สลับบทบาทเป็นผู้บริหารหรือเจ้าหน้าที่เขตที่มุมขวาบนเพื่อดูภาพรวม</p>
 } @else {
   @switch (kpis().state) {
     @case ('loading') {
-      <p class="muted">กำลังโหลด…</p>
+      <!-- Placeholders hold the tiles' and chart panel's height, so nothing jumps when the figures land -->
+      <p class="sr-only" role="status">กำลังโหลดตัวชี้วัด…</p>
+      <div class="tiles" aria-hidden="true">
+        @for (i of [0, 1, 2, 3]; track i) {
+          <p-skeleton height="8.5rem" borderRadius="var(--radius-lg)" />
+        }
+      </div>
+      <p-skeleton styleClass="panel-placeholder" height="12rem" borderRadius="var(--radius-lg)" aria-hidden="true" />
     }
     @case ('error') {
-      <p class="error">โหลดตัวชี้วัดไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
+      <p class="error" role="alert">โหลดตัวชี้วัดไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="reload()" /></p>
     }
   }
 
   @if (data(); as k) {
-    <!-- The figures come in once, as they load; Chart.js animation stays off, so the bars only fade in with their canvas -->
-    <section class="kpis" aria-label="ตัวชี้วัดหลัก">
-      <article class="tile arrive" style="--i: 0"><p-card styleClass="fill">
-        <h2 title="Occupancy">การใช้พื้นที่</h2>
-        <p class="value">{{ pct(k.occupancy) }}</p>
-        <p class="detail">ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
-      </p-card></article>
-      <article class="tile arrive" style="--i: 1"><p-card styleClass="fill">
-        <h2 title="LeadTime">ความเร็วในการประกาศผล</h2>
-        <p class="value">@if (k.leadTime.medianDays === null) {
-          –
-        } @else {
-          {{ k.leadTime.medianDays }}<span class="unit">วัน</span>
-        }</p>
-        <p class="detail">ค่ามัธยฐานจากวันปิดรับคำขอถึงวันอนุมัติผล · {{ k.leadTime.runs }} รอบ</p>
-      </p-card></article>
-      <article class="tile arrive" style="--i: 2"><p-card styleClass="fill">
-        <h2 title="NewVendors">ผู้ค้าหน้าใหม่</h2>
-        <p class="value">{{ pct(k.newVendors) }}</p>
-        <p class="detail">ผู้ได้สิทธิ์ {{ k.newVendors.of }} คน เป็นกลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} คน</p>
-      </p-card></article>
-      <article class="tile arrive" style="--i: 3"><p-card styleClass="fill">
-        <h2 title="FairRotation">การหมุนเวียนสิทธิ์</h2>
-        <p class="value">{{ pct(k.fairRotation) }}</p>
-        <p class="detail">ผู้ได้สิทธิ์ {{ k.fairRotation.of }} คน ไม่ได้ถือล็อคที่เดิมในรอบก่อน {{ k.fairRotation.count }} คน</p>
-      </p-card></article>
+    <section aria-labelledby="kpi-heading">
+      <h2 id="kpi-heading" class="sr-only">ตัวชี้วัดหลัก</h2>
+      <!-- The figures come in once, as they load; Chart.js animation stays off, so the bars only fade in with their canvas -->
+      <div class="tiles">
+        <article class="tile appear" style="--i: 0"><p-card styleClass="fill">
+          <h3>การใช้พื้นที่</h3>
+          <p class="value">{{ pct(k.occupancy) }}</p>
+          <p class="detail">ผู้ได้สิทธิ์ยืนยันแล้ว {{ k.occupancy.count }} จาก {{ k.occupancy.of }} ล็อค</p>
+        </p-card></article>
+        <article class="tile appear" style="--i: 1"><p-card styleClass="fill">
+          <h3>การหมุนเวียนสิทธิ์</h3>
+          <p class="value">{{ pct(k.fairRotation) }}</p>
+          <p class="detail">ไม่ได้ถือล็อคที่เดิมรอบก่อน {{ k.fairRotation.count }} จาก {{ k.fairRotation.of }} คน</p>
+        </p-card></article>
+        <article class="tile appear" style="--i: 2"><p-card styleClass="fill">
+          <h3>ผู้ค้าหน้าใหม่</h3>
+          <p class="value">{{ pct(k.newVendors) }}</p>
+          <p class="detail">กลุ่มผู้ค้าใหม่ {{ k.newVendors.count }} จาก {{ k.newVendors.of }} คนที่ได้สิทธิ์</p>
+        </p-card></article>
+        <article class="tile appear" style="--i: 3"><p-card styleClass="fill">
+          <h3>ระยะเวลาประกาศผล</h3>
+          <p class="value">@if (k.leadTime.medianDays === null) {
+            –
+          } @else {
+            {{ k.leadTime.medianDays }}<span class="unit">วัน</span>
+          }</p>
+          <p class="detail">ค่ามัธยฐาน · {{ k.leadTime.runs }} รอบ</p>
+        </p-card></article>
+      </div>
+
+      <details class="disclosure definitions">
+        <summary>นิยามตัวชี้วัด</summary>
+        <dl>
+          <dt>การใช้พื้นที่</dt>
+          <dd>ล็อคที่มีผู้ได้สิทธิ์ยืนยันแล้ว ÷ ล็อคทั้งหมดของเขต</dd>
+          <dt>การหมุนเวียนสิทธิ์</dt>
+          <dd>สัดส่วนผู้ได้สิทธิ์รอบนี้ที่ไม่ได้ถือล็อคที่เดิมในรอบก่อน (รวมผู้ได้น้ำหนัก ×2)</dd>
+          <dt>ผู้ค้าหน้าใหม่</dt>
+          <dd>สัดส่วนผู้ได้สิทธิ์ในรอบล่าสุดที่อยู่ในกลุ่มผู้ค้าใหม่</dd>
+          <dt>ระยะเวลาประกาศผล</dt>
+          <dd>ค่ามัธยฐานจำนวนวัน จากวันปิดรับคำขอถึงวันอนุมัติผลจัดสรร</dd>
+        </dl>
+      </details>
     </section>
 
+    @if (notes().length > 0) {
+      <section aria-labelledby="notes-heading" class="notes">
+        <h2 id="notes-heading">ข้อสังเกต</h2>
+        <ul>
+          @for (n of notes(); track n) {
+            <li>{{ n }}</li>
+          }
+        </ul>
+      </section>
+    }
+
     <section aria-labelledby="quota-heading">
-      <h2 id="quota-heading">ผู้ได้สิทธิ์จริงเทียบโควตา</h2>
-      <p class="muted small">แท่ง = ผู้ได้สิทธิ์ตอนนี้ · เส้นตั้ง = โควตาของกลุ่ม · เกินโควตาได้จากการโอนโควตาที่ผู้สมัครไม่พอ</p>
-      <ul class="legend" aria-label="คำอธิบายสี">
-        @for (c of categories; track c) {
-          <li><span class="swatch" [attr.data-category]="c"></span>{{ categoryLabel[c] }}</li>
-        }
-      </ul>
-      <div class="chart">
-        @for (row of k.spaces; track row.spaceId) {
-          <div class="space">
-            <div class="space-name">
-              {{ row.name }}
-              @if (row.referenceNo) {
-                <span class="mono muted">{{ row.referenceNo }}</span>
-              } @else {
-                <span class="muted">ยังไม่มีผลจัดสรรที่อนุมัติ</span>
+      <div class="section-head">
+        <h2 id="quota-heading">ผู้ได้สิทธิ์จริงเทียบโควตา</h2>
+        <ul class="legend" aria-label="คำอธิบายสัญลักษณ์">
+          @for (c of categories; track c) {
+            <li><span class="swatch" [attr.data-category]="c"></span>{{ categoryLabel[c] }}</li>
+          }
+          <li><span class="quota-mark"></span>โควตา</li>
+        </ul>
+      </div>
+      <p class="muted small">ตัวเลข = ได้สิทธิ์ / โควตา · ผู้ค้าเดิมมีโควตาเป็นเพดาน กลุ่มเปราะบางและผู้ค้าใหม่เป็นขั้นต่ำ · โควตาที่ผู้สมัครไม่พอโอนให้กลุ่มถัดไป</p>
+      @if (allocated().length === 0) {
+        <p class="muted">ยังไม่มีผลจัดสรรที่อนุมัติ</p>
+      } @else {
+        <div class="chart">
+          @for (row of allocated(); track row.spaceId) {
+            <div class="space">
+              <h3 class="space-name">{{ row.name }} <span class="mono muted">{{ row.referenceNo }}</span></h3>
+              @if (charts().get(row.spaceId); as chart) {
+                <!-- Canvas: the per-space table below carries the same numbers for screen readers -->
+                <p-chart class="appear" type="bar" [data]="chart.data" [options]="chart.options" height="132px"
+                  [ariaLabel]="chart.label" />
               }
             </div>
-            @if (charts().get(row.spaceId); as chart) {
-              <!-- Canvas: the per-space table below carries the same numbers for screen readers -->
-              <p-chart class="appear" type="bar" [data]="chart.data" [options]="chart.options" height="120px"
-                [ariaLabel]="chart.label" />
-            }
-          </div>
-        }
-      </div>
+          }
+        </div>
+      }
     </section>
 
     <section aria-labelledby="spaces-heading">
       <h2 id="spaces-heading">รายพื้นที่</h2>
-      <p class="muted small">ช่องกลุ่มผู้ค้า = ได้สิทธิ์จริง / โควตา · ช่องที่ระบุ <span class="off-quota">เกิน/ขาด</span> ต่างจากโควตา เพราะโอนโควตาจากกลุ่มที่ผู้สมัครไม่พอ</p>
-      <p-table class="frame" [value]="k.spaces" dataKey="spaceId">
+      <!-- Focusable so a keyboard can scroll it sideways when the columns outgrow a narrow screen -->
+      <p-table class="frame" [value]="k.spaces" dataKey="spaceId" tabindex="0" role="group" aria-label="ตารางรายพื้นที่: ล็อค ผู้ได้สิทธิ์ ผู้ยืนยันแล้ว และผู้ได้สิทธิ์เทียบโควตาของแต่ละกลุ่ม">
         <ng-template #header>
-            <tr>
-              <th scope="col">พื้นที่</th>
-              <th scope="col">รอบ</th>
-              <th scope="col">เลขอ้างอิง</th>
-              <th scope="col" class="num">ล็อค</th>
-              <th scope="col" class="num">ได้สิทธิ์</th>
-              <th scope="col" class="num">ยืนยันแล้ว</th>
-              @for (c of categories; track c) {
-                <th scope="col" class="num">{{ categoryLabel[c] }}</th>
-              }
-            </tr>
+          <tr>
+            <th scope="col" rowspan="2">พื้นที่</th>
+            <th scope="col" rowspan="2">รอบ</th>
+            <th scope="col" rowspan="2">เลขอ้างอิง</th>
+            <th scope="col" rowspan="2" class="num">ล็อค</th>
+            <th scope="col" rowspan="2" class="num">ได้สิทธิ์</th>
+            <th scope="col" rowspan="2" class="num">ยืนยันแล้ว</th>
+            <th scope="colgroup" colspan="3" class="group-head">ได้สิทธิ์ / โควตา</th>
+          </tr>
+          <tr>
+            @for (c of categories; track c) {
+              <th scope="col" class="num">{{ categoryLabel[c] }}</th>
+            }
+          </tr>
         </ng-template>
         <ng-template #body let-r>
-            @let row = asSpace(r);
-              @if (!row.referenceNo) {
-                <!-- No approved run yet: one quiet line instead of a row of dashes -->
-                <tr>
-                  <td>{{ row.name }}</td>
-                  <td colspan="8" class="muted">ยังไม่มีผลจัดสรรที่อนุมัติ · <span class="mono">{{ row.locks }}</span> ล็อค</td>
-                </tr>
-              } @else {
-              <tr>
-                <td>{{ row.name }}</td>
-                <td>{{ row.startsOn ? date(row.startsOn) + ' – ' + date(row.endsOn!) : '–' }}</td>
-                <td class="mono">{{ row.referenceNo }}</td>
-                <td class="num mono">{{ row.locks }}</td>
-                <td class="num mono">{{ row.winners }}</td>
-                <td class="num mono">{{ row.confirmed }}</td>
-                @for (c of categories; track c) {
-                  <td class="num mono">
-                    @if (quotaFor(row, c); as q) {
-                      @if (q.winners !== q.base) {
-                        <span class="off-quota">{{ q.winners }}/{{ q.base }}
-                          <span class="off-word">{{ q.winners > q.base ? 'เกิน' : 'ขาด' }}</span></span>
-                      } @else {
-                        {{ q.winners }}/{{ q.base }}
-                      }
-                    } @else {
-                      –
+          @let row = asSpace(r);
+          @if (!row.referenceNo) {
+            <!-- No approved run yet: one quiet line instead of a row of dashes -->
+            <tr>
+              <td>{{ row.name }}</td>
+              <td colspan="2" class="muted">ยังไม่มีผลจัดสรรที่อนุมัติ</td>
+              <td class="num mono">{{ row.locks }}</td>
+              <td colspan="5"></td>
+            </tr>
+          } @else {
+            <tr>
+              <td>{{ row.name }}</td>
+              <td>{{ row.startsOn ? date(row.startsOn) + ' – ' + date(row.endsOn!) : '–' }}</td>
+              <td class="mono">{{ row.referenceNo }}</td>
+              <td class="num mono">{{ row.locks }}</td>
+              <td class="num mono">{{ row.winners }}</td>
+              <td class="num mono">{{ row.confirmed }}</td>
+              @for (c of categories; track c) {
+                <td class="num">
+                  @if (quotaFor(row, c); as q) {
+                    <span class="mono">{{ q.winners }}/{{ q.base }}</span>
+                    @if (q.winners !== q.base) {
+                      <span class="shift muted">{{ shift(q) }}</span>
                     }
-                  </td>
-                }
-              </tr>
+                  } @else {
+                    –
+                  }
+                </td>
               }
+            </tr>
+          }
+        </ng-template>
+        <ng-template #footer>
+          @let t = totals();
+          <tr class="total">
+            <td colspan="3">รวมทั้งเขต</td>
+            <td class="num mono">{{ t.locks }}</td>
+            <td class="num mono">{{ t.winners }}</td>
+            <td class="num mono">{{ t.confirmed }}</td>
+            @for (q of t.quota; track q.category) {
+              <td class="num mono">{{ q.winners }}/{{ q.base }}</td>
+            }
+          </tr>
         </ng-template>
       </p-table>
     </section>
