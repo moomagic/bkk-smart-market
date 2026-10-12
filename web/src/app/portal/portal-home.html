@@ -392,8 +392,8 @@
   }
 
   <!-- Audit beside the work, not below it: non-modal, so the round stays readable and the header usable -->
-  <!-- From 1024px the workspace makes room for it (portal-home.scss › .with-audit), so it sits beside the round and
-       below the site header instead of over either -->
+  <!-- Below the site header; beside the round from 1440px, over it below that with the decision bar kept clear
+       (portal-home.scss › .with-audit) -->
   <p-drawer [visible]="auditTarget() !== null" (visibleChange)="$event || auditTarget.set(null)" position="right"
     [modal]="false" styleClass="audit-drawer" [style]="{ width: 'min(28rem, 100vw)' }" ariaCloseLabel="ปิดประวัติการดำเนินการ"
     [pt]="{ root: { 'aria-labelledby': 'audit-heading' } }" (onShow)="focusAudit()" (onHide)="returnFromAudit()">

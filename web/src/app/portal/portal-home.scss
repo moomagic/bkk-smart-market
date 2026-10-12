@@ -117,25 +117,24 @@ tr.group > th {
   gap: var(--space-1);
   justify-items: start;
 }
-/* With the audit open, the workspace stops short of the panel (28rem + a gap) instead of under it. Main is centred at
-   1600px with 16px padding, so the room already right of it is subtracted. Under 1440px there is not room for three
-   columns: the rounds list steps aside until the audit closes. The panel itself starts under the site header. */
+/* The audit panel starts under the site header (--audit-top follows its bottom edge as the page scrolls).
+   From 1440px it sits beside the work: the workspace stops short of it (28rem + a gap; main is centred at 1600px with
+   16px padding, so the room already right of it is subtracted). Below that it lies over the work, and only the
+   decision bar draws in so approve and reject stay clear of it. */
 @media (min-width: 1024px) {
-  .workspace.with-audit {
-    padding-right: max(0px, calc(28rem + var(--space-5) - max(var(--space-4), (100vw - 1600px) / 2 + var(--space-4))));
-  }
-  /* Under the site header: --audit-top follows its bottom edge as the page scrolls (portal-home.ts) */
   ::ng-deep .p-drawer.audit-drawer {
     top: var(--audit-top, 60px);
     height: calc(100% - var(--audit-top, 60px));
   }
 }
-@media (min-width: 1024px) and (max-width: 1439.98px) {
+@media (min-width: 1440px) {
   .workspace.with-audit {
-    grid-template-columns: minmax(0, 1fr);
+    padding-right: max(0px, calc(28rem + var(--space-5) - max(var(--space-4), (100vw - 1600px) / 2 + var(--space-4))));
   }
-  .workspace.with-audit > .rounds-pane {
-    display: none;
+}
+@media (min-width: 1024px) and (max-width: 1439.98px) {
+  .with-audit .decision-bar {
+    margin-right: 28rem;
   }
 }
 .earlier-runs {
