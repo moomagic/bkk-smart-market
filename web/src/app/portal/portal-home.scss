@@ -211,11 +211,6 @@ tr.group > th {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
 }
-.tally {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-4);
-}
 /* Workspace: one column on narrow screens; from 1024px the rounds sit left and stay in view */
 @media (min-width: 1024px) {
   .workspace {

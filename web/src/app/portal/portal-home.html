@@ -208,12 +208,13 @@
                     <tr class="group">
                       <th scope="colgroup" [attr.colspan]="weighted(run) ? 5 : 4">
                         {{ category[g.category] }}
-                        <span class="muted">· โควตา <span class="mono">{{ q.base }}</span> · ได้สิทธิ์</span>
+                        <!-- Trailing and leading spaces sit inside the spans: whitespace-only text between elements is dropped -->
+                        <span class="muted">· โควตา <span class="mono">{{ q.base }}</span> · ได้สิทธิ์ </span>
                         <span class="mono" [class.warn-text]="q.allocated !== q.base">{{ q.allocated }}</span>
                         @if (q.allocated > q.base) {
-                          <span class="warn-text">(รับโอนโควตา +{{ q.allocated - q.base }})</span>
+                          <span class="warn-text"> (รับโอนโควตา +{{ q.allocated - q.base }})</span>
                         } @else if (q.allocated < q.base) {
-                          <span class="warn-text">(โอนโควตาออก {{ q.base - q.allocated }})</span>
+                          <span class="warn-text"> (โอนโควตาออก {{ q.base - q.allocated }})</span>
                         }
                       </th>
                     </tr>
@@ -270,9 +271,9 @@
                     </form>
                   }
                   <div id="decision" class="decision-bar" role="group" aria-label="ตัดสินผลจัดสรร" tabindex="-1">
-                    <p class="tally text-small flush">
-                      <span>ได้สิทธิ์ <span class="mono">{{ countOf(run, 'Won') }}</span> จาก <span class="mono">{{ lockCount(run) }}</span> ล็อค</span>
-                      <span>สำรอง <span class="mono">{{ countOf(run, 'Waitlisted') }}</span> คน</span>
+                    <p class="text-small flush">
+                      ได้สิทธิ์ <span class="mono">{{ countOf(run, 'Won') }}</span> จาก <span class="mono">{{ lockCount(run) }}</span> ล็อค ·
+                      สำรอง <span class="mono">{{ countOf(run, 'Waitlisted') }}</span> คน ·
                       <span class="muted">ปฏิเสธได้อีก {{ round.rejectsLeft }} ครั้ง</span>
                     </p>
                     <div class="actions">

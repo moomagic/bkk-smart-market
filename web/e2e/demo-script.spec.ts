@@ -86,9 +86,9 @@ test('demo script 1–6', async ({ page, request }) => {
     // Each group of the result carries its quota and seats won, in quota order
     const groups = run.getByRole('columnheader').filter({ hasText: 'โควตา' });
     await expect(groups).toHaveText([
-      /^ผู้ค้าเดิม · โควตา 2 · ได้สิทธิ์ 2/,
-      /^กลุ่มเปราะบาง · โควตา 1 · ได้สิทธิ์ 1/,
-      /^ผู้ค้าใหม่ · โควตา 1 · ได้สิทธิ์ 1/,
+      /ผู้ค้าเดิม · โควตา 2 · ได้สิทธิ์ 2/,
+      /กลุ่มเปราะบาง · โควตา 1 · ได้สิทธิ์ 1/,
+      /ผู้ค้าใหม่ · โควตา 1 · ได้สิทธิ์ 1/,
     ]);
     await expect(run.getByRole('row').filter({ hasText: 'สมศรี ใ.' })).toContainText('B2');
 
