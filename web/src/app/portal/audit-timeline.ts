@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Button } from 'primeng/button';
 import { Timeline } from 'primeng/timeline';
@@ -9,6 +9,13 @@ import { formatThaiDateTimeSeconds } from '../shared/labels';
 import { AuditNames, ChangeView, EntryView, NO_NAMES, describeEntry } from './audit-view';
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: AuditEntry[] };
+
+/** Whose trail is shown: an entity, and how the officer's screen names it. */
+export interface AuditTarget {
+  type: string;
+  id: string;
+  label: string;
+}
 
 /**
  * Who did what, when, and what changed — for a round or a single entity, in the officer's words (audit-view.ts).
@@ -26,7 +33,7 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
         <p class="muted">กำลังโหลด…</p>
       }
       @case ('error') {
-        <p class="error">โหลด audit trail ไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="retry.update((n) => n + 1)" /></p>
+        <p class="error" role="alert">โหลดประวัติการดำเนินการไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="retry.update((n) => n + 1)" /></p>
       }
       @case ('ready') {
         @if (views().length === 0) {
@@ -34,9 +41,6 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
         } @else {
           <!-- Entries keep their list semantics (the old markup was an <ol>) -->
           <p-timeline class="panel" [value]="views()" align="left" [pt]="listSemantics">
-            <ng-template #opposite let-entry>
-              <span class="when">{{ dateTime(asView(entry).at) }}</span>
-            </ng-template>
             <ng-template #content let-entry>
               @let e = asView(entry);
               <div class="what">
@@ -108,11 +112,12 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
   styles: `
     /* The timeline sits in the drawer's own surface: no second bordered box inside it */
     app-audit-timeline .panel { display: block; padding-top: var(--space-2); }
-    app-audit-timeline .p-timeline-left .p-timeline-event-opposite { flex: 0 0 9.5rem; padding: 1px var(--space-3) 0 0; text-align: left; white-space: nowrap; }
+    /* The panel is 28rem: each time sits above its entry rather than in a column that squeezes the entry */
+    app-audit-timeline .p-timeline-left .p-timeline-event-opposite { display: none; }
     app-audit-timeline .what { padding-bottom: var(--space-4); }
     /* Thai month names: body face with even-width figures (the mono face has no Thai glyphs) */
     app-audit-timeline .when { font-size: var(--text-small); color: var(--muted); font-variant-numeric: tabular-nums; }
-    app-audit-timeline .when-inline { display: none; }
+    app-audit-timeline .when-inline { display: block; }
     app-audit-timeline .head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-2); }
     app-audit-timeline .actor { font-size: var(--text-small); color: var(--muted); }
     app-audit-timeline .summary { margin: var(--space-1) 0 0; padding: 0; list-style: none; font-size: var(--text-small); }
@@ -125,11 +130,6 @@ type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: 
     app-audit-timeline .fold { margin-top: var(--space-2); font-size: var(--text-small); }
     app-audit-timeline .technical > summary { color: var(--muted); font-weight: 400; }
     app-audit-timeline .technical ul { margin: var(--space-1) 0 0; padding-left: var(--space-4); color: var(--muted); font-size: var(--text-small); overflow-wrap: anywhere; }
-    /* Narrow: one column — the time moves into the entry and the opposite column goes */
-    @media (max-width: 640px) {
-      app-audit-timeline .p-timeline-left .p-timeline-event-opposite { display: none; }
-      app-audit-timeline .when-inline { display: block; }
-    }
   `,
 })
 export class AuditTimeline {
@@ -142,7 +142,9 @@ export class AuditTimeline {
   /** Masked names the page already holds, so changes name people instead of ids. */
   readonly names = input<AuditNames>(NO_NAMES);
   /** The officer wants the trail of one entity from a change line; label is how that line named it. */
-  readonly openEntity = output<{ type: string; id: string; label: string }>();
+  readonly openEntity = output<AuditTarget>();
+  /** The entries are on screen (the panel can now restore where the officer had scrolled to). */
+  readonly loaded = output<void>();
 
   protected readonly dateTime = formatThaiDateTimeSeconds;
   protected readonly listSemantics = { root: { role: 'list' }, event: { role: 'listitem' } };
@@ -169,6 +171,12 @@ export class AuditTimeline {
     ),
     { initialValue: { state: 'loading' } as Load },
   );
+
+  constructor() {
+    effect(() => {
+      if (this.entries().state === 'ready') untracked(() => this.loaded.emit());
+    });
+  }
 
   protected readonly views = computed(() => {
     const e = this.entries();

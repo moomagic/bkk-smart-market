@@ -15,7 +15,7 @@ import { AllocationRun } from '../core/api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog [visible]="visible()" (visibleChange)="$event || cancel.emit()" (onShow)="opened()" (onHide)="closed.emit()"
-      [modal]="true" [draggable]="false" closeAriaLabel="ปิด" [focusOnShow]="false"
+      [modal]="true" [draggable]="false" closeAriaLabel="ปิด" styleClass="portal-dialog" [focusOnShow]="false"
       [style]="{ width: 'min(32rem, calc(100vw - 32px))' }" header="ปฏิเสธผลจัดสรร">
       @let run = this.run();
       <div class="body">
@@ -23,7 +23,7 @@ import { AllocationRun } from '../core/api';
         <label for="reject-reason">เหตุผลในการปฏิเสธ (ผู้ค้าจะเห็นเหตุผลนี้)</label>
         <textarea #reason pTextarea id="reject-reason" rows="3" maxlength="500" [value]="text()"
           (input)="text.set($any($event.target).value)"></textarea>
-        <p class="muted note">
+        <p class="muted note" id="reject-note">
           @if (rejectsLeft() > 0) {
             ปฏิเสธได้อีก {{ rejectsLeft() }} ครั้งในรอบนี้ · เกินนั้นต้องให้ผู้บริหารเป็นผู้ปฏิเสธ
           } @else if (isExecutive()) {
@@ -35,7 +35,7 @@ import { AllocationRun } from '../core/api';
       </div>
       <ng-template #footer>
         <p-button text label="กลับไปตรวจผล" (onClick)="cancel.emit()" [disabled]="deciding()" />
-        <p-button severity="danger" variant="outlined" (onClick)="submit()"
+        <p-button severity="danger" variant="outlined" (onClick)="submit()" [pt]="{ root: { 'aria-describedby': 'reject-note' } }"
           [label]="deciding() ? 'กำลังบันทึก…' : 'ยืนยันการปฏิเสธ'" [disabled]="!canSubmit()" />
       </ng-template>
     </p-dialog>

@@ -18,7 +18,7 @@ import { ApproveRunDialog } from './approve-run-dialog';
 import { RejectRunDialog } from './reject-run-dialog';
 import { RoundList } from './round-list';
 import { RoundStep, RoundSteps } from './round-steps';
-import { AuditTimeline } from './audit-timeline';
+import { AuditTarget, AuditTimeline } from './audit-timeline';
 import { AuditNames } from './audit-view';
 import { StatusTag } from '../shared/status-tag';
 import {
@@ -144,6 +144,9 @@ export class PortalHome {
     loadKeyed(toObservable(this.selectedId), toObservable(this.refresh), (id) => (id ? load(this.api.roundRequests(id)) : of(null))),
     { initialValue: null as Load<RoundRequestRow[]> | null },
   );
+
+  /** The requests have loaded and there are none: nothing to check or draw yet. */
+  protected readonly noRequests = computed(() => this.requests()?.state === 'ready' && this.requestRows().length === 0);
 
   protected readonly requestRows = computed(() => {
     const r = this.requests();
@@ -368,7 +371,7 @@ export class PortalHome {
   );
 
   /** What the audit panel shows: the selected round, or one request in it. */
-  protected readonly auditTarget = signal<{ type: string; id: string; label: string } | null>(null);
+  protected readonly auditTarget = signal<AuditTarget | null>(null);
   protected readonly refreshCount = this.refresh.asReadonly();
 
   protected readonly running = signal(false);
@@ -566,6 +569,25 @@ export class PortalHome {
     this.rejecting.set(run.id);
   }
 
+  /**
+   * Esc while a decision dialog is open closes that dialog only. PrimeNG's dialog and the audit drawer both listen for
+   * Esc on the document, so one press would also close the audit behind it; this takes the key first while a dialog
+   * is up and closes just the dialog (its close returns focus as a cancel does).
+   */
+  private readonly escapeClosesTopDialog = effect((onCleanup) => {
+    if (this.approving() === null && this.rejecting() === null) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopImmediatePropagation();
+      // Mid-save the dialog stays: the decision is already on its way to the server
+      if (this.deciding()) return;
+      this.approving.set(null);
+      this.rejecting.set(null);
+    };
+    document.addEventListener('keydown', onKey, true);
+    onCleanup(() => document.removeEventListener('keydown', onKey, true));
+  });
+
   /** The dialog closed on a decision rather than a cancel. */
   private decided = false;
 
@@ -588,19 +610,29 @@ export class PortalHome {
   /** The control that opened the audit panel, so closing it puts the keyboard back where the officer was. */
   private auditOpener: HTMLElement | null = null;
 
-  /** Trails the officer stepped through inside the panel (a request from the round, say), to step back to. */
-  protected readonly auditTrail = signal<{ type: string; id: string; label: string }[]>([]);
+  /** Trails the officer stepped through inside the panel (a request from the round, say), to step back to, with how
+   *  far each was scrolled. */
+  protected readonly auditTrail = signal<{ target: AuditTarget; scroll: number }[]>([]);
+  /** Scroll position to restore once the trail stepped back to has loaded. */
+  private auditScroll: number | null = null;
 
-  private openAudit(target: { type: string; id: string; label: string }): void {
+  private auditContent(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('.p-drawer.audit-drawer .p-drawer-content');
+  }
+
+  private openAudit(target: AuditTarget): void {
     if (this.auditTarget() === null) this.auditOpener = document.activeElement as HTMLElement | null;
     this.auditTrail.set([]);
+    this.auditScroll = null;
     this.auditTarget.set(target);
   }
 
   /** A change line in the panel names another entity: show its trail, remembering where the officer came from. */
-  protected followAudit(target: { type: string; id: string; label: string }): void {
+  protected followAudit(target: AuditTarget): void {
     const current = this.auditTarget();
-    if (current) this.auditTrail.update((t) => [...t, current]);
+    const scroll = this.auditContent()?.scrollTop ?? 0;
+    if (current) this.auditTrail.update((t) => [...t, { target: current, scroll }]);
+    this.auditScroll = null;
     this.auditTarget.set(target);
     this.focusAudit();
   }
@@ -610,8 +642,20 @@ export class PortalHome {
     const previous = trail.at(-1);
     if (!previous) return;
     this.auditTrail.set(trail.slice(0, -1));
-    this.auditTarget.set(previous);
+    this.auditScroll = previous.scroll;
+    this.auditTarget.set(previous.target);
     this.focusAudit();
+  }
+
+  /** The trail stepped back to is on screen: put it where the officer had left it. */
+  protected auditLoaded(): void {
+    const scroll = this.auditScroll;
+    if (scroll === null) return;
+    this.auditScroll = null;
+    // The timeline lays its entries out a frame after it renders them; scrolling earlier is clamped to the top
+    afterNextRender(() => requestAnimationFrame(() => this.auditContent()?.scrollTo({ top: scroll })), {
+      injector: this.injector,
+    });
   }
 
   protected focusAudit(): void {
@@ -622,6 +666,7 @@ export class PortalHome {
 
   protected returnFromAudit(): void {
     this.auditTrail.set([]);
+    this.auditScroll = null;
     this.auditOpener?.focus({ preventScroll: true });
     this.auditOpener = null;
   }
