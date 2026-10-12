@@ -12,7 +12,7 @@ import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, problemMessage } from '../core/api';
+import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, RunOutcome, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
 import { RoundList } from './round-list';
@@ -34,6 +34,9 @@ type RoundTab = 'requests' | 'run' | 'reviews' | 'insight';
 const CATEGORY_ORDER: Category[] = ['Legacy', 'Vulnerable', 'New'];
 
 type Load<T> = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: T };
+
+/** A row of the outcome table: a vendor's outcome, or the one line of a quota group nobody applied in. */
+type OutcomeRow = RunOutcome & { group: string; empty?: true };
 
 @Component({
   selector: 'app-portal-home',
@@ -185,13 +188,25 @@ export class PortalHome {
   /**
    * The latest run's outcomes in quota-group order. p-table sorts subheader groups by their group field, so the field
    * is a key that sorts in that order ("1-Legacy", "2-Vulnerable", "3-New"); rows keep the draw order inside a group.
+   * Every quota group gets its header, as in the approve dialog: a group nobody applied in carries one empty row, so
+   * the quota it handed on is shown where it left.
    */
-  protected readonly outcomeRows = computed(() => {
+  protected readonly outcomeRows = computed<OutcomeRow[]>(() => {
     const run = this.latestRun();
     if (!run) return [];
-    return run.outcomes
-      .map((o) => ({ ...o, group: `${CATEGORY_ORDER.indexOf(o.category) + 1}-${o.category}` }))
-      .sort((a, b) => a.group.localeCompare(b.group));
+    const group = (c: Category) => `${CATEGORY_ORDER.indexOf(c) + 1}-${c}`;
+    const rows: OutcomeRow[] = run.outcomes.map((o) => ({ ...o, group: group(o.category) }));
+    if (!run.pooledDraw) {
+      for (const q of run.quota) {
+        if (q.base > 0 && !run.outcomes.some((o) => o.category === q.category)) {
+          rows.push({
+            vendorId: `empty-${q.category}`, vendorName: '', category: q.category, weight: 1, kind: 'NotSelected',
+            lockCode: null, waitlistPosition: null, viaRollover: false, reason: '', group: group(q.category), empty: true,
+          });
+        }
+      }
+    }
+    return rows.sort((a, b) => a.group.localeCompare(b.group));
   });
 
   /** The tab the officer picked for this round; null follows what the round needs next. */
@@ -361,7 +376,7 @@ export class PortalHome {
     return row;
   }
 
-  protected asOutcome(row: AllocationRun['outcomes'][number]): AllocationRun['outcomes'][number] {
+  protected asOutcome(row: OutcomeRow): OutcomeRow {
     return row;
   }
 
