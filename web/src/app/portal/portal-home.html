@@ -75,12 +75,14 @@
               [variant]="uncheckedCount() > 0 ? undefined : 'outlined'"
               [label]="checking() ? 'กำลังตรวจ…' : 'ตรวจสิทธิทั้งรอบ'"
               (onClick)="checkEligibility(round)"
-              [disabled]="checking() || running() || (requests()?.state === 'ready' && requestRows().length === 0)"
-              [attr.aria-describedby]="requestRows().length === 0 ? 'run-blocked' : null"
+              [disabled]="checking() || running() || noRequests()"
+              [pt]="{ root: { 'aria-describedby': noRequests() ? 'run-blocked' : undefined } }"
             />
+            <!-- The reason it is blocked is on the inner <button> (pt), where assistive tech reads it -->
             <p-button [variant]="canRun() ? undefined : 'outlined'"
               [label]="running() ? 'กำลังรัน…' : 'รันจัดสรร'" (onClick)="runAllocation(round)"
-              [disabled]="running() || checking() || !canRun()" [attr.aria-describedby]="canRun() ? null : 'run-blocked'" />
+              [disabled]="running() || checking() || !canRun()"
+              [pt]="{ root: { 'aria-describedby': canRun() ? undefined : 'run-blocked' } }" />
           } @else if (round.status === 'Drawn' && latestRun()?.status === 'Draft' && tab() !== 'run') {
             <!-- From another tab, the way back to the decision; on the run tab its bar is already on screen -->
             <p-button text label="ตรวจผลและอนุมัติ" (onClick)="goToDecision()" />
@@ -93,7 +95,7 @@
       @if (round.status === 'Open' || round.status === 'Closed') {
         @if (uncheckedCount() > 0) {
           <p id="run-blocked" class="muted small-note">มีคำขอที่ยังไม่ได้ตรวจสิทธิ {{ uncheckedCount() }} คำขอ ต้องตรวจสิทธิก่อนจึงรันจัดสรรได้</p>
-        } @else if (requests()?.state === 'ready' && requestRows().length === 0) {
+        } @else if (noRequests()) {
           <p id="run-blocked" class="muted small-note">ยังไม่มีคำขอในรอบนี้ จึงยังรันจัดสรรไม่ได้</p>
         } @else if (requests()?.state === 'ready' && !canRun()) {
           <p id="run-blocked" class="muted small-note">ไม่มีคำขอที่ผ่านการตรวจสิทธิ จึงยังรันจัดสรรไม่ได้</p>
@@ -402,7 +404,7 @@
     <ng-template #header>
       @if (auditTarget(); as t) {
         <div class="audit-head">
-          @if (auditTrail().at(-1); as back) {
+          @if (auditTrail().at(-1)?.target; as back) {
             <p-button link size="small" [label]="'← ' + back.label" [ariaLabel]="'กลับไปประวัติ' + back.label" (onClick)="backAudit()" />
           }
           <h2 id="audit-heading" class="audit-heading" tabindex="-1">ประวัติการดำเนินการ · {{ t.label }}</h2>

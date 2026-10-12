@@ -10,6 +10,13 @@ import { AuditNames, ChangeView, EntryView, NO_NAMES, describeEntry } from './au
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; data: AuditEntry[] };
 
+/** Whose trail is shown: an entity, and how the officer's screen names it. */
+export interface AuditTarget {
+  type: string;
+  id: string;
+  label: string;
+}
+
 /**
  * Who did what, when, and what changed — for a round or a single entity, in the officer's words (audit-view.ts).
  * Personal data arrives masked ("***"); ids and the use-case name stay one click away under "รายละเอียดทางเทคนิค".
@@ -135,7 +142,7 @@ export class AuditTimeline {
   /** Masked names the page already holds, so changes name people instead of ids. */
   readonly names = input<AuditNames>(NO_NAMES);
   /** The officer wants the trail of one entity from a change line; label is how that line named it. */
-  readonly openEntity = output<{ type: string; id: string; label: string }>();
+  readonly openEntity = output<AuditTarget>();
   /** The entries are on screen (the panel can now restore where the officer had scrolled to). */
   readonly loaded = output<void>();
 

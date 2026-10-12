@@ -76,7 +76,9 @@ test('disabled controls say why: the run tab before a draw, the check with no re
   await openRound(page, 'ปากซอยจรัญฯ 79');
   await expect(page.getByRole('tab', { name: 'ผลจัดสรร' })).toHaveAccessibleDescription(/ยังไม่ได้รันจัดสรร/);
   await openRound(page, 'ตลาดนัดเขตบางพลัด');
-  await expect(page.getByRole('button', { name: 'ตรวจสิทธิทั้งรอบ' })).toBeDisabled();
+  const check = page.getByRole('button', { name: 'ตรวจสิทธิทั้งรอบ' });
+  await expect(check).toBeDisabled();
+  await expect(check).toHaveAccessibleDescription(/ยังไม่มีคำขอในรอบนี้/);
 });
 
 test('under reduced motion the tab bar does not slide; dialog titles use the heading face', async ({
