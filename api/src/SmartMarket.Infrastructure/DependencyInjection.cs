@@ -8,6 +8,7 @@ using SmartMarket.Application.Common;
 using SmartMarket.Infrastructure.Allocation;
 using SmartMarket.Infrastructure.Assistant;
 using SmartMarket.Infrastructure.Audit;
+using SmartMarket.Infrastructure.Claude;
 using SmartMarket.Infrastructure.Persistence;
 using SmartMarket.Infrastructure.Seed;
 using SmartMarket.Infrastructure.Time;
@@ -31,6 +32,8 @@ public static class DependencyInjection
             });
         services.AddHttpClient<ClaudeAssistantModel>();
         services.AddTransient<IAssistantModel>(sp => sp.GetRequiredService<ClaudeAssistantModel>());
+        services.AddHttpClient<ClaudeTextModel>();
+        services.AddTransient<ITextModel>(sp => sp.GetRequiredService<ClaudeTextModel>());
         services.AddSingleton<IRulesLibrary, FileRulesLibrary>();
         services.AddOptions<RulesOptions>()
             .Bind(config.GetSection(RulesOptions.Section))
