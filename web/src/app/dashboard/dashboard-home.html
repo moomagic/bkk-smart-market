@@ -25,6 +25,31 @@
   }
 
   @if (data(); as k) {
+    <!-- Above the figures: a reading of them, made only when asked; it sets no targets and scores nothing -->
+    <section aria-labelledby="summary-heading" class="notes">
+      <div class="section-head">
+        <h2 id="summary-heading">สรุปสถานการณ์</h2>
+        <p-button variant="outlined" size="small" label="ให้ AI สรุป" [loading]="summary()?.state === 'loading'" (onClick)="summarize()" />
+      </div>
+      @if (summary(); as s) {
+        @if (s.state === 'done') {
+          <ul aria-live="polite">
+            @for (line of s.data.lines; track $index) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+          <p class="muted text-small">
+            {{ s.data.source === 'claude' ? 'สรุปโดย AI (Claude)' : 'สรุปจากแม่แบบคงที่ ไม่ได้ใช้ AI' }} ·
+            สรุปจากตัวเลขบนหน้านี้เท่านั้น ไม่ตั้งเป้าหรือให้คะแนนเอง
+          </p>
+        } @else if (s.state === 'error') {
+          <p class="error" role="alert">สรุปไม่สำเร็จ — <p-button link label="ลองอีกครั้ง" (onClick)="summarize()" /></p>
+        }
+      } @else {
+        <p class="muted text-small">สรุป 4 บรรทัดจากตัวเลขบนหน้านี้: ภาพรวม · พื้นที่ที่ควรดู · การกระจายโอกาส · การใช้แผงจริง</p>
+      }
+    </section>
+
     <section aria-labelledby="kpi-heading">
       <h2 id="kpi-heading" class="sr-only">ตัวชี้วัดหลัก</h2>
       <!-- The figures come in once, as they load; Chart.js animation stays off, so the bars only fade in with their canvas -->
