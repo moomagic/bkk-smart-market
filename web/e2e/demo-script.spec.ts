@@ -132,7 +132,10 @@ test('demo script 1–6', async ({ page, request }) => {
     );
     await expect(detail).toContainText('ยืนยันสิทธิ์แล้ว');
 
+    // The check-in carries this browser's simulated device id (stored as a hash, to spot subleasing)
+    const checkIn = page.waitForRequest((r) => r.url().endsWith('/api/check-ins') && r.method() === 'POST');
     await page.getByRole('button', { name: 'สแกน QR เช็คอินที่ล็อค B2' }).click();
+    expect((await checkIn).postDataJSON().deviceId).toMatch(/^[0-9a-f-]{36}$/);
     await expect(page.getByRole('status')).toContainText('เช็คอินแล้ว · ปากซอยจรัญฯ 79 ล็อค B2');
     await expect(detail).toContainText('เช็คอินล่าสุด');
     await expectNoHorizontalScroll(page);

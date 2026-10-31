@@ -201,6 +201,10 @@ namespace SmartMarket.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly>("Day")
                         .HasColumnType("date");
 
+                    b.Property<string>("DeviceHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("Method")
                         .IsRequired()
                         .HasMaxLength(10)

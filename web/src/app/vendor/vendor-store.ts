@@ -4,6 +4,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { Observable, Subscription, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
 import { Api, AssistantAnswer, AssistantSource, PreferredTime, RunVerification, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoRole, DemoSession } from '../core/demo-session';
+import { deviceId } from '../core/device-id';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
 
 const FINISHED = new Set<StallRequestStatus>(['NotSelected', 'Forfeited']);
@@ -264,7 +265,7 @@ export class VendorStore {
     if (!req.lockCode) return;
     this.acting.set(req.id);
     this.notice.set(null);
-    this.api.checkIn(req.id, lockQr(req.spaceId, req.lockCode), !this.outsideGeofence()).subscribe({
+    this.api.checkIn(req.id, lockQr(req.spaceId, req.lockCode), !this.outsideGeofence(), deviceId()).subscribe({
       next: (c) => {
         this.acting.set(null);
         this.notice.set({

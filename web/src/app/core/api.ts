@@ -337,8 +337,8 @@ export class Api {
     return this.http.post<Review>(`/api/reviews/${reviewId}/respond`, { outcome, response });
   }
 
-  checkIn(stallRequestId: string, qrCode: string, withinGeofence: boolean) {
-    return this.http.post<CheckIn>('/api/check-ins', { stallRequestId, qrCode, withinGeofence });
+  checkIn(stallRequestId: string, qrCode: string, withinGeofence: boolean, deviceId: string) {
+    return this.http.post<CheckIn>('/api/check-ins', { stallRequestId, qrCode, withinGeofence, deviceId });
   }
 
   auditTrail(entityType: string, entityId: string) {

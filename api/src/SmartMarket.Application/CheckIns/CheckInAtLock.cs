@@ -10,7 +10,8 @@ using SmartMarket.Domain.StallRequests;
 namespace SmartMarket.Application.CheckIns;
 
 /// <param name="WithinGeofence">Simulated location result from the phone.</param>
-public sealed record CheckInAtLock(Guid StallRequestId, string QrCode, bool WithinGeofence);
+/// <param name="DeviceId">Simulated device identity (a random id the web app keeps); stored only as a hash.</param>
+public sealed record CheckInAtLock(Guid StallRequestId, string QrCode, bool WithinGeofence, string? DeviceId = null);
 
 public sealed record CheckInDto(Guid Id, Guid StallRequestId, string SpaceName, string LockCode, DateTimeOffset At, bool WithinGeofence);
 
@@ -21,9 +22,12 @@ public sealed record CheckInDto(Guid Id, Guid StallRequestId, string SpaceName, 
 public sealed class CheckInAtLockHandler(IAppDbContext db, IClock clock, ICurrentActor actor, AssignmentExpiry expiry)
 {
     public const string Action = "Round.CheckIn";
+    public const int MaxDeviceIdLength = 100;
 
     public async Task<Result<CheckInDto>> Handle(CheckInAtLock command, CancellationToken ct)
     {
+        if (command.DeviceId is { Length: > MaxDeviceIdLength })
+            return Error.Invalid("checkin.device_id_too_long", $"รหัสอุปกรณ์ยาวเกิน {MaxDeviceIdLength} ตัวอักษร");
         if (await VendorLookup.Current(db, actor, ct) is not { } vendor)
             return VendorLookup.Unknown;
         var request = await db.StallRequests
@@ -53,7 +57,8 @@ public sealed class CheckInAtLockHandler(IAppDbContext db, IClock clock, ICurren
         if (await db.CheckIns.AnyAsync(c => c.AssignmentId == target.Assignment.Id && c.Day == today, ct))
             return Error.Conflict("checkin.already_today", "เช็คอินวันนี้แล้ว");
 
-        var checkIn = new CheckIn(Guid.CreateVersion7(now), target.Assignment.Id, now, CheckInMethod.QR, command.WithinGeofence);
+        var checkIn = new CheckIn(
+            Guid.CreateVersion7(now), target.Assignment.Id, now, CheckInMethod.QR, command.WithinGeofence, DeviceHash.Of(command.DeviceId));
         db.CheckIns.Add(checkIn);
         await db.CommitAsync(Action, AuditSubject.For<Round>(request.RoundId), ct);
 

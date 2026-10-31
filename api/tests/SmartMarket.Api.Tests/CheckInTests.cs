@@ -2,7 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.CheckIns;
+using SmartMarket.Application.Common;
 
 namespace SmartMarket.Api.Tests;
 
@@ -127,6 +130,52 @@ public sealed class CheckInTests(ApiFactory api) : IDisposable
         (await Detail(response)).Should().Contain("รอบนี้สิ้นสุดแล้ว");
     }
 
+    [Fact]
+    public async Task The_device_is_kept_as_a_hash_and_masked_in_the_audit_trail()
+    {
+        var (_, vendorId, request) = await ConfirmedWinner();
+        const string device = "device-7f3a91c2";
+        var since = await api.AuditMark();
+
+        var response = await CheckIn(vendorId, request.Id, Qr(request), deviceId: device);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var id = (await response.Content.ReadFromJsonAsync<CheckInDto>())!.Id;
+        await using (var scope = api.Services.CreateAsyncScope())
+        {
+            var stored = await scope.ServiceProvider.GetRequiredService<IAppDbContext>().CheckIns.SingleAsync(c => c.Id == id);
+            stored.DeviceHash.Should().Be(DeviceHash.Of(device)).And.MatchRegex("^[0-9a-f]{64}$").And.NotContain(device);
+        }
+        var entry = (await api.AuditSince(since)).Should().ContainSingle().Subject;
+        var added = JsonDocument.Parse(entry.Changes).RootElement.EnumerateArray()
+            .Single(c => c.GetProperty("Entity").GetString() == "CheckIn");
+        added.GetProperty("After").GetProperty("DeviceHash").GetString().Should().Be("***");
+        entry.Changes.Should().NotContain(device).And.NotContain(DeviceHash.Of(device)!);
+    }
+
+    [Fact]
+    public async Task A_check_in_without_a_device_id_still_goes_through()
+    {
+        var (_, vendorId, request) = await ConfirmedWinner();
+
+        var response = await CheckIn(vendorId, request.Id, Qr(request));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var id = (await response.Content.ReadFromJsonAsync<CheckInDto>())!.Id;
+        await using var scope = api.Services.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<IAppDbContext>().CheckIns.SingleAsync(c => c.Id == id)).DeviceHash.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task An_overlong_device_id_is_a_bad_request()
+    {
+        var (_, vendorId, request) = await ConfirmedWinner();
+
+        var response = await CheckIn(vendorId, request.Id, Qr(request), deviceId: new string('x', CheckInAtLockHandler.MaxDeviceIdLength + 1));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     /// <summary>A winner of a fresh round who has confirmed their lock.</summary>
     private async Task<(Guid RoundId, Guid VendorId, ApproveAllocationTests.MyRequestDto Request)> ConfirmedWinner()
     {
@@ -140,8 +189,8 @@ public sealed class CheckInTests(ApiFactory api) : IDisposable
 
     private static string Qr(ApproveAllocationTests.MyRequestDto request) => CheckInQr.For(request.SpaceId, request.LockCode!);
 
-    private Task<HttpResponseMessage> CheckIn(Guid vendorId, Guid requestId, string qrCode, bool withinGeofence = true) =>
-        api.Vendor(vendorId).PostAsJsonAsync("/api/check-ins", new { stallRequestId = requestId, qrCode, withinGeofence });
+    private Task<HttpResponseMessage> CheckIn(Guid vendorId, Guid requestId, string qrCode, bool withinGeofence = true, string? deviceId = null) =>
+        api.Vendor(vendorId).PostAsJsonAsync("/api/check-ins", new { stallRequestId = requestId, qrCode, withinGeofence, deviceId });
 
     private static async Task<string> Detail(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString()!;

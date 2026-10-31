@@ -26,6 +26,18 @@ public sealed class AssistantTests(ApiFactory api)
         answer.Text.Split('\n').Length.Should().BeLessThanOrEqualTo(4);
     }
 
+    [Theory]
+    [InlineData("ระบบเก็บข้อมูลมือถือไหม")]
+    [InlineData("เช็คอินแล้วเก็บข้อมูลอะไรจากมือถือบ้าง")]
+    public async Task A_vendor_learns_what_is_kept_of_the_device_they_check_in_with(string question)
+    {
+        var answer = await Ask(question);
+
+        answer.Found.Should().BeTrue();
+        answer.Citations.Should().ContainSingle().Which.Should().Be(new CitationDto("using-the-space.md", "ข้อมูลอุปกรณ์ที่ใช้เช็คอิน"));
+        answer.Text.Should().Contain("ตรวจการเช่าช่วง").And.Contain("ไม่ตัดสิทธิ์ใครอัตโนมัติ");
+    }
+
     [Fact]
     public async Task A_question_outside_the_rules_is_sent_to_the_district_office()
     {

@@ -10,6 +10,7 @@ internal sealed class CheckInConfiguration : IEntityTypeConfiguration<CheckIn>
     public void Configure(EntityTypeBuilder<CheckIn> b)
     {
         b.Property(x => x.Method).HasConversion<string>().HasMaxLength(10);
+        b.Property(x => x.DeviceHash).HasMaxLength(64);
         b.HasOne<Assignment>().WithMany().HasForeignKey(x => x.AssignmentId);
         b.HasIndex(x => new { x.AssignmentId, x.Day }).IsUnique();
     }

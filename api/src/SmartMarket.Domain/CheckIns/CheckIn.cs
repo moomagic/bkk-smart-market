@@ -1,3 +1,5 @@
+using SmartMarket.Domain.Common;
+
 namespace SmartMarket.Domain.CheckIns;
 
 public enum CheckInMethod
@@ -24,9 +26,16 @@ public sealed class CheckIn
     /// <summary>Simulated: the phone's location check. Outside is recorded and flagged, never refused.</summary>
     public bool WithinGeofence { get; private set; }
 
+    /// <summary>
+    /// Simulated: a hash of the id the vendor's device sent, kept only to spot one device checking in for several winners
+    /// (sublease). Null for check-ins recorded before devices were (and for a device that sent none).
+    /// </summary>
+    [PersonalData]
+    public string? DeviceHash { get; private set; }
+
     private static readonly TimeSpan BangkokOffset = TimeSpan.FromHours(7);
 
-    public CheckIn(Guid id, Guid assignmentId, DateTimeOffset at, CheckInMethod method, bool withinGeofence)
+    public CheckIn(Guid id, Guid assignmentId, DateTimeOffset at, CheckInMethod method, bool withinGeofence, string? deviceHash = null)
     {
         Id = id;
         AssignmentId = assignmentId;
@@ -34,6 +43,7 @@ public sealed class CheckIn
         Day = DayOf(at);
         Method = method;
         WithinGeofence = withinGeofence;
+        DeviceHash = deviceHash;
     }
 
     public static DateOnly DayOf(DateTimeOffset at) => DateOnly.FromDateTime(at.ToOffset(BangkokOffset).DateTime);
