@@ -11,6 +11,9 @@ public static class DashboardEndpoints
 
         group.MapGet("/kpis", (Guid? districtId, GetDashboardHandler handler, CancellationToken ct) => handler.Handle(districtId, ct));
 
+        // POST: made on request (it may call a model), never cached; it changes nothing
+        group.MapPost("/summary", (Guid? districtId, SummarizeDashboardHandler handler, CancellationToken ct) => handler.Handle(districtId, ct));
+
         return api;
     }
 }

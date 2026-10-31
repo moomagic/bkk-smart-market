@@ -252,6 +252,13 @@ export interface DashboardSpaceRow {
   quota: { category: Category; base: number; winners: number }[];
 }
 
+/** The executive summary: four lines read off the dashboard's figures; "template" when no model wrote it. */
+export interface DashboardSummary {
+  lines: string[];
+  source: 'template' | 'claude';
+  generatedAt: string;
+}
+
 export interface DashboardKpis {
   occupancy: Ratio;
   leadTime: { medianDays: number | null; runs: number };
@@ -351,6 +358,11 @@ export class Api {
 
   dashboard() {
     return this.http.get<DashboardKpis>('/api/dashboard/kpis');
+  }
+
+  /** POST: made on request, never on load (it may call a model). */
+  dashboardSummary() {
+    return this.http.post<DashboardSummary>('/api/dashboard/summary', null);
   }
 
   askAssistant(question: string) {

@@ -174,6 +174,14 @@ test('demo script 1–6', async ({ page, request }) => {
     await expect(page.getByRole('region', { name: 'ผู้ได้สิทธิ์จริงเทียบโควตา' })).toContainText(
       ref,
     );
+
+    // The summary is made only when asked; without a key it is the fixed template, and it says so
+    const summary = page.getByRole('region', { name: 'สรุปสถานการณ์' });
+    await expect(summary.getByRole('listitem')).toHaveCount(0);
+    await summary.getByRole('button', { name: 'ให้ AI สรุป' }).click();
+    await expect(summary.getByRole('listitem')).toHaveCount(4);
+    await expect(summary.getByRole('listitem').first()).toContainText(`(${before.count + 1}/${before.of} ล็อคมีผู้ยืนยันสิทธิ์)`);
+    await expect(summary).toContainText('สรุปจากแม่แบบคงที่ ไม่ได้ใช้ AI');
   });
 });
 

@@ -8,7 +8,7 @@ import { Card } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { Skeleton } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
-import { Api, Category, DashboardKpis, Ratio } from '../core/api';
+import { Api, Category, DashboardKpis, DashboardSummary, Ratio } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, formatThaiDate } from '../shared/labels';
 
@@ -71,6 +71,19 @@ export class DashboardHome {
 
   protected reload(): void {
     this.retry.update((n) => n + 1);
+  }
+
+  /** The executive summary, asked for with the button and never made on load. */
+  protected readonly summary = signal<
+    { state: 'loading' } | { state: 'done'; data: DashboardSummary } | { state: 'error' } | null
+  >(null);
+
+  protected summarize(): void {
+    this.summary.set({ state: 'loading' });
+    this.api.dashboardSummary().subscribe({
+      next: (data) => this.summary.set({ state: 'done', data }),
+      error: () => this.summary.set({ state: 'error' }),
+    });
   }
 
   /** One decimal on every percentage, so 71.0% and 88.6% read as the same kind of figure. */
