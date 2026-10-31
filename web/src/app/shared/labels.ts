@@ -86,6 +86,7 @@ export const INSIGHT_KIND_LABEL: Record<InsightKind, string> = {
   LowCheckIn: 'เช็คอินต่ำกว่าเกณฑ์',
   SharedSurname: 'นามสกุลซ้ำ',
   SharedPhone: 'เบอร์โทรซ้ำ',
+  SharedDevice: 'อุปกรณ์ใช้ร่วมกัน',
 };
 
 /** Audit Action (use-case name) → what the officer reads on the timeline. */

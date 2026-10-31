@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartMarket.Application.Allocation;
+using SmartMarket.Application.CheckIns;
 using SmartMarket.Domain.Allocation;
 using SmartMarket.Domain.CheckIns;
 using SmartMarket.Domain.Rounds;
@@ -89,6 +90,18 @@ public static class HistorySeed
         [(2, 3)] = new(2026, 10, 5),
         [(3, 4)] = new(2026, 10, 9),
     };
+
+    /// <summary>
+    /// Planted for the Shared device flag (#71): from 1 Oct, MRT winner 5's phone also checks in market winner 6 —
+    /// one person keeping two stalls across spaces. Every other winner checks in from a device of their own.
+    /// Devices take no draw from the attendance RNG, so check-in days and times are as before.
+    /// </summary>
+    private static readonly Dictionary<(int Space, int Assignment), (int Space, int Assignment)> UsesDeviceOf = new()
+    {
+        [(3, 6)] = (2, 5),
+    };
+
+    private static readonly DateOnly SharedDeviceFrom = new(2026, 10, 1);
 
     private const int MarketSpace = 3;
 
@@ -183,10 +196,15 @@ public static class HistorySeed
             var minutes = rng.Next(0, 90);
             if (!comes || day > until) continue;
             var at = new DateTimeOffset(day.ToDateTime(new TimeOnly(16, 0)), Bangkok).AddMinutes(minutes).ToUniversalTime();
+            var device = day >= SharedDeviceFrom && UsesDeviceOf.TryGetValue((h.Spaces, assignmentNo), out var owner)
+                ? Device(owner.Space, owner.Assignment) : Device(h.Spaces, assignmentNo);
             db.CheckIns.Add(new CheckIn(new Guid($"71000000-0000-{h.Spaces:0000}-{assignmentNo:0000}-{++n:000000000000}"),
-                assignment.Id, at, CheckInMethod.QR, withinGeofence: !(assignmentNo == 1 && n == 2)));
+                assignment.Id, at, CheckInMethod.QR, withinGeofence: !(assignmentNo == 1 && n == 2), DeviceHash.Of(device)));
         }
     }
+
+    /// <summary>The simulated device id of a space's n-th winner, as their browser would send it.</summary>
+    private static string Device(int space, int assignmentNo) => $"seed-device-{space}-{assignmentNo}";
 
     private static DateTimeOffset At(DateTime bangkok) => new DateTimeOffset(bangkok, Bangkok).ToUniversalTime();
 

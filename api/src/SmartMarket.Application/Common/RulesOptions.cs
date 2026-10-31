@@ -27,6 +27,7 @@ public sealed class RulesOptions
         && Rounds.RelaxationMonths > 0 && Rounds.DistrictMarketMonths > 0 && Rounds.TrialAreaMonths > 0
         && Rounds.TrialAreaRequestsPerYear > 0 && Reject.MaxPerRoundWithoutExecutive > 0
         && Usage.MinCheckInRatio > 0 && Usage.AbsentDaysWarning > 0 && Usage.AbsentDaysRevoke > 0
+        && Usage.SharedDeviceMinDays > 0 && Usage.SharedDeviceWindowDays > 0
         && Review.FileWithinDays > 0 && Review.RespondWithinDays > 0;
 }
 
@@ -55,6 +56,8 @@ public sealed class UsageRules
     public decimal MinCheckInRatio { get; init; }
     public int AbsentDaysWarning { get; init; }
     public int AbsentDaysRevoke { get; init; }
+    public int SharedDeviceMinDays { get; init; }
+    public int SharedDeviceWindowDays { get; init; }
 }
 
 public sealed class ReviewRules
