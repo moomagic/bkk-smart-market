@@ -68,6 +68,8 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
         run.Outcomes.Single(o => o.VendorId == SeedData.VendorId(7)).Weight.Should().Be(2);
         run.Outcomes.Single(o => o.VendorId == SeedData.Somsri)
             .Should().Match<OutcomeDto>(o => o.VendorName == "สมศรี ใ." && o.Kind == "Won" && o.LockCode == "B2");
+        (await VerifyAllocationRunTests.Verify(officer, run.Id))
+            .Should().Match<VerifyAllocationRunTests.VerificationDto>(v => v.ResultMatches && v.InputHashMatches);
 
         (await officer.PostAsync($"/api/allocation-runs/{run.Id}/approve", null)).StatusCode.Should().Be(HttpStatusCode.OK);
 

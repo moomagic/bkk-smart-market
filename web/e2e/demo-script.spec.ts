@@ -83,6 +83,9 @@ test('demo script 1–6', async ({ page, request }) => {
     // The input hash sits in the folded evidence, one click away
     await run.getByText('หลักฐานการสุ่ม').click();
     await expect(run.getByText('ค่าแฮชข้อมูลนำเข้า (SHA-256)')).toBeVisible();
+    // Replay verification: the draw again from the stored seed, rules and draw record gives the same result
+    await run.getByRole('button', { name: 'ตรวจซ้ำด้วย seed เดิม' }).click();
+    await expect(run.getByRole('status').filter({ hasText: 'ผลตรงกัน' })).toHaveText('ผลตรงกันทุกราย · ค่าแฮชข้อมูลตรงกัน');
     // Each group of the result carries its quota and seats won, in quota order
     const groups = run.getByRole('columnheader').filter({ hasText: 'โควตา' });
     await expect(groups).toHaveText([

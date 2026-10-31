@@ -173,6 +173,24 @@ export interface AllocationRun {
   unassignedLockCodes: string[];
 }
 
+/** Replay verification: the run drawn again from what it stores, compared with its draw record. */
+export interface RunVerification {
+  runId: string;
+  referenceNo: string;
+  seed: number;
+  inputHashMatches: boolean;
+  resultMatches: boolean;
+  mismatches: RunMismatch[];
+}
+
+export interface RunMismatch {
+  /** Masked name; null when the difference is not about one vendor. */
+  vendorName: string | null;
+  field: 'kind' | 'lockCode' | 'waitlistPosition' | 'outcome' | 'quota' | 'unassignedLockCodes' | 'pooledOrder' | 'order' | 'record';
+  recorded: string | null;
+  replayed: string | null;
+}
+
 export interface AuditChange {
   Entity: string;
   Id: string;
@@ -354,6 +372,10 @@ export class Api {
 
   rejectAllocationRun(runId: string, reason: string) {
     return this.http.post<AllocationRun>(`/api/allocation-runs/${runId}/reject`, { reason });
+  }
+
+  verifyAllocationRun(runId: string) {
+    return this.http.get<RunVerification>(`/api/allocation-runs/${runId}/verify`);
   }
 
   approveAllocationRun(runId: string) {
