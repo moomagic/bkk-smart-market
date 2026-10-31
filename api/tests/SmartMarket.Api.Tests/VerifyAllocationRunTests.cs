@@ -4,7 +4,9 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMarket.Application.Allocation;
+using System.Text.Json;
 using SmartMarket.Application.Common;
+using SmartMarket.Domain.StallRequests;
 using static SmartMarket.Api.Tests.AllocationRunTests;
 
 namespace SmartMarket.Api.Tests;
@@ -124,14 +126,29 @@ public sealed class VerifyAllocationRunTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task Only_officers_verify_for_now()
+    public async Task A_vendor_verifies_the_runs_of_a_round_they_applied_to_and_no_other()
     {
-        var run = await Draw(await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1));
-        var vendor = run.Outcomes[0].VendorId;
+        var roundId = await api.CheckedRound(legacy: 1, vulnerable: 1, @new: 1);
+        var run = await Draw(roundId);
+        var applicant = run.Outcomes[0].VendorId;
+        var outsider = await api.AddRequest(await api.OpenRound(), Category.New, StallRequestStatus.Submitted);
 
-        (await api.Vendor(vendor).GetAsync($"/api/allocation-runs/{run.Id}/verify")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await Verify(api.Vendor(applicant), run.Id)).ResultMatches.Should().BeTrue();
+        (await api.Vendor(outsider).GetAsync($"/api/allocation-runs/{run.Id}/verify")).StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await api.ClientAs("executive", "executive-bkk").GetAsync($"/api/allocation-runs/{run.Id}/verify"))
             .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task A_vendors_request_lists_each_run_by_id_so_the_result_page_can_verify_it()
+    {
+        var (roundId, run) = await api.ApprovedRound(legacy: 1, vulnerable: 1, @new: 1);
+        var vendor = run.Outcomes[0].VendorId;
+
+        var mine = await api.Vendor(vendor).GetFromJsonAsync<JsonElement[]>("/api/stall-requests/me", Json);
+
+        var runs = mine!.Single(r => r.GetProperty("roundId").GetGuid() == roundId).GetProperty("runs");
+        runs.EnumerateArray().Select(r => r.GetProperty("id").GetGuid()).Should().Equal(run.Id);
     }
 
     internal static async Task<VerificationDto> Verify(HttpClient client, Guid runId)

@@ -125,11 +125,34 @@
           <details class="runs">
             <summary>ประวัติการจับฉลากของรอบนี้ ({{ req.runs.length }})</summary>
             <ul>
-              @for (run of req.runs; track run.referenceNo) {
+              @for (run of req.runs; track run.id) {
                 <li><span class="mono">{{ run.referenceNo }}</span> · {{ runStatus[run.status] }} · {{ dateTime(run.ranAt) }}
                   @if (run.rejectReason) {
                     · เหตุผล: {{ run.rejectReason }}
                   }
+                  <div class="verify">
+                    <p-button variant="outlined" size="small" label="ตรวจซ้ำด้วย seed เดิม" [ariaLabel]="'ตรวจซ้ำผลจับฉลาก ' + run.referenceNo"
+                      [loading]="verification()?.runId === run.id && verification()?.state === 'loading'" (onClick)="verify(run.id)" />
+                    @if (verification(); as v) {
+                      @if (v.runId === run.id) {
+                        @if (v.state === 'done') {
+                          <!-- Live but not role=status: the screen's one status region is the vendor notice -->
+                          <div aria-live="polite">
+                            <p [class.warn-text]="!v.result.resultMatches || !v.result.inputHashMatches">{{ verificationSummary(v.result) }}</p>
+                            @if (v.result.mismatches.length) {
+                              <ul>
+                                @for (m of v.result.mismatches; track $index) {
+                                  <li>{{ describeMismatch(m) }}</li>
+                                }
+                              </ul>
+                            }
+                          </div>
+                        } @else if (v.state === 'error') {
+                          <p class="error" role="alert">ตรวจซ้ำไม่สำเร็จ — {{ v.text }}</p>
+                        }
+                      }
+                    }
+                  </div>
                 </li>
               }
             </ul>

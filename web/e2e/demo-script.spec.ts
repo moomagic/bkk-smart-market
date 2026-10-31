@@ -121,6 +121,10 @@ test('demo script 1–6', async ({ page, request }) => {
     await expect(detail).toContainText('ได้ล็อค B2');
     await expect(detail.getByRole('definition').filter({ hasText: ref })).toBeVisible();
     await expect(detail).toContainText('ยืนยันสิทธิ์ภายใน');
+    // The vendor checks the draw themselves: replayed from its seed, it gives the published result
+    await detail.getByText(/ประวัติการจับฉลากของรอบนี้/).click();
+    await detail.getByRole('button', { name: `ตรวจซ้ำผลจับฉลาก ${ref}` }).click();
+    await expect(detail.getByText('ผลตรงกันทุกราย · ค่าแฮชข้อมูลตรงกัน')).toBeVisible();
 
     await page.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();
     await expect(page.getByRole('status')).toContainText(

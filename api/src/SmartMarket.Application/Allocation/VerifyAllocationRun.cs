@@ -18,14 +18,17 @@ public sealed record RunVerificationDto(
 /// weights in its draw record, its lock codes, seed and RulesSnapshot — and compares with the draw record
 /// (<see cref="Domain.Allocation.AllocationRun.ResultJson"/>), never the current result: forfeits and promotions follow
 /// the rules after the draw (ADR-0004). Request rows are not read, so a later Corrected review cannot read as tampering.
-/// A query: nothing changes, so no audit entry.
+/// A query: nothing changes, so no audit entry. Officers verify any run; a vendor, the runs of a round they applied
+/// to — the same runs their result page lists (ADR-0002).
 /// </summary>
-public sealed class VerifyAllocationRunHandler(IAppDbContext db)
+public sealed class VerifyAllocationRunHandler(IAppDbContext db, ICurrentActor actor)
 {
+    public const string VendorRole = "vendor";
+
     public async Task<Result<RunVerificationDto>> Handle(Guid runId, CancellationToken ct)
     {
         var run = await db.AllocationRuns.AsNoTracking().SingleOrDefaultAsync(r => r.Id == runId, ct);
-        if (run is null)
+        if (run is null || (actor.Role == VendorRole && !await AppliedTo(run.RoundId, ct)))
             return Error.NotFound("allocation_run.not_found", "ไม่พบผลการจัดสรรนี้");
 
         var recorded = AllocationJson.Deserialize<AllocationResult>(run.ResultJson);
@@ -52,6 +55,10 @@ public sealed class VerifyAllocationRunHandler(IAppDbContext db)
         var mismatches = resultMatches ? [] : Differences(recorded, replayed, id => names.GetValueOrDefault(id));
         return new RunVerificationDto(run.Id, run.ReferenceNo, run.Seed, replayed.InputHash == run.InputHash, resultMatches, mismatches);
     }
+
+    private async Task<bool> AppliedTo(Guid roundId, CancellationToken ct) =>
+        Guid.TryParse(actor.Actor, out var vendorId)
+        && await db.StallRequests.AnyAsync(q => q.RoundId == roundId && q.VendorId == vendorId, ct);
 
     private static List<RunMismatch> Differences(AllocationResult recorded, AllocationResult replayed, Func<Guid, string?> name)
     {
