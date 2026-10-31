@@ -15,6 +15,10 @@ public static class AllocationRunsEndpoints
         group.MapPost("/{id:guid}/approve", async (Guid id, ApproveAllocationRunHandler handler, CancellationToken ct) =>
             ResultHttp.Ok(await handler.Handle(id, ct)));
 
+        // A draft for the officer to check and publish; the system publishes nothing. POST: it may call a model (#76)
+        group.MapPost("/{id:guid}/announcement", async (Guid id, DraftAnnouncementHandler handler, CancellationToken ct) =>
+            ResultHttp.Ok(await handler.Handle(id, ct)));
+
         group.MapPost("/{id:guid}/reject", async (Guid id, RejectAllocationRun command, RejectAllocationRunHandler handler, CancellationToken ct) =>
             ResultHttp.Ok(await handler.Handle(id, command, ct)));
 

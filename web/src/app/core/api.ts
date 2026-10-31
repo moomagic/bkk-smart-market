@@ -192,6 +192,13 @@ export interface RunMismatch {
   replayed: string | null;
 }
 
+/** A draft public announcement of an approved run: the officer checks and publishes it; the system publishes nothing. */
+export interface Announcement {
+  runId: string;
+  text: string;
+  source: 'template' | 'claude';
+}
+
 export interface AuditChange {
   Entity: string;
   Id: string;
@@ -377,6 +384,11 @@ export class Api {
 
   verifyAllocationRun(runId: string) {
     return this.http.get<RunVerification>(`/api/allocation-runs/${runId}/verify`);
+  }
+
+  /** POST: drafted on request (it may call a model); approved runs only. */
+  draftAnnouncement(runId: string) {
+    return this.http.post<Announcement>(`/api/allocation-runs/${runId}/announcement`, null);
   }
 
   approveAllocationRun(runId: string) {

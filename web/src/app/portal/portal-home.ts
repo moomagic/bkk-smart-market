@@ -12,7 +12,7 @@ import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, RunOutcome, RunVerification, problemMessage } from '../core/api';
+import { AllocationRun, Announcement, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, RunOutcome, RunVerification, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
 import { RejectRunDialog } from './reject-run-dialog';
@@ -500,6 +500,27 @@ export class PortalHome {
         this.notice.set({ kind: 'error', text: problemMessage(err) });
       },
     });
+  }
+
+  /** The draft announcement of an approved run, asked for by the officer. */
+  protected readonly announcement = signal<
+    { runId: string; state: 'loading' } | { runId: string; state: 'done'; data: Announcement; copied: boolean } | { runId: string; state: 'error'; text: string } | null
+  >(null);
+
+  protected draftAnnouncement(run: AllocationRun): void {
+    this.announcement.set({ runId: run.id, state: 'loading' });
+    this.api.draftAnnouncement(run.id).subscribe({
+      next: (data) => this.announcement.set({ runId: run.id, state: 'done', data, copied: false }),
+      error: (err) => this.announcement.set({ runId: run.id, state: 'error', text: problemMessage(err) }),
+    });
+  }
+
+  /** Clipboard where the browser allows it; otherwise the text stays selectable in its box. */
+  protected copyAnnouncement(text: string): void {
+    navigator.clipboard?.writeText(text).then(
+      () => this.announcement.update((a) => (a?.state === 'done' ? { ...a, copied: true } : a)),
+      () => undefined,
+    );
   }
 
   protected verify(run: AllocationRun): void {

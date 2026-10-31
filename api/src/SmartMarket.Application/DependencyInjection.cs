@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<RunAllocationHandler>();
         services.AddScoped<GetAllocationRunHandler>();
         services.AddScoped<VerifyAllocationRunHandler>();
+        services.AddScoped<DraftAnnouncementHandler>();
         services.AddScoped<ApproveAllocationRunHandler>();
         services.AddScoped<RejectAllocationRunHandler>();
         services.AddScoped<AssignmentExpiry>();
