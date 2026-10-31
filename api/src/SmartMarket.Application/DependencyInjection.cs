@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<AskAssistantHandler>();
         services.AddScoped<GetDashboardHandler>();
         services.AddScoped<GetRoundInsightsHandler>();
+        services.AddScoped<SummarizeDashboardHandler>();
         services.AddScoped<FileReviewHandler>();
         services.AddScoped<RespondReviewHandler>();
         services.AddScoped<ListRoundReviewsHandler>();
