@@ -4,9 +4,17 @@ import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
 import { Textarea } from 'primeng/textarea';
-import { StallRequest } from '../core/api';
+import { RunVerification, StallRequest, problemMessage } from '../core/api';
 import { StatusTag } from '../shared/status-tag';
-import { CATEGORY_LABEL, REVIEW_OUTCOME_LABEL, SPACE_TYPE_LABEL, formatThaiDate, formatThaiDateTime } from '../shared/labels';
+import {
+  CATEGORY_LABEL,
+  REVIEW_OUTCOME_LABEL,
+  SPACE_TYPE_LABEL,
+  describeMismatch,
+  formatThaiDate,
+  formatThaiDateTime,
+  verificationSummary,
+} from '../shared/labels';
 import { VENDOR_RUN_STATUS, canReview, nextStep, pendingSteps } from './request-text';
 import { VendorStore } from './vendor-store';
 
@@ -33,6 +41,21 @@ export class RequestDetail {
   protected readonly dateTime = formatThaiDateTime;
   protected readonly next = nextStep;
   protected readonly reviewable = canReview;
+  protected readonly verificationSummary = verificationSummary;
+  protected readonly describeMismatch = describeMismatch;
+
+  /** Replay verification of one run, asked for by the vendor: proof of the draw without taking the district's word. */
+  protected readonly verification = signal<
+    { runId: string; state: 'loading' } | { runId: string; state: 'done'; result: RunVerification } | { runId: string; state: 'error'; text: string } | null
+  >(null);
+
+  protected verify(runId: string): void {
+    this.verification.set({ runId, state: 'loading' });
+    this.store.verifyRun(runId).subscribe({
+      next: (result) => this.verification.set({ runId, state: 'done', result }),
+      error: (err) => this.verification.set({ runId, state: 'error', text: problemMessage(err) }),
+    });
+  }
 
   protected readonly mine = this.store.myRequests;
   protected readonly acting = this.store.acting;

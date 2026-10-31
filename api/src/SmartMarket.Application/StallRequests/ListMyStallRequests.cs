@@ -35,7 +35,7 @@ internal static class MyStallRequests
         var runs = (await db.AllocationRuns.AsNoTracking()
                 .Where(r => roundIds.Contains(r.RoundId))
                 .OrderByDescending(r => r.RanAt)
-                .Select(r => new { r.RoundId, r.ReferenceNo, r.Status, r.RanAt, r.RejectReason })
+                .Select(r => new { r.Id, r.RoundId, r.ReferenceNo, r.Status, r.RanAt, r.RejectReason })
                 .ToListAsync(ct))
             .ToLookup(r => r.RoundId);
         // Outcomes come from the approved run only, so a draft never leaks to vendors; the current result, so a
@@ -70,7 +70,7 @@ internal static class MyStallRequests
                 req.Id, round.Id, round.SpaceId, x.SpaceName, round.StartsOn, round.EndsOn, req.SubmittedAt, req.Category,
                 req.Status, req.IneligibleReason, req.WaitlistPosition, assignment?.Code, outcome?.Reason,
                 approved?.ReferenceNo, assignment?.ConfirmBy,
-                [.. runs[round.Id].Select(r => new RunReference(r.ReferenceNo, r.Status, r.RanAt, r.RejectReason))],
+                [.. runs[round.Id].Select(r => new RunReference(r.Id, r.ReferenceNo, r.Status, r.RanAt, r.RejectReason))],
                 assignment?.LastCheckInAt,
                 reviews.TryGetValue(req.Id, out var review) ? ReviewDto.From(review) : null);
         })];

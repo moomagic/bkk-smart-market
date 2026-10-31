@@ -1,4 +1,4 @@
-import { AllocationRunStatus, Category, InsightKind, OutcomeKind, ReviewOutcome, RoundStatus, SpaceType, StallRequestStatus } from '../core/api';
+import { AllocationRunStatus, Category, InsightKind, OutcomeKind, ReviewOutcome, RoundStatus, RunMismatch, RunVerification, SpaceType, StallRequestStatus } from '../core/api';
 
 export const SPACE_TYPE_LABEL: Record<SpaceType, string> = {
   Relaxation: 'จุดผ่อนผัน',
@@ -43,6 +43,36 @@ export const OUTCOME_LABEL: Record<OutcomeKind, string> = {
   NotSelected: 'ไม่ได้สิทธิ์',
   Forfeited: 'สละสิทธิ์',
 };
+
+/** One line for a replay verification: what an officer or vendor reads under the run's evidence. */
+export function verificationSummary(v: RunVerification): string {
+  if (v.resultMatches && v.inputHashMatches) return 'ผลตรงกันทุกราย · ค่าแฮชข้อมูลตรงกัน';
+  const hash = v.inputHashMatches ? 'ค่าแฮชข้อมูลตรงกัน' : 'ค่าแฮชข้อมูลไม่ตรง: ข้อมูลนำเข้าถูกเปลี่ยนหลังจับ';
+  return v.resultMatches ? `ผลตรงกันทุกราย · ${hash}` : `ผลไม่ตรงกับที่บันทึกไว้ · ${hash}`;
+}
+
+const MISMATCH_FIELD: Record<RunMismatch['field'], string> = {
+  kind: 'ผล',
+  lockCode: 'ล็อค',
+  waitlistPosition: 'ลำดับสำรอง',
+  outcome: 'ผล',
+  quota: 'โควตา',
+  unassignedLockCodes: 'ล็อคที่ว่าง',
+  pooledOrder: 'ลำดับการจับรวม',
+  order: 'ลำดับ',
+  record: 'ผลที่บันทึก',
+};
+
+/** "สมศรี ใ. · ล็อค: บันทึกไว้ B3 · รันซ้ำได้ B2" */
+export function describeMismatch(m: RunMismatch): string {
+  if (m.field === 'record') return 'ผลที่บันทึกไว้อ่านกลับไม่ได้ · ถูกแก้ไขหลังจับ';
+  if (m.field === 'order') return 'ลำดับในผลที่บันทึกต่างจากลำดับที่จับได้';
+  if (m.field === 'outcome') return `${m.vendorName ?? ''} · ไม่อยู่ในผลที่รันซ้ำ`;
+  const show = (v: string | null) =>
+    v === null ? 'ไม่มี' : m.field === 'kind' ? (OUTCOME_LABEL[v as OutcomeKind] ?? v) : v;
+  const who = m.vendorName ? `${m.vendorName} · ` : '';
+  return `${who}${MISMATCH_FIELD[m.field]}: บันทึกไว้ ${show(m.recorded)} · รันซ้ำได้ ${show(m.replayed)}`;
+}
 
 export const REVIEW_OUTCOME_LABEL: Record<ReviewOutcome, string> = {
   Upheld: 'ยืนตามเดิม',

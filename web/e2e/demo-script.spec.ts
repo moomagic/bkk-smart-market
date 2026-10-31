@@ -83,6 +83,9 @@ test('demo script 1–6', async ({ page, request }) => {
     // The input hash sits in the folded evidence, one click away
     await run.getByText('หลักฐานการสุ่ม').click();
     await expect(run.getByText('ค่าแฮชข้อมูลนำเข้า (SHA-256)')).toBeVisible();
+    // Replay verification: the draw again from the stored seed, rules and draw record gives the same result
+    await run.getByRole('button', { name: 'ตรวจซ้ำด้วย seed เดิม' }).click();
+    await expect(run.getByRole('status').filter({ hasText: 'ผลตรงกัน' })).toHaveText('ผลตรงกันทุกราย · ค่าแฮชข้อมูลตรงกัน');
     // Each group of the result carries its quota and seats won, in quota order
     const groups = run.getByRole('columnheader').filter({ hasText: 'โควตา' });
     await expect(groups).toHaveText([
@@ -118,6 +121,10 @@ test('demo script 1–6', async ({ page, request }) => {
     await expect(detail).toContainText('ได้ล็อค B2');
     await expect(detail.getByRole('definition').filter({ hasText: ref })).toBeVisible();
     await expect(detail).toContainText('ยืนยันสิทธิ์ภายใน');
+    // The vendor checks the draw themselves: replayed from its seed, it gives the published result
+    await detail.getByText(/ประวัติการจับฉลากของรอบนี้/).click();
+    await detail.getByRole('button', { name: `ตรวจซ้ำผลจับฉลาก ${ref}` }).click();
+    await expect(detail.getByText('ผลตรงกันทุกราย · ค่าแฮชข้อมูลตรงกัน')).toBeVisible();
 
     await page.getByRole('button', { name: 'ยืนยันสิทธิ์', exact: true }).click();
     await expect(page.getByRole('status')).toContainText(

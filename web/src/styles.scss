@@ -159,6 +159,19 @@ h1 {
   color: var(--muted);
 }
 
+/* Replay verification under a run's evidence (portal and vendor): the button, then its one-line result */
+.verify {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.verify p,
+.verify ul {
+  margin: 0;
+}
+
 /* Portal dialogs title in the heading face, like every other title on the page */
 .portal-dialog .p-dialog-title {
   font-family: var(--font-heading);

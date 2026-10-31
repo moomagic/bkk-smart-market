@@ -17,4 +17,4 @@ public sealed record StallRequestDto(
     int? WaitlistPosition, string? LockCode, string? ResultReason, string? ReferenceNo, DateTimeOffset? ConfirmBy,
     IReadOnlyList<RunReference> Runs, DateTimeOffset? LastCheckInAt, ReviewDto? Review);
 
-public sealed record RunReference(string ReferenceNo, AllocationRunStatus Status, DateTimeOffset RanAt, string? RejectReason);
+public sealed record RunReference(Guid Id, string ReferenceNo, AllocationRunStatus Status, DateTimeOffset RanAt, string? RejectReason);

@@ -202,6 +202,28 @@
                         <dd>ผู้ค้าเดิม ≤ {{ pct(run.rules.legacyMax) }} · กลุ่มเปราะบาง ≥ {{ pct(run.rules.vulnerableMin) }} · ผู้ค้าใหม่ ≥ {{ pct(run.rules.newMin) }} · สำรอง {{ run.rules.waitlistPerGroup }} คนต่อกลุ่ม</dd>
                       </div>
                     </dl>
+                    <div class="verify">
+                      <p-button variant="outlined" size="small" label="ตรวจซ้ำด้วย seed เดิม"
+                        [loading]="verification()?.runId === run.id && verification()?.state === 'loading'" (onClick)="verify(run)" />
+                      @if (verification(); as v) {
+                        @if (v.runId === run.id) {
+                          @if (v.state === 'done') {
+                            <div role="status">
+                              <p [class.warn-text]="!v.result.resultMatches || !v.result.inputHashMatches">{{ verificationSummary(v.result) }}</p>
+                              @if (v.result.mismatches.length) {
+                                <ul>
+                                  @for (m of v.result.mismatches; track $index) {
+                                    <li>{{ describeMismatch(m) }}</li>
+                                  }
+                                </ul>
+                              }
+                            </div>
+                          } @else if (v.state === 'error') {
+                            <p class="error" role="alert">ตรวจซ้ำไม่สำเร็จ — {{ v.text }}</p>
+                          }
+                        }
+                      }
+                    </div>
                   </details>
 
                 <h4>ผลรายคน</h4>

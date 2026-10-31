@@ -12,7 +12,7 @@ import { Textarea } from 'primeng/textarea';
 import { Message } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { Observable, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
-import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, RunOutcome, problemMessage } from '../core/api';
+import { AllocationRun, Api, Category, InsightFlag, OutcomeKind, QuotaLine, ReviewOutcome, RoundRequestRow, RoundReview, RoundSummary, RunOutcome, RunVerification, problemMessage } from '../core/api';
 import { DemoSession } from '../core/demo-session';
 import { ApproveRunDialog } from './approve-run-dialog';
 import { RejectRunDialog } from './reject-run-dialog';
@@ -26,8 +26,10 @@ import {
   REVIEW_OUTCOME_LABEL,
   RUN_STATUS_LABEL,
   STATUS_LABEL,
+  describeMismatch,
   formatThaiDate,
   formatThaiDateTime,
+  verificationSummary,
 } from '../shared/labels';
 
 type RoundTab = 'requests' | 'run' | 'reviews' | 'insight';
@@ -381,6 +383,12 @@ export class PortalHome {
   /** Run id whose reject dialog is open. */
   protected readonly rejecting = signal<string | null>(null);
   protected readonly checking = signal(false);
+  /** Replay verification of one run: asked for by the officer, never on load. */
+  protected readonly verification = signal<
+    { runId: string; state: 'loading' } | { runId: string; state: 'done'; result: RunVerification } | { runId: string; state: 'error'; text: string } | null
+  >(null);
+  protected readonly verificationSummary = verificationSummary;
+  protected readonly describeMismatch = describeMismatch;
   /** p-table hands rows to its templates untyped; these restore the type for the template checker. */
   protected asRound(row: RoundSummary): RoundSummary {
     return row;
@@ -491,6 +499,14 @@ export class PortalHome {
         this.deciding.set(false);
         this.notice.set({ kind: 'error', text: problemMessage(err) });
       },
+    });
+  }
+
+  protected verify(run: AllocationRun): void {
+    this.verification.set({ runId: run.id, state: 'loading' });
+    this.api.verifyAllocationRun(run.id).subscribe({
+      next: (result) => this.verification.set({ runId: run.id, state: 'done', result }),
+      error: (err) => this.verification.set({ runId: run.id, state: 'error', text: problemMessage(err) }),
     });
   }
 

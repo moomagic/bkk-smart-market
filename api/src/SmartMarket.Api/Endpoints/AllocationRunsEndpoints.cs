@@ -18,6 +18,10 @@ public static class AllocationRunsEndpoints
         group.MapPost("/{id:guid}/reject", async (Guid id, RejectAllocationRun command, RejectAllocationRunHandler handler, CancellationToken ct) =>
             ResultHttp.Ok(await handler.Handle(id, command, ct)));
 
+        // Outside the officer group: vendors verify the runs of their own rounds too (the handler checks which)
+        api.MapGet("/allocation-runs/{id:guid}/verify", async (Guid id, VerifyAllocationRunHandler handler, CancellationToken ct) =>
+            ResultHttp.Ok(await handler.Handle(id, ct))).RequireAuthorization();
+
         return api;
     }
 }
