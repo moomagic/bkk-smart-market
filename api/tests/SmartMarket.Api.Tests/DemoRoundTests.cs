@@ -72,6 +72,9 @@ public sealed class DemoRoundTests(ApiFactory api) : IClassFixture<ApiFactory>
             .Should().Match<VerifyAllocationRunTests.VerificationDto>(v => v.ResultMatches && v.InputHashMatches);
 
         (await officer.PostAsync($"/api/allocation-runs/{run.Id}/approve", null)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await AnnouncementTests.Announcement(officer, run.Id)).Text.Should()
+            .Contain("โควตา 2 · ได้สิทธิ์ 2").And.Contain("โควตา 1 · ได้สิทธิ์ 1").And.Contain("เลขอ้างอิง BPL-2569-1025-01")
+            .And.NotContain("สมศรี");
 
         var mine = (await somsri.GetFromJsonAsync<MyRequestDto[]>("/api/stall-requests/me", Json))!
             .Single(r => r.RoundId == SeedData.CharanCurrentRound);

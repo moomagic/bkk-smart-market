@@ -311,6 +311,29 @@
                     </div>
                   </div>
                 }
+
+                <!-- After approval: a draft announcement the officer checks and publishes themselves -->
+                @if (run.status === 'Approved') {
+                  <h4 id="announcement-heading">ประกาศผล</h4>
+                  <div class="verify" role="group" aria-labelledby="announcement-heading">
+                    <p-button variant="outlined" size="small" label="ร่างประกาศผล"
+                      [loading]="announcement()?.runId === run.id && announcement()?.state === 'loading'" (onClick)="draftAnnouncement(run)" />
+                    @if (announcement(); as a) {
+                      @if (a.runId === run.id) {
+                        @if (a.state === 'done') {
+                          <textarea pTextarea readonly fluid rows="22" aria-label="ร่างประกาศผล" [value]="a.data.text"></textarea>
+                          <p class="muted text-small">
+                            {{ a.data.source === 'claude' ? 'ย่อหน้าวิธีจัดสรรเขียนโดย AI (Claude) · ตัวเลขมาจากผลจัดสรร' : 'จากแม่แบบคงที่ ไม่ได้ใช้ AI' }} ·
+                            ร่างนี้ยังไม่ถูกเผยแพร่ ตรวจก่อนนำไปใช้
+                          </p>
+                          <p-button size="small" [label]="a.copied ? 'คัดลอกแล้ว' : 'คัดลอก'" (onClick)="copyAnnouncement(a.data.text)" />
+                        } @else if (a.state === 'error') {
+                          <p class="error" role="alert">ร่างประกาศไม่สำเร็จ — {{ a.text }}</p>
+                        }
+                      }
+                    }
+                  </div>
+                }
               </section>
             } @else if (runs()?.state === 'ready') {
               <p class="muted">ไม่มีผลจัดสรรของรอบนี้ในระบบ</p>

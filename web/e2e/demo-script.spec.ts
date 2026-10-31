@@ -103,6 +103,14 @@ test('demo script 1–6', async ({ page, request }) => {
     await confirm.getByRole('button', { name: 'ยืนยันอนุมัติผล' }).click();
     await expect(confirm).toBeHidden();
     await expect(run).toContainText('อนุมัติแล้ว');
+
+    // Once approved, the officer can draft the public announcement: verifiable, naming nobody, published by hand
+    await run.getByRole('button', { name: 'ร่างประกาศผล' }).click();
+    const draft = run.getByRole('textbox', { name: 'ร่างประกาศผล' });
+    await expect(draft).toHaveValue(new RegExp(`เลขอ้างอิง ${ref}`));
+    await expect(draft).toHaveValue(/ไม่มีช่องทางจ่ายเงินเพื่อได้แผง/);
+    await expect(draft).not.toHaveValue(/สมศรี/);
+    await expect(run).toContainText('ร่างนี้ยังไม่ถูกเผยแพร่');
   });
 
   await test.step('4 · vendor sees lock B2 with the reason, confirms and checks in', async () => {
