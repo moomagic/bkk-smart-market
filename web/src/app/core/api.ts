@@ -260,7 +260,7 @@ export interface DashboardKpis {
   spaces: DashboardSpaceRow[];
 }
 
-export type InsightKind = 'OutsideGeofence' | 'Absent' | 'LowCheckIn' | 'SharedSurname' | 'SharedPhone';
+export type InsightKind = 'OutsideGeofence' | 'Absent' | 'LowCheckIn' | 'SharedSurname' | 'SharedPhone' | 'SharedDevice';
 export type InsightSeverity = 'Info' | 'Warning' | 'Critical';
 
 /** Read-only flag for an officer to look into; it never changes anything by itself. */

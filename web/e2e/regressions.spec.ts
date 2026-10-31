@@ -369,3 +369,21 @@ test('the dashboard states rollover as a fact, and its district totals are the o
   // The table scrolls sideways on a narrow screen, so the keyboard can reach it
   await expect(table).toHaveAttribute('tabindex', '0');
 });
+
+test('one device checking in for winners in two spaces is flagged on both, and never names the device', async ({ page }) => {
+  await page.goto('/portal');
+  await switchRole(page, 'officer');
+
+  for (const [space, other] of [
+    ['หน้า MRT บางพลัด ทางออก 1', 'ตลาดนัดเขตบางพลัด'],
+    ['ตลาดนัดเขตบางพลัด', 'หน้า MRT บางพลัด ทางออก 1'],
+  ]) {
+    await openRound(page, space, '1 พ.ค. 2569');
+    await page.getByRole('tab', { name: /ข้อสังเกต/ }).click();
+    const flag = page.getByRole('region', { name: 'ข้อสังเกตการจัดสรร' }).getByRole('listitem').filter({ hasText: 'อุปกรณ์ใช้ร่วมกัน' });
+    await expect(flag).toHaveCount(1);
+    await expect(flag).toContainText(`อุปกรณ์เดียวกันเช็คอินให้`);
+    await expect(flag).toContainText(other);
+    await expect(flag).not.toContainText('seed-device');
+  }
+});

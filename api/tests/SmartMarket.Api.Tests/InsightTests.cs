@@ -25,9 +25,22 @@ public sealed class InsightTests(ApiFactory api)
 
         flags.Select(f => (f.Kind, f.Severity)).Should().Contain([
             ("OutsideGeofence", "Info"), ("Absent", "Warning"), ("Absent", "Critical"), ("LowCheckIn", "Warning"),
-            ("SharedSurname", "Warning"), ("SharedPhone", "Warning"),
+            ("SharedSurname", "Warning"), ("SharedPhone", "Warning"), ("SharedDevice", "Warning"),
         ]);
         flags.Should().OnlyContain(f => f.VendorName.Contains('.'), "names are masked");
+    }
+
+    [Fact]
+    public async Task The_planted_shared_device_is_flagged_on_both_spaces_each_pointing_at_the_other()
+    {
+        var mrt = (await Insights(HistorySeed.MrtPreviousRound)).Where(f => f.Kind == "SharedDevice").ToList();
+        var market = (await Insights(HistorySeed.MarketPreviousRound)).Where(f => f.Kind == "SharedDevice").ToList();
+
+        var mrtFlag = mrt.Should().ContainSingle("only MRT winner 5 and market winner 6 share a device").Subject;
+        var marketFlag = market.Should().ContainSingle().Subject;
+        mrtFlag.Message.Should().Contain(marketFlag.VendorName).And.Contain($"ตลาดนัดเขตบางพลัด ล็อค {marketFlag.LockCode}");
+        marketFlag.Message.Should().Contain(mrtFlag.VendorName).And.Contain($"หน้า MRT บางพลัด ทางออก 1 ล็อค {mrtFlag.LockCode}");
+        (await Insights(HistorySeed.Rama8PreviousRound)).Should().NotContain(f => f.Kind == "SharedDevice");
     }
 
     [Fact]

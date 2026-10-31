@@ -9,6 +9,7 @@ public enum InsightKind
     LowCheckIn,
     SharedSurname,
     SharedPhone,
+    SharedDevice,
 }
 
 public enum InsightSeverity
@@ -21,9 +22,17 @@ public enum InsightSeverity
 /// <param name="VendorName">Masked name(s) (Guardrail 5); for a shared surname/phone, everyone in the group.</param>
 public sealed record InsightFlag(InsightKind Kind, InsightSeverity Severity, string VendorName, string LockCode, string Message);
 
-public sealed record UsageThresholds(decimal MinCheckInRatio, int AbsentDaysWarning, int AbsentDaysRevoke);
+/// <param name="SharedDeviceMinDays">Days a device must have checked in for each of two winners to flag them.</param>
+/// <param name="SharedDeviceWindowDays">Calendar days back from today the shared-device check looks at.</param>
+public sealed record UsageThresholds(
+    decimal MinCheckInRatio, int AbsentDaysWarning, int AbsentDaysRevoke, int SharedDeviceMinDays = 3, int SharedDeviceWindowDays = 30);
 
-public sealed record InsightCheckIn(DateOnly Day, bool WithinGeofence);
+/// <param name="DeviceHash">Compared only, never shown (personal data); null when the check-in carried no device.</param>
+public sealed record InsightCheckIn(DateOnly Day, bool WithinGeofence, string? DeviceHash = null);
+
+/// <summary>A check-in anywhere in the district that carried a device: the other side of a shared-device flag.</summary>
+/// <param name="DeviceHash">Compared only, never shown (personal data).</param>
+public sealed record DeviceCheckIn(Guid VendorId, string MaskedName, string SpaceName, string LockCode, DateOnly Day, string DeviceHash);
 
 /// <param name="Surname">Compared only, never shown (personal data).</param>
 /// <param name="Phone">Compared only, never shown (personal data).</param>
@@ -31,7 +40,11 @@ public sealed record InsightHolder(
     Guid VendorId, string MaskedName, string Surname, string Phone, string LockCode, IReadOnlyList<InsightCheckIn> CheckIns);
 
 /// <param name="Holders">Winners who hold a confirmed lock in the round.</param>
-public sealed record InsightRound(DateOnly StartsOn, DateOnly EndsOn, IReadOnlyList<DayOfWeek> SellingDays, IReadOnlyList<InsightHolder> Holders);
+/// <param name="DistrictCheckIns">Check-ins with a device across the district (every space, every round) — what the
+/// holders' devices are compared with; this round's own check-ins may be among them.</param>
+public sealed record InsightRound(
+    DateOnly StartsOn, DateOnly EndsOn, IReadOnlyList<DayOfWeek> SellingDays, IReadOnlyList<InsightHolder> Holders,
+    IReadOnlyList<DeviceCheckIn>? DistrictCheckIns = null);
 
 /// <summary>
 /// Allocation Insight (CLAUDE.md › AI components): rule-based, read-only flags for an officer to look into. A flag never
@@ -46,6 +59,9 @@ public sealed record InsightRound(DateOnly StartsOn, DateOnly EndsOn, IReadOnlyL
 /// selling days (the current month once a week of it has passed).</item>
 /// <item><b>OutsideGeofence</b>: any check-in recorded outside the space.</item>
 /// <item><b>SharedSurname / SharedPhone</b>: two or more holders in the round with the same surname or phone.</item>
+/// <item><b>SharedDevice</b>: in the last <see cref="UsageThresholds.SharedDeviceWindowDays"/> days, one device checked in
+/// for a holder and for another winner anywhere in the district, on at least <see cref="UsageThresholds.SharedDeviceMinDays"/>
+/// days <i>each</i> — so borrowing a neighbour's phone once or twice flags neither of them (CONTEXT.md › Shared device).</item>
 /// </list>
 /// </summary>
 public static class InsightRules
@@ -96,7 +112,32 @@ public static class InsightRules
 
         flags.AddRange(Shared(round.Holders, h => h.Surname, InsightKind.SharedSurname, "นามสกุลเดียวกัน"));
         flags.AddRange(Shared(round.Holders, h => h.Phone, InsightKind.SharedPhone, "เบอร์โทรเดียวกัน"));
+        flags.AddRange(SharedDevices(round, today, rules));
         return flags;
+    }
+
+    /// <summary>One flag per holder and other winner; the device itself is personal data and never shown.</summary>
+    private static IEnumerable<InsightFlag> SharedDevices(InsightRound round, DateOnly today, UsageThresholds rules)
+    {
+        var from = today.AddDays(1 - rules.SharedDeviceWindowDays);
+        bool InWindow(DateOnly d) => d >= from && d <= today;
+        var byDevice = (round.DistrictCheckIns ?? []).Where(c => InWindow(c.Day)).ToLookup(c => c.DeviceHash);
+
+        foreach (var h in round.Holders.OrderBy(h => h.LockCode.Length).ThenBy(h => h.LockCode, StringComparer.Ordinal))
+        {
+            var own = h.CheckIns.Where(c => c.DeviceHash is not null && InWindow(c.Day))
+                .GroupBy(c => c.DeviceHash!).ToDictionary(g => g.Key, g => g.Select(c => c.Day).Distinct().Count());
+            var shared = own
+                .SelectMany(d => byDevice[d.Key].Where(c => c.VendorId != h.VendorId).GroupBy(c => c.VendorId)
+                    .Select(g => (Other: g.First(), Days: Math.Min(d.Value, g.Select(c => c.Day).Distinct().Count()))))
+                .Where(x => x.Days >= rules.SharedDeviceMinDays)
+                .GroupBy(x => x.Other.VendorId)
+                .Select(g => g.MaxBy(x => x.Days))
+                .OrderByDescending(x => x.Days).ThenBy(x => x.Other.MaskedName, StringComparer.Ordinal);
+            foreach (var (other, days) in shared)
+                yield return new InsightFlag(InsightKind.SharedDevice, InsightSeverity.Warning, h.MaskedName, h.LockCode,
+                    $"อุปกรณ์เดียวกันเช็คอินให้ {other.MaskedName} ({other.SpaceName} ล็อค {other.LockCode}) ด้วย อย่างน้อย {days} วันใน {rules.SharedDeviceWindowDays} วันล่าสุด — ตรวจสอบการเช่าช่วงหน้างานก่อน ระบบไม่ตัดสิทธิ์เอง");
+        }
     }
 
     /// <summary>The shared value itself is personal data: the flag names who, never what.</summary>
