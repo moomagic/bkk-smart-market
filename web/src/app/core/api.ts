@@ -96,6 +96,7 @@ export function lockQr(spaceId: string, lockCode: string): string {
 }
 
 export interface RunReference {
+  id: string;
   referenceNo: string;
   status: AllocationRunStatus;
   ranAt: string;

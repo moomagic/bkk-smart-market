@@ -2,7 +2,7 @@ import { DestroyRef, Injectable, computed, inject, linkedSignal, signal } from '
 import { Router } from '@angular/router';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, catchError, combineLatest, map, of, scan, startWith, switchMap } from 'rxjs';
-import { Api, AssistantAnswer, AssistantSource, PreferredTime, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
+import { Api, AssistantAnswer, AssistantSource, PreferredTime, RunVerification, SpaceMatch, SpaceSummary, StallRequest, StallRequestStatus, lockQr, problemMessage } from '../core/api';
 import { DemoRole, DemoSession } from '../core/demo-session';
 import { CATEGORY_LABEL, STATUS_LABEL, formatThaiDateTime } from '../shared/labels';
 
@@ -285,6 +285,11 @@ export class VendorStore {
   /** Resolves true once the review is filed. */
   fileReview(req: StallRequest, reason: string): Promise<boolean> {
     return this.act(req, this.api.fileReview(req.id, reason), () => `ยื่นขอทบทวนผลแล้ว · ${req.spaceName} — รอเขตตอบ`, false);
+  }
+
+  /** Replay verification of one run of the vendor's round: a read, so no notice, no reload. */
+  verifyRun(runId: string): Observable<RunVerification> {
+    return this.api.verifyAllocationRun(runId);
   }
 
   /** Runs one request action; true when it went through. A failed confirm/forfeit reloads, as the state may have moved. */
